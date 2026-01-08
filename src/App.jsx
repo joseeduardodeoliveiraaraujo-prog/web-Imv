@@ -3,7 +3,11 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./services/firebase";
 
 import Login from "./components/Login/Login";
+import Home from "./Pages/Home";
 import "./App.css";
+
+
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -29,11 +33,8 @@ function App() {
   return (
     <div className="App">
       {user ? (
-        <div className="logged">
-          <h1>Usuário logado</h1>
-          <button onClick={handleLogout}>Sair</button>
-        </div>
-      ) : (
+        <Home user={user} onLogout={handleLogout}/>
+        ):(
         <Login />
       )}
     </div>
