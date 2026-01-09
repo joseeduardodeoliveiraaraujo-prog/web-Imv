@@ -1,71 +1,141 @@
-/* Container Principal */
+/* =========================
+   CONTAINER PRINCIPAL
+========================= */
 .container {
   width: 100%;
   max-width: 400px;
   padding: 50px 40px;
-  background: rgba(255, 255, 255, 0.1); /* Efeito Vidro */
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(30, 50, 45, 0.85);
   border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  box-sizing: border-box;
 }
 
+/* Glassmorphism */
+@supports (backdrop-filter: blur(20px)) {
+  .container {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+}
+
+/* =========================
+   TÍTULO
+========================= */
 .container h1 {
   text-align: center;
   color: #fff;
   font-size: 2.2rem;
   margin-bottom: 35px;
   font-weight: 700;
-  letter-spacing: -1px;
 }
 
-/* Estilização das Divs que envolvem os Inputs */
-form > div:not(.recall-forget) {
-  position: relative; /* Necessário para posicionar o ícone */
+/* =========================
+   WRAPPER DOS INPUTS
+========================= */
+.input-box {
+  position: relative;
   width: 100%;
   margin-bottom: 20px;
 }
 
-/* Estilização do Input (E-mail e Senha) */
+/* =========================
+   INPUTS (Correção de Autofill e Padding)
+========================= */
 form input[type="email"],
-form input[type="password"] {
+form input[type="password"],
+form input[type="text"] {
   width: 100%;
+  /* Padding aumentado para 95px para garantir que o texto não sobreponha os dois ícones */
+  padding: 15px 95px 15px 20px; 
   background: rgba(255, 255, 255, 0.08);
   border: 1.5px solid rgba(255, 255, 255, 0.15);
-  outline: none;
   border-radius: 14px;
-  padding: 15px 45px 15px 20px; /* Padding extra na direita para o ícone */
+  outline: none;
   font-size: 1rem;
-  color: #000;
+  color: #fff;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
-/* Altera a cor do placeholder para todos os navegadores */
+/* Remove o fundo branco/azul do preenchimento automático do Chrome */
+form input:-webkit-autofill,
+form input:-webkit-autofill:hover, 
+form input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(40, 50, 50, 0.9) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 form input::placeholder {
-  color: #000000 !important; /* Cor preta */
-  opacity: 1; /* Garante que não haja transparência padrão */
+  color: rgba(255, 255, 255, 0.7);
 }
 
-/* Efeito de foco nos inputs */
 form input:focus {
   background: rgba(255, 255, 255, 0.15);
-  border-color: #2e3c46;
-  box-shadow: 0 0 15px rgba(26, 85, 99, 0.3);
+  border-color: #00d2ff;
+  box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
 }
 
-/* Posicionamento dos Ícones (FaUser e FaLock) */
-.icon {
+/* =========================
+   ESTILO DOS ÍCONES (NOVO)
+========================= */
+
+/* Ícone de Usuário (E-mail) */
+.right-icon {
   position: absolute;
   right: 18px;
   top: 50%;
   transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 1.1rem;
-  pointer-events: none; /* Garante que o clique passe para o input */
+  pointer-events: none;
 }
 
-/* Checkbox e Texto "Lembrar da senha" */
+/* Container dos ícones de Senha */
+.password-icons {
+  position: absolute;
+  right: 18px; /* Mantém o conjunto alinhado à direita */
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Espaço entre o olho e o cadeado */
+  z-index: 10;
+}
+
+/* Botão do Olho (Estilo Moderno/Fino) */
+.toggle-password {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  
+  /* Cor mais clara para o estilo "outline" fino */
+  color: rgba(255, 255, 255, 0.4); 
+  font-size: 1rem; /* Um pouco menor para delicadeza */
+  transition: all 0.2s ease;
+}
+
+.toggle-password:hover {
+  color: #ffffff;
+  transform: scale(1.15);
+}
+
+/* Ícone do Cadeado */
+.lock-icon {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.1rem;
+  pointer-events: none;
+}
+
+/* =========================
+   CHECKBOX LEMBRAR SENHA
+========================= */
 .recall-forget {
   margin: 15px 0 25px;
   color: #fff;
@@ -77,37 +147,61 @@ form input:focus {
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.recall-forget label:hover {
-  opacity: 0.8;
 }
 
 .recall-forget input {
-  accent-color: #00d2ff; /* Cor customizada para o check */
+  accent-color: #00d2ff;
   width: 17px;
   height: 17px;
 }
 
-/* Botão Entrar */
-button {
+/* =========================
+   BOTÃO ENTRAR
+========================= */
+form button[type="submit"] {
   width: 100%;
   height: 55px;
   background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
   border: none;
-  outline: none;
   border-radius: 14px;
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.25);
   cursor: pointer;
   font-size: 1.1rem;
-  color: #fff;
   font-weight: 700;
+  color: #fff;
   transition: all 0.3s ease;
 }
 
-button:hover {
+form button[type="submit"]:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 20px rgba(58, 123, 213, 0.4);
-  filter: brightness(1.1);
+  box-shadow: 0 12px 20px rgba(58, 123, 213, 0.45);
+}
+
+/* =========================
+   RESPONSIVO
+========================= */
+@media (max-width: 480px) {
+  .container {
+    padding: 40px 25px;
+    border-radius: 22px;
+  }
+  .container h1 {
+    font-size: 1.9rem;
+  }
+}
+
+/* Esconde o ícone de 'olho' nativo do Edge e navegadores baseados em Webkit */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+/* Tenta forçar o navegador a não injetar ícones de gerenciadores */
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
 }

@@ -1,4 +1,5 @@
 import "./Header.css";
+import { FaSignOutAlt } from "react-icons/fa";
 
 const Header = ({ user, onLogout }) => {
   return (
@@ -8,9 +9,11 @@ const Header = ({ user, onLogout }) => {
         <span>{user.email}</span>
       </div>
 
-      <button className="logout-btn" onClick={onLogout}>
-        Sair
+      <button className="logout-btn" onClick={onLogout} title="Sair">
+        <FaSignOutAlt />
       </button>
+
+
     </header>
   );
 };
