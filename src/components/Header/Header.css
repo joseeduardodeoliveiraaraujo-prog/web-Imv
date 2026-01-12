@@ -45,11 +45,11 @@
   align-items: center;
   justify-content: center;
   
-  background: rgba(230, 57, 70, 0.1); /* Fundo leve para o botão */
+  background: transparent; /* Fundo leve para o botão */
   border: 1px solid transparent;
   border-radius: 8px; /* Cantos arredondados modernos */
 
-  color: #e63946;
+  color: rgba(255, 255, 255, 0.7);
   font-size: 1.1rem;
   cursor: pointer;
 
@@ -59,7 +59,7 @@
 }
 
 .logout-btn:hover {
-  background: transparent;
+  background: rgba(230, 57, 70, 0.15);
   color: #ff4d5a;
   transform: scale(1.15px); /* Pequeno deslocamento para cima */
 }
