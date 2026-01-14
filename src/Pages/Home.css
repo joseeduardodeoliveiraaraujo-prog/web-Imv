@@ -1,4 +1,111 @@
+/* Container Principal */
 .home-content {
-  padding-top: 90px; /* espaço para o header */
+  padding: 110px 4% 40px; /* Mais respiro nas laterais */
+  min-height: 100vh;
   color: #fff;
+  max-width: 1200px; /* Centraliza o conteúdo em telas ultra-wide */
+  margin: 0 auto;
+  width: 100%;
+  height: 72px;
+  
+}
+
+.home-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 40px;
+  background: linear-gradient(90deg, #fff, #a5a5a5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Grid Responsivo */
+.certificates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+/* Card Base */
+.certificate-card, 
+.certificate-card-upload-card {
+  position: relative;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px); /* Efeito de vidro */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Card de Imagem (Certificados) */
+.certificate-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.certificate-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+}
+
+.certificate-card:hover img {
+  opacity: 1;
+}
+
+/* Card de Upload (Novo Modelo) */
+.certificate-card-upload-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 2px dashed rgba(255, 255, 255, 0.2); /* Borda tracejada para upload */
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.certificate-card-upload-card svg {
+  font-size: 2.5rem;
+  color: rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+.certificate-card-upload-card span {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  transition: all 0.3s ease;
+}
+
+/* Hover do Upload */
+.certificate-card-upload-card:hover {
+  background: rgba(56, 189, 248, 0.05);
+  border-color: #38bdf8;
+  transform: translateY(-8px);
+}
+
+.certificate-card-upload-card:hover svg {
+  color: #38bdf8;
+  transform: scale(1.1) rotate(90deg); /* Pequena rotação no + */
+}
+
+.certificate-card-upload-card:hover span {
+  color: #38bdf8;
+}
+
+/* Ajuste para telas pequenas */
+@media (max-width: 600px) {
+  .home-title {
+    font-size: 1.8rem;
+    text-align: center;
+  }
+  
+  .certificates-grid {
+    grid-template-columns: 1fr; /* Coluna única no mobile */
+  }
 }
