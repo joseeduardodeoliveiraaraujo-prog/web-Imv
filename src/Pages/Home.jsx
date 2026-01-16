@@ -2,6 +2,7 @@ import Header from "../components/Header/Header";
 import "./Home.css";
 import { FaPlus } from "react-icons/fa";
 import { useState, useRef } from "react";
+import { FcCloseUpMode } from "react-icons/fc";
 
 const Home = ({ user, onLogout }) => {
 
@@ -25,6 +26,26 @@ const Home = ({ user, onLogout }) => {
     console.log("Arquivo:", file);
 
   setCertificates(prev => [...prev, { file, previewUrl }]);
+
+  };
+
+  const handleEdit = () => {
+    console.log("editar:", selectedCertificate)
+  };
+
+  const handleDelete = () => {
+    const confirmDelete = window.confirm(
+      "tem certeza que deseja apagar este modelo?"
+    );
+
+    if (!confirmDelete) return;
+    
+    setCertificates(prev =>
+      prev.filter(cert => cert !== selectedCertificate)
+    );
+
+    closeModal();
+
 
   };
 
@@ -77,6 +98,17 @@ const Home = ({ user, onLogout }) => {
                     src={selectedCertificate.previewUrl}
                     alt="Preview do certificado"
                   />
+                </div>
+
+                {/*footer*/}
+                <div className="modal-footer">
+                  <button className="btn-edit" onClick={handleEdit}>
+                    editar
+                  </button>
+
+                  <button className="btn-delete" onClick={handleDelete}>
+                    apagar
+                  </button>
                 </div>
 
                </div>

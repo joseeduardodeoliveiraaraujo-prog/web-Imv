@@ -196,6 +196,47 @@
   transition: transform 0.3s ease;
 }
 
+.modal-footer{
+  display:flex ;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bnt-edit{
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  border: none;
+  padding: 10px 22px;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.bnt-edit:hover{
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.bnt-delete{
+  background: transparent;
+  border: 1px solid #ef4444;
+  padding: 10px 22px;
+  border-radius: 10px;
+  color: #ef4444;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+
+}
+
+.btn-delete:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
 
 /* Keyframes para as animações */
 @keyframes fadeIn {
