@@ -168,6 +168,7 @@
 
 /* Corpo do modal - Melhor aproveitamento de espaço */
 .modal-body {
+  
   padding: 40px; /* Espaço para o fundo aparecer em volta da imagem */
   flex: 1;
   display: flex;
@@ -196,46 +197,56 @@
   transition: transform 0.3s ease;
 }
 
-.modal-footer{
-  display:flex ;
-  justify-content: flex-end;
-  gap: 14px;
-  padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+.floating-actions {
+  position: absolute;
+  bottom: 30px; /* Distância do fundo da imagem */
+  right: 30px;  /* Distância da direita */
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 20;
 }
 
-.bnt-edit{
-  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+/* Estilo do Botão Circular (FAB) */
+.btn-fab {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
   border: none;
-  padding: 10px 22px;
-  border-radius: 10px;
-  color: #fff;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   cursor: pointer;
-  transition: all 0.25s ease;
+  color: white;
+  font-size: 1.2rem;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  svg {
+    width: 22px;
+    height: 22px;
+  }
 }
 
-.bnt-edit:hover{
-  transform: translateY(-2px);
-  filter: brightness(1.1);
+/* Cores com Glassmorphism leve */
+.btn-fab.edit {
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
 }
 
-.bnt-delete{
-  background: transparent;
-  border: 1px solid #ef4444;
-  padding: 10px 22px;
-  border-radius: 10px;
-  color: #ef4444;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s ease;
-
+.btn-fab.delete {
+  background: linear-gradient(135deg, #f87171, #ef4444);
 }
 
-.btn-delete:hover {
-  background: #ef4444;
-  color: #fff;
+/* Hover Effects */
+.btn-fab:hover {
+  transform: scale(1.15) rotate(5deg);
+  filter: brightness(1.2);
 }
+
+.btn-fab:active {
+  transform: scale(0.95);
+}
+
 
 
 /* Keyframes para as animações */
