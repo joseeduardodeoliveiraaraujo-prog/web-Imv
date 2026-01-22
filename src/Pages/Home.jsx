@@ -2,7 +2,6 @@ import Header from "../components/Header/Header";
 import "./Home.css";
 import { FaPlus } from "react-icons/fa";
 import { useState, useRef } from "react";
-import { FcCloseUpMode } from "react-icons/fc";
 
 const Home = ({ user, onLogout }) => {
 
@@ -23,9 +22,16 @@ const Home = ({ user, onLogout }) => {
 
     const previewUrl = URL.createObjectURL(file);
 
-    console.log("Arquivo:", file);
+      setCertificates(prev => [
+    ...prev,
+    {
+      id: crypto.randomUUID(),
+      file,
+      previewUrl
+    }
+  ]);
 
-  setCertificates(prev => [...prev, { file, previewUrl }]);
+    e.target.value = null;
 
   };
 
@@ -103,32 +109,32 @@ const Home = ({ user, onLogout }) => {
                     src={selectedCertificate.previewUrl}
                     alt="Preview do certificado"
                   />
-                  {/* Ações Flutuantes - Substituem o footer */}
-                  <div className="floating-actions">
-                    <button class="btn-fab edit" title="Editar" onClick={handleEdit}>
-                     <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                      </svg>
-                    </button>
-                    
-                    <button class="btn-fab delete" title="Excluir" onClick={handleDelete}>
-                      <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        <line x1="10" y1="11" x2="10" y2="17"></line>
-                        <line x1="14" y1="11" x2="14" y2="17"></line>
-                      </svg>
-                    </button>
-
-                  </div>
                 </div>
-               </div>
+              </div>
+              {/* Ações Flutuantes - Substituem o footer */}
+              <div className="floating-actions">
+                <button className="btn-fab edit" title="Editar" onClick={handleEdit}>
+                  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                  </svg>
+                </button>
+                    
+                <button className="btn-fab delete" title="Excluir" onClick={handleDelete}>
+                  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                </button>
+              </div>
             </div>
+        
           )}
 
 
           {certificates.map((cert,index) => (
-            <div className="certificate-card" key={index} onClick={() =>  setSelectedCertificate(cert)}>
+            <div className="certificate-card" key={cert.id} onClick={() =>  setSelectedCertificate(cert)}>
              <img
                src={cert.previewUrl}
                alt={cert.file.name}

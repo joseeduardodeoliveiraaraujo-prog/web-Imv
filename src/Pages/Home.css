@@ -198,13 +198,14 @@
 }
 
 .floating-actions {
-  position: absolute;
+  position: fixed;
   bottom: 30px; /* Distância do fundo da imagem */
   right: 30px;  /* Distância da direita */
   display: flex;
   flex-direction: column;
   gap: 15px;
   z-index: 20;
+  
 }
 
 /* Estilo do Botão Circular (FAB) */
@@ -220,7 +221,9 @@
   cursor: pointer;
   color: white;
   font-size: 1.2rem;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+              filter 0.3s ease, 
+              box-shadow 0.3s ease;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
   svg {
     width: 22px;
