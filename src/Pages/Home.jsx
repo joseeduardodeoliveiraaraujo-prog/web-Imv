@@ -27,7 +27,8 @@ const Home = ({ user, onLogout }) => {
     {
       id: crypto.randomUUID(),
       file,
-      previewUrl
+      previewUrl,
+      name: file.name.replace(/\.[^/.]+$/, "")
     }
   ]);
 
@@ -133,12 +134,15 @@ const Home = ({ user, onLogout }) => {
           )}
 
 
-          {certificates.map((cert,index) => (
+          {certificates.map((cert) => (
             <div className="certificate-card" key={cert.id} onClick={() =>  setSelectedCertificate(cert)}>
              <img
                src={cert.previewUrl}
-               alt={cert.file.name}
+               alt={cert.name}
               />
+              <span className="certificate-name" title={cert.name}>
+                {cert.name}
+              </span>
             </div>
           ))}
 
