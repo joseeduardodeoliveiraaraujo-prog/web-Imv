@@ -80,10 +80,16 @@ const Home = ({ user, onLogout }) => {
 
         <div className="certificates-grid">
           {/*card de upload*/}
-          <div className="certificate-card-upload-card" 
-            onClick={handleUploadClick}>
-            <FaPlus/>
-            <span>Novo modelo</span>
+          <div className="certificate-item">
+            <span className="certificate-name">Novo modelo</span>
+  
+            <div 
+            className="certificate-card-upload-card" 
+            onClick={handleUploadClick}
+            >
+            <FaPlus />
+             {/* Removi o span daqui de dentro para ele não duplicar */}
+            </div>
           </div>
 
           {selectedCertificate && (
@@ -135,14 +141,23 @@ const Home = ({ user, onLogout }) => {
 
 
           {certificates.map((cert) => (
-            <div className="certificate-card" key={cert.id} onClick={() =>  setSelectedCertificate(cert)}>
-             <img
-               src={cert.previewUrl}
-               alt={cert.name}
-              />
+            <div className="certificate-item" key={cert.id} >
               <span className="certificate-name" title={cert.name}>
                 {cert.name}
               </span>
+            
+              <div className="certificate-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedCertificate(cert)}
+                onKeyDown={(e) => e.key === "Enter" && setSelectedCertificate(cert)}
+              >
+             
+                <img
+                  src={cert.previewUrl}
+                  alt={cert.name}
+                />  
+             </div>
             </div>
           ))}
 
