@@ -142,16 +142,11 @@
 }
 
 /* No hover do card, destacamos um pouco mais o nome */
-.certificate-item:has(.certificate-card-upload-card:hover) .certificate-name  {
+.certificate-item:has(.certificate-card:hover) .certificate-name,
+.certificate-item:has(.certificate-card-upload-card:hover) .certificate-name {
   color: #38bdf8;
   transform: translateY(-8px);
 }
-
-.certificate-item:has(.certificate-card:hover) .certificate-name {
-  color: #38bdf8;
-  transform: translateY(-8px);
-}
-
 
 
 /* Fundo escuro com animação de fade */
