@@ -110,12 +110,10 @@
   padding-top: 30px;
 }
 
-.certificate-item:hover .certificate-name {
-  color: #38bdf8;
-}
 
 
 .certificate-name {
+  pointer-events: none;
   position: absolute;
   top: 0;
   left: 0;
@@ -144,10 +142,17 @@
 }
 
 /* No hover do card, destacamos um pouco mais o nome */
-.certificate-card:hover .certificate-name {
-  background: rgba(15, 23, 42, 0.8); /* Azul sutil do seu tema */
+.certificate-item:has(.certificate-card-upload-card:hover) .certificate-name  {
   color: #38bdf8;
+  transform: translateY(-8px);
 }
+
+.certificate-item:has(.certificate-card:hover) .certificate-name {
+  color: #38bdf8;
+  transform: translateY(-8px);
+}
+
+
 
 /* Fundo escuro com animação de fade */
 .modal-overlay {
