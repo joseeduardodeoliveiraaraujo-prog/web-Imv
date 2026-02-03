@@ -1,16 +1,34 @@
 import Header from "../components/Header/Header";
 import "./Home.css";
 import { FaPlus } from "react-icons/fa";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Home = ({ user, onLogout }) => {
-
+  //states
+  const navigate = useNavigate();
   const [selectedCertificate, setSelectedCertificate] = useState (null);
-
   const [certificates, setCertificates] = useState([]);
   
+  //refs
   const fileInputRef = useRef(null);
+
+  //Effect
+  useEffect(() => {
+    localStorage.setItem(
+      "certificates",
+      JSON.stringify(certificates)
+    );
+  }, [certificates]);
   
+  useEffect(() => {
+    const saved = localStorage.getItem("certificates");
+    if (saved) {
+     setCertificates(JSON.parse(saved));
+    }
+  }, []);
+
+  //handlers funçoes
   const handleUploadClick = () => {
     fileInputRef.current.click();
 
@@ -42,7 +60,9 @@ const Home = ({ user, onLogout }) => {
   };
 
   const handleEdit = () => {
-    console.log("editar:", selectedCertificate)
+   if (!selectedCertificate) return;
+  closeModal();
+  navigate(`/editor/${selectedCertificate.id}`);
   };
 
   const handleDelete = () => {
@@ -62,7 +82,7 @@ const Home = ({ user, onLogout }) => {
   };
 
 
-
+  //return
   return (
     <>
       <Header user={user} onLogout={onLogout} />

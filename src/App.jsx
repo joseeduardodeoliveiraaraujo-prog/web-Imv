@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./services/firebase";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
 
 import Login from "./components/Login/Login";
 import Home from "./Pages/Home";
+import Editor from "./Pages/Editor"
 import "./App.css";
 
 
@@ -31,14 +34,29 @@ function App() {
   }
 
   return (
+  <BrowserRouter>
     <div className="App">
-      {user ? (
-        <Home user={user} onLogout={handleLogout}/>
-        ):(
+      {!user ? (
         <Login />
+      ) : (
+        <Routes>
+          <Route 
+            path="/" 
+            element={<Home user={user} onLogout={handleLogout} />} 
+          />
+
+          <Route 
+            path="/editor/:id" 
+            element={<Editor user={user} />} 
+          />
+
+          {/* segurança extra */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
       )}
     </div>
-  );
+  </BrowserRouter>
+);
 }
 
 export default App;

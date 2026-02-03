@@ -1,0 +1,177 @@
+:root {
+  --bg-main: #020617;
+  --bg-card: rgba(15, 23, 42, 0.6);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --accent-color: #38bdf8;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --glass-effect: blur(12px) saturate(180%);
+}
+
+/* Base do Editor */
+.editor {
+  height: 100vh; /* Fixa a altura na tela */
+  background-color: var(--bg-main);
+  background-image: 
+    radial-gradient(at top left, rgba(56, 189, 248, 0.05), transparent 40%),
+    radial-gradient(at bottom right, rgba(30, 41, 59, 0.4), transparent 50%);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Impede scroll na página inteira */
+  font-family: 'Inter', sans-serif;
+}
+
+/* Header fixo */
+.editor-header {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.editor-header h1 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  background: linear-gradient(to right, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* O "Pai" que divide Lado Esquerdo e Direito */
+.editor-container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 350px; /* Workspace ocupa tudo, Sidebar 350px */
+  gap: 0;
+  overflow: hidden; /* Importante para o scroll interno */
+}
+
+/* Lado Esquerdo: Área do Certificado */
+.editor-workspace {
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  overflow: auto; /* Se a imagem ainda for grande, o scroll fica só aqui */
+  position: relative;
+}
+
+/* A Mágica para a imagem não estourar */
+.editor-preview {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* Mantém a proporção sem cortar */
+  border-radius: 4px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  background: white; /* Fundo branco caso a imagem demore a carregar */
+}
+
+/* Lado Direito: Sidebar */
+.editor-sidebar {
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-effect);
+  border-left: 1px solid var(--border-color);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+}
+
+/* Estilização dos Controles */
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.editor-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  color: white;
+  transition: all 0.2s;
+}
+
+.editor-input:focus {
+  border-color: var(--accent-color);
+  outline: none;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.btn-primary {
+  background: var(--accent-color);
+  color: #020617;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: transform 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+/* Responsividade: No mobile, vira uma coluna */
+@media (max-width: 900px) {
+  .editor-container {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .editor-sidebar {
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+  }
+}
+
+/* Botão Sair/Voltar Estilizado */
+.btn-exit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.08); /* Vermelho bem transparente */
+  color: #f87171; /* Cor do ícone (vermelho pastel) */
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 8px 16px;
+  border-radius: 12px; /* Cantos arredondados estilo squircle */
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-exit svg {
+  transition: transform 0.3s ease;
+}
+
+.btn-exit:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444; /* Vermelho mais intenso no hover */
+  border-color: rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-exit:hover svg {
+  transform: translateX(3px); /* Animação do ícone saindo */
+}
+
+.btn-exit:active {
+  transform: scale(0.95);
+}
