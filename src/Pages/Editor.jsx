@@ -10,6 +10,8 @@ const Editor = () => {
   const canvasRef = useRef(null);
   const [texto, setTexto] = useState("Nome do Aluno");
   const [cor, setCor] = useState("#000000");
+  const [posicao, setPosicao] = useState({ x: 500, y: 300 }); // Posição inicial (centro aproximado)
+  const [isDragging, setIsDragging] = useState(false);
 
   // Carregar dados do certificado
   useEffect(() => {
@@ -42,23 +44,21 @@ const Editor = () => {
     img.src = certificate.previewUrl;
 
     img.onload = () => {
-      // Ajusta tamanho
       canvas.width = img.width;
       canvas.height = img.height;
 
-      // Limpa e desenha fundo
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0);
 
-      // Desenha o Nome
+      // Desenha o Nome na posição que o usuário escolheu arrastando
       ctx.font = "bold 65px Inter, sans-serif";
       ctx.fillStyle = cor;
       ctx.textAlign = "center";
       
-      // Posição Y ajustada para a linha do nome (+180)
-      ctx.fillText(texto, canvas.width / 2, canvas.height / 2 + 180);
-    }; // Fim do onload
-  }, [certificate, texto, cor]); // Fim do useEffect
+      // Mudança aqui: usamos posicao.x e posicao.y em vez de valores fixos
+      ctx.fillText(texto, posicao.x, posicao.y);
+    };
+  }, [certificate, texto, cor, posicao]); // 'posicao' adicionada como dependência
 
   const handleDownload = () => {
     const canvas = canvasRef.current;
@@ -67,6 +67,38 @@ const Editor = () => {
     link.href = canvas.toDataURL("image/png");
     link.click();
   };
+
+  const handleMouseDown = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    
+    // Converte a posição do clique para a escala real do canvas
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mouseX = (e.clientX - rect.left) * scaleX;
+    const mouseY = (e.clientY - rect.top) * scaleY;
+
+    // Verifica se o clique foi perto do texto (área de colisão simples)
+    if (Math.abs(mouseX - posicao.x) < 200 && Math.abs(mouseY - posicao.y) < 50) {
+        setIsDragging(true);
+    }
+};
+
+const handleMouseMove = (e) => {
+    if (!isDragging) return;
+
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    setPosicao({
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+    });
+};
+
+const handleMouseUp = () => setIsDragging(false);
 
   if (!certificate) {
     return <p>Carregando certificado...</p>;
@@ -89,7 +121,15 @@ const Editor = () => {
       <div className="editor-container">
         {/* LADO ESQUERDO */}
         <main className="editor-workspace">
-          <canvas ref={canvasRef} className="editor-canvas" />
+          <canvas 
+            ref={canvasRef} 
+            className="editor-canvas"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp} // Solta o texto se o mouse sair da área
+            style={{ cursor: isDragging ? 'grabbing' : 'grab' }} // Muda o ícone do mouse
+          />
         </main>
 
         {/* LADO DIREITO */}
