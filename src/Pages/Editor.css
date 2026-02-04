@@ -49,24 +49,34 @@
 
 /* Área do Canvas (Lado Esquerdo) */
 .editor-workspace {
-  background: rgba(0, 0, 0, 0.3);
+  flex: 1;
   display: flex;
-  align-items: center;
+  align-items: center; 
   justify-content: center;
-  padding: 40px;
-  overflow: hidden; /* Impede que o canvas transborde */
+  padding: 100px; /* Margem de respiro ao redor do certificado */
+  background: #020617; 
+  overflow: hidden; 
+  position: relative;
+  /* Garante que esta área ocupe apenas o espaço disponível */
+  height: calc(100vh - 70px);
 }
 
 /* O "Pulo do Gato" para o Canvas não ficar gigante */
 .editor-canvas {
+  /* Estas propriedades garantem o enquadramento perfeito */
   max-width: 100%;
   max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  width: auto !important;
+  height: auto !important;
+  
+  /* Mantém a proporção e centraliza */
+  object-fit: contain; 
+  
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
   display: block;
+  user-select: none;
+  background-color: white;
+  border-radius: 4px;
 }
 
 /* Sidebar (Lado Direito) */
@@ -171,4 +181,51 @@
     border-left: none;
     border-top: 1px solid var(--border-color);
   }
+}
+
+/* Coloque isso no seu Editor.css */
+
+.floating-input {
+ position: absolute;
+  background: rgba(56, 189, 248, 0.05);
+  border: 1px dashed var(--accent-color);
+  transform: translate(-50%, -50%);
+  text-align: center;
+  /* Usar 'vw' ou '%' ajuda a manter o tamanho relativo ao zoom */
+  font-size: 2rem; 
+  font-weight: bold;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  resize: none;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.bulk-area {
+  height: 180px;
+  min-height: 100px;
+  resize: vertical; /* Permite aumentar o campo puxando o canto */
+  line-height: 1.5;
+  white-space: pre; /* Garante que as quebras de linha apareçam visualmente */
+  font-family: 'Inter', sans-serif;
+  overflow-y: auto;
+}
+
+.navigation-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.navigation-controls button {
+  background: var(--accent-color);
+  color: #000;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
 }
