@@ -1,3 +1,11 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Evita scroll duplo na página inteira */
+}
+
 :root {
   --bg-main: #020617;
   --bg-card: rgba(15, 23, 42, 0.6);
@@ -8,18 +16,16 @@
   --glass-effect: blur(12px) saturate(180%);
 }
 
+
 /* Base do Editor */
 .editor {
+  width: 100vw; /* Força ocupar a largura total da janela */
   height: 100vh;
+  position: fixed; /* Fixa o editor no topo de tudo */
+  top: 0;
+  left: 0;
+  z-index: 9999; /* Garante que fique acima de qualquer elemento da Home */
   background-color: var(--bg-main);
-  background-image: 
-    radial-gradient(at top left, rgba(56, 189, 248, 0.05), transparent 40%),
-    radial-gradient(at bottom right, rgba(30, 41, 59, 0.4), transparent 50%);
-  color: var(--text-primary);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; /* Trava o scroll da página */
-  font-family: 'Inter', sans-serif;
 }
 
 /* Header */
@@ -43,52 +49,102 @@
 .editor-container {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 350px; /* Workspace flexível, Sidebar fixa */
+  /* Mantém suas colunas, mas garante que o workspace não vaze */
+  grid-template-columns: 1fr 350px; 
+  width: 100%; 
+  margin: 0;
+  padding: 0;
+  
+  /* IMPORTANTE: Garante que o container ocupe o resto da tela 
+     subtraindo a altura do seu header (70px) */
+  height: calc(100vh - 70px); 
+  
   overflow: hidden;
+  background: var(--bg-main);
+  
+  /* Uma borda sutil no topo do container para separar do header */
+  border-top: 1px solid var(--border-color);
 }
 
 /* Área do Canvas (Lado Esquerdo) */
 .editor-workspace {
-  flex: 1;
-  display: flex;
-  align-items: center; 
-  justify-content: center;
-  padding: 100px; /* Margem de respiro ao redor do certificado */
-  background: #020617; 
-  overflow: hidden; 
-  position: relative;
-  /* Garante que esta área ocupe apenas o espaço disponível */
+  background: #020617;
+  box-shadow: inset -10px 0 20px rgba(0, 0, 0, 0.4); 
+  border-right: 2px solid rgba(255, 255, 255, 0.05); /* Linha divisória fina */
+  z-index: 1; 
+  width: 100%;
   height: calc(100vh - 70px);
+  padding: 60px 0; /* Padding apenas em cima/baixo */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbar para Chrome, Edge e Safari */
+.editor-workspace::-webkit-scrollbar,
+.editor-sidebar::-webkit-scrollbar {
+  width: 8px; /* Largura da barra */
+}
+
+.editor-workspace::-webkit-scrollbar-track,
+.editor-sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2); /* Fundo da calha */
+}
+
+.editor-workspace::-webkit-scrollbar-thumb,
+.editor-sidebar::-webkit-scrollbar-thumb {
+  background: var(--accent-color); /* Cor da barra (o azul claro) */
+  border-radius: 10px;
+  border: 2px solid var(--bg-main); /* Cria um respiro ao redor da barra */
+}
+
+.editor-workspace::-webkit-scrollbar-thumb:hover {
+  background: #7dd3fc; /* Brilho leve ao passar o mouse */
+}
+
+/* Suporte para Firefox */
+.editor-workspace, .editor-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-color) transparent;
 }
 
 /* O "Pulo do Gato" para o Canvas não ficar gigante */
 .editor-canvas {
-  /* Estas propriedades garantem o enquadramento perfeito */
-  max-width: 100%;
-  max-height: 100%;
-  width: auto !important;
-  height: auto !important;
+ /* Removemos o max-height: 100% para ele não tentar caber na tela de uma vez */
+  max-width: 900px; /* Define um tamanho máximo elegante para a lista */
+  width: 100%; 
+  height: auto; 
   
-  /* Mantém a proporção e centraliza */
-  object-fit: contain; 
-  
-  box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
   display: block;
   user-select: none;
   background-color: white;
   border-radius: 4px;
+  margin-bottom: 10px;
 }
 
 /* Sidebar (Lado Direito) */
 .editor-sidebar {
-  background: var(--bg-card);
-  backdrop-filter: var(--glass-effect);
-  border-left: 1px solid var(--border-color);
-  padding: 2rem;
+  /* Usamos uma cor sólida e levemente mais clara que o fundo para destacar */
+  background: #0f172a; 
+  
+  /* Borda esquerda bem definida para marcar a separação */
+  border-left: 1px solid rgba(255, 255, 255, 0.1); 
+  
+  /* Sombra voltada para a esquerda para dar profundidade sobre o workspace */
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+  
+  padding: 2.5rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
   overflow-y: auto;
+  z-index: 10; /* Garante que ela fique "por cima" do scroll do canvas */
+  
+  /* Remove o glass effect para não vazar cores do fundo */
+  backdrop-filter: none;
 }
 
 /* Controles e Inputs */
@@ -96,6 +152,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .control-group label {
@@ -228,4 +286,24 @@
   padding: 5px 10px;
   border-radius: 4px;
   cursor: pointer;
+}
+
+.editor-workspace.bulk-scroll {
+  flex: 1;
+  overflow-y: auto; /* Permite scroll vertical */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 60px; /* Espaço entre os certificados */
+  padding: 40px;
+  background: #0f172a;
+}
+
+.canvas-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 80px; /* Distância entre o fim de um e o começo do outro */
+  width: 100%;
 }
