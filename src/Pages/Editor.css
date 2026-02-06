@@ -180,16 +180,45 @@ html, body {
   background: rgba(0, 0, 0, 0.4);
 }
 
+.bulk-area {
+  height: 180px;
+  min-height: 100px;
+  resize: vertical; /* Permite aumentar o campo puxando o canto */
+  line-height: 1.5;
+  white-space: pre; /* Garante que as quebras de linha apareçam visualmente */
+  font-family: 'Inter', sans-serif;
+  overflow-y: auto;
+}
+
+.input-color-picker {
+  height: 45px !important; /* Define a altura específica */
+  padding: 2px !important;
+  cursor: pointer;
+  appearance: none; /* Remove estilos padrão do navegador */
+  -webkit-appearance: none;
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Isso remove a borda interna feia que alguns navegadores colocam no input color */
+.input-color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.input-color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
 /* Botões */
 .btn-primary {
-  background: var(--accent-color);
-  color: #020617;
-  border: none;
-  padding: 14px;
+  background: transparent;
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
+  padding: 12px 16px;
   border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
-  margin-top: 1rem;
+  transition: all 0.2s;
   transition: all 0.2s;
 }
 
@@ -198,6 +227,26 @@ html, body {
   filter: brightness(1.1);
   box-shadow: 0 10px 20px rgba(56, 189, 248, 0.2);
 }
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+
+}
+
+.btn-secondary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 10px 20px rgba(56, 189, 248, 0.2);
+}
+
+
 
 /* Botão Sair (Igual ao da imagem que você mandou) */
 .btn-exit {
@@ -259,15 +308,6 @@ html, body {
   pointer-events: auto;
 }
 
-.bulk-area {
-  height: 180px;
-  min-height: 100px;
-  resize: vertical; /* Permite aumentar o campo puxando o canto */
-  line-height: 1.5;
-  white-space: pre; /* Garante que as quebras de linha apareçam visualmente */
-  font-family: 'Inter', sans-serif;
-  overflow-y: auto;
-}
 
 .navigation-controls {
   display: flex;

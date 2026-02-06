@@ -1,8 +1,12 @@
 import "./Editor.css";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRef, useEffect, useState } from "react";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import {jsPDF} from "jspdf";
 
-const CertificadoCanvas = ({ certificate, nome, cor, posicao, isDragging, onMouseDown, onMouseMove, onMouseUp }) => {
+
+const CertificadoCanvas = ({ certificate, nome, textoCorpo, cor, posicao, isDragging, onMouseDown, onMouseMove, onMouseUp }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -31,14 +35,23 @@ const CertificadoCanvas = ({ certificate, nome, cor, posicao, isDragging, onMous
         ctx.stroke();
         ctx.restore();
       }
-
+      // --- 1. DESENHAR O NOME DO ALUNO ---
       ctx.font = "bold 65px Inter, sans-serif";
       ctx.fillStyle = cor;
       ctx.textAlign = "center";
       // Se o nome estiver vazio na lista, mostra o guia "Nome do Aluno"
       ctx.fillText(nome || "Nome do Aluno", posicao.x, posicao.y);
+
+      // --- 2. DESENHAR O TEXTO DO CORPO (TEXTO DE BAIXO) ---
+      // Usamos uma fonte um pouco menor (ex: 35px) e sem o 'bold' para diferenciar
+      ctx.font = "35px Inter, sans-serif"; 
+      ctx.fillStyle = cor; 
+      
+      // A posição Y do texto de baixo deve ser relativa à do nome (ex: posicao.y + 80)
+      // Ou você pode usar uma variável 'posicaoCorpo.y' se quiser mover ele sozinho
+      ctx.fillText(textoCorpo || "Texto do certificado aparece aqui", posicao.x, posicao.y + 100);
     };
-  }, [certificate, nome, cor, posicao, isDragging]);
+  }, [certificate, nome, textoCorpo, cor, posicao, isDragging]);
 
   return (
     <div className="canvas-wrapper">
@@ -61,10 +74,12 @@ const Editor = () => {
 
   // Estados Base
   const [certificate, setCertificate] = useState(null);
-  const canvasRef = useRef(null);
   const [cor, setCor] = useState("#000000");
   const [posicao, setPosicao] = useState({ x: 500, y: 300 });
   const [isDragging, setIsDragging] = useState(false);
+  
+  const [textoCorpo, setTextoCorpo] = useState();
+  const [posicaoCorpo, setPosicaoCorpo] = useState({ x: 500, y: 400 }); // Ajuste conforme seu template
 
   // Estados Novos: Lista de Nomes e Edição em Tela
   const [nomesLista, setNomesLista] = useState([""]);
@@ -121,12 +136,83 @@ const handleMouseMove = (e) => {
   const handleMouseUp = () => setIsDragging(false);
 
   // Download
-  const handleDownload = () => {
-    const canvas = canvasRef.current;
-    const link = document.createElement("a");
-    link.download = `certificado-${textoAtual}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+ const handleDownloadPDF = async () => {
+    const nomesValidos = nomesLista.filter(n => n.trim() !== "");
+    if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = certificate.previewUrl;
+
+    img.onload = () => {
+      // Criamos o PDF com a orientação baseada na imagem (paisagem ou retrato)
+      const orientation = img.width > img.height ? "l" : "p";
+      const pdf = new jsPDF(orientation, "px", [img.width, img.height]);
+
+      const tempCanvas = document.createElement("canvas");
+      const ctx = tempCanvas.getContext("2d");
+      tempCanvas.width = img.width;
+      tempCanvas.height = img.height;
+
+      nomesValidos.forEach((nome, index) => {
+        ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+        ctx.drawImage(img, 0, 0);
+        // 1. Desenha o Nome
+        ctx.font = "bold 65px Inter, sans-serif";
+        ctx.fillStyle = cor;
+        ctx.textAlign = "center";
+        ctx.fillText(nome, posicao.x, posicao.y);
+        // 2. Desenha o Texto do Corpo
+        ctx.font = "35px Inter, sans-serif";
+        ctx.fillText(textoCorpo || "", posicao.x, posicao.y + 100);
+
+        const imgData = tempCanvas.toDataURL("image/png");
+        
+        // Adiciona página se não for o primeiro nome
+        if (index > 0) pdf.addPage([img.width, img.height], orientation);
+        
+        pdf.addImage(imgData, "PNG", 0, 0, img.width, img.height);
+      });
+
+      pdf.save("todos-os-certificados.pdf");
+    };
+  };
+
+  const handleDownloadZIP = async () => {
+    const zip = new JSZip();
+    const nomesValidos = nomesLista.filter(n => n.trim() !== "");
+    if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = certificate.previewUrl;
+
+    img.onload = async () => {
+      const tempCanvas = document.createElement("canvas");
+      const ctx = tempCanvas.getContext("2d");
+      tempCanvas.width = img.width;
+      tempCanvas.height = img.height;
+
+      for (let nome of nomesValidos) {
+        ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+        ctx.drawImage(img, 0, 0);
+        // 1. Desenha o Nome
+        ctx.font = "bold 65px Inter, sans-serif";
+        ctx.fillStyle = cor;
+        ctx.textAlign = "center";
+        ctx.fillText(nome, posicao.x, posicao.y);
+
+        // 2. Desenha o Texto do Corpo (NOVO)
+        ctx.font = "35px Inter, sans-serif";
+        ctx.fillText(textoCorpo || "", posicao.x, posicao.y + 100);
+
+        const dataUrl = tempCanvas.toDataURL("image/png").split(",")[1];
+        zip.file(`${nome.replace(/\s+/g, "_")}.png`, dataUrl, { base64: true });
+      }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, "certificados-individuais.zip");
+    };
   };
 
   // Lógica de nomes em massa (estilo seu CSV anterior)
@@ -167,6 +253,7 @@ const handleMouseMove = (e) => {
             key={index}
             certificate={certificate}
             nome={nome}
+            textoCorpo={textoCorpo}
             cor={cor}
             posicao={posicao}
             isDragging={isDragging}
@@ -190,20 +277,38 @@ const handleMouseMove = (e) => {
         </div>
 
         <div className="control-group">
+          <label>Texto do Certificado </label>
+          <textarea
+            className="editor-input bulk-area"
+            placeholder="Ex: participou do evento realizado em..."
+            value={textoCorpo}
+            onChange={(e) => setTextoCorpo(e.target.value)}
+           
+          />
+        </div>
+
+        <div className="control-group">
           <label>Cor do Texto</label>
           <input 
             type="color" 
-            className="editor-input" 
+            className="editor-input input-color-picker" 
             value={cor} 
-            style={{ height: "45px", padding: "2px", cursor: "pointer" }}
             onChange={(e) => setCor(e.target.value)} 
           />
         </div>
 
         {/* Mudei o texto para 'Baixar Tudo' para combinar com a nova lógica */}
-        <button className="btn-primary" onClick={() => alert("Função de ZIP em breve!")}>
-          Baixar Todos os Certificados
-        </button>
+        <div className="download-actions" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <button className="btn-primary" onClick={handleDownloadPDF}>
+            Baixar Tudo em PDF
+          </button>
+          
+          <button className="btn-secondary" onClick={handleDownloadZIP} style={{ 
+            
+          }}>
+            Baixar Imagens Individuais (.ZIP)
+          </button>
+        </div>
       </aside>
     </div>
   </div>
