@@ -5,8 +5,57 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import {jsPDF} from "jspdf";
 
+const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) => {
+  if (!text) return;
 
-const CertificadoCanvas = ({ certificate, nome, textoCorpo, cor, posicao, isDragging, onMouseDown, onMouseMove, onMouseUp }) => {
+  const words = text.split(" ");
+  let lines = [];
+  let currentLine = [];
+
+  // 1. Primeiro, organizamos as palavras em um array de linhas
+  words.forEach(word => {
+    let testLine = [...currentLine, word].join(" ");
+    let metrics = ctx.measureText(testLine);
+    
+    if (metrics.width > maxWidth && currentLine.length > 0) {
+      lines.push(currentLine);
+      currentLine = [word];
+    } else {
+      currentLine.push(word);
+    }
+  });
+  lines.push(currentLine); // Adiciona a última linha
+
+  // 2. Agora desenhamos cada linha
+  const xEsquerdo = x - (maxWidth / 2);
+  lines.forEach((lineWords, index) => {
+    const isLastLine = index === lines.length - 1;
+    let currentY = y + (index * lineHeight);
+    
+    // Se for a última linha ou só tiver uma palavra, não justifica (alinha à esquerda/centro)
+    if (!justify || isLastLine || lineWords.length <= 1) {
+      ctx.textAlign = "left"; 
+      ctx.fillText(lineWords.join(" "), xEsquerdo, currentY);
+    } else {
+      // LÓGICA DE JUSTIFICAÇÃO
+      let totalWordsWidth = lineWords.reduce((sum, word) => sum + ctx.measureText(word).width, 0);
+      let totalSpaceWidth = maxWidth - totalWordsWidth;
+      let spaceBetweenWords = totalSpaceWidth / (lineWords.length - 1);
+      
+      let startX = x - (maxWidth / 2); // Começa na borda esquerda da área
+      let currentX = startX;
+
+      lineWords.forEach((word, wordIndex) => {
+        ctx.textAlign = "left";
+        ctx.fillText(word, currentX, currentY);
+        // O próximo X é: largura da palavra + o espaço calculado
+        currentX += ctx.measureText(word).width + spaceBetweenWords;
+      });
+    }
+  });
+};
+
+const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, posicaoNome, posicaoCorpo, isDragging, onMouseDown, onMouseMove, onMouseUp }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -24,7 +73,7 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, cor, posicao, isDrag
       ctx.drawImage(img, 0, 0);
 
       // Linha de Guia Rosa (Aparece em todos sincronizadamente)
-      if (isDragging && posicao.x === canvas.width / 2) {
+      if (isDragging && (posicaoNome.x === canvas.width / 2 || posicaoCorpo.x === canvas.width / 2)) {
         ctx.save();
         ctx.beginPath();
         ctx.setLineDash([15, 10]);
@@ -37,21 +86,31 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, cor, posicao, isDrag
       }
       // --- 1. DESENHAR O NOME DO ALUNO ---
       ctx.font = "bold 65px Inter, sans-serif";
-      ctx.fillStyle = cor;
+      ctx.fillStyle = corNome;
       ctx.textAlign = "center";
       // Se o nome estiver vazio na lista, mostra o guia "Nome do Aluno"
-      ctx.fillText(nome || "Nome do Aluno", posicao.x, posicao.y);
+      ctx.fillText(nome || "Nome do Aluno", posicaoNome.x, posicaoNome.y);
 
       // --- 2. DESENHAR O TEXTO DO CORPO (TEXTO DE BAIXO) ---
       // Usamos uma fonte um pouco menor (ex: 35px) e sem o 'bold' para diferenciar
       ctx.font = "35px Inter, sans-serif"; 
-      ctx.fillStyle = cor; 
+      ctx.fillStyle = corCorpo; 
       
-      // A posição Y do texto de baixo deve ser relativa à do nome (ex: posicao.y + 80)
-      // Ou você pode usar uma variável 'posicaoCorpo.y' se quiser mover ele sozinho
-      ctx.fillText(textoCorpo || "Texto do certificado aparece aqui", posicao.x, posicao.y + 100);
+      const larguraMaxima = canvas.width * 0.8;
+      const alturaLinha = 45; // Espaçamento entre linhas
+      
+
+      drawWrappedText(
+        ctx, 
+        textoCorpo || "Texto do certificado aparece aqui", 
+        posicaoCorpo.x, 
+        posicaoCorpo.y, 
+        larguraMaxima, 
+        alturaLinha,
+        true
+      );
     };
-  }, [certificate, nome, textoCorpo, cor, posicao, isDragging]);
+  }, [certificate, nome, textoCorpo, corNome, corCorpo, posicaoNome, posicaoCorpo, isDragging]);
 
   return (
     <div className="canvas-wrapper">
@@ -72,18 +131,20 @@ const Editor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Estados Base
+ // Estados Base
   const [certificate, setCertificate] = useState(null);
-  const [cor, setCor] = useState("#000000");
-  const [posicao, setPosicao] = useState({ x: 500, y: 300 });
-  const [isDragging, setIsDragging] = useState(false);
-  
-  const [textoCorpo, setTextoCorpo] = useState();
-  const [posicaoCorpo, setPosicaoCorpo] = useState({ x: 500, y: 400 }); // Ajuste conforme seu template
-
-  // Estados Novos: Lista de Nomes e Edição em Tela
   const [nomesLista, setNomesLista] = useState([""]);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [itemArrastado, setItemArrastado] = useState(null);
+
+  // Estados do NOME (Cor e Posição)
+  const [corNome, setCorNome] = useState("#000000");
+  const [posicaoNome, setPosicaoNome] = useState({ x: 500, y: 300 });
+
+  // Estados do CORPO (Texto, Cor e Posição)
+  const [textoCorpo, setTextoCorpo] = useState("");
+  const [corCorpo, setCorCorpo] = useState("#000000");
+  const [posicaoCorpo, setPosicaoCorpo] = useState({ x: 500, y: 500 });
 
 
   // Carregar dados do certificado
@@ -111,7 +172,13 @@ const Editor = () => {
   const mouseX = (e.clientX - rect.left) * scaleX;
   const mouseY = (e.clientY - rect.top) * scaleY;
 
-  if (Math.abs(mouseX - posicao.x) < 400 && Math.abs(mouseY - posicao.y) < 100) {
+  if (Math.abs(mouseX - posicaoNome.x) < 300 && Math.abs(mouseY - posicaoNome.y) < 50) {
+    setItemArrastado("nome");
+    setIsDragging(true);
+  }
+    // Checa se clicou no Corpo
+  else if (Math.abs(mouseX - posicaoCorpo.x) < 400 && Math.abs(mouseY - posicaoCorpo.y) < 100) {
+    setItemArrastado("corpo");
     setIsDragging(true);
   }
 };
@@ -130,10 +197,19 @@ const handleMouseMove = (e) => {
   const centroX = canvas.width / 2;
   if (Math.abs(mouseX - centroX) < 40) mouseX = centroX;
 
-  setPosicao({ x: mouseX, y: mouseY });
+  if (itemArrastado === "nome") {
+    setPosicaoNome({ x: mouseX, y: mouseY });
+  } 
+  else if (itemArrastado === "corpo") {
+    setPosicaoCorpo({ x: mouseX, y: mouseY });
+  }
+
 };
 
-  const handleMouseUp = () => setIsDragging(false);
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setItemArrastado(null);
+  }
 
   // Download
  const handleDownloadPDF = async () => {
@@ -159,12 +235,25 @@ const handleMouseMove = (e) => {
         ctx.drawImage(img, 0, 0);
         // 1. Desenha o Nome
         ctx.font = "bold 65px Inter, sans-serif";
-        ctx.fillStyle = cor;
+        ctx.fillStyle = corNome;
         ctx.textAlign = "center";
-        ctx.fillText(nome, posicao.x, posicao.y);
+        ctx.fillText(nome, posicaoNome.x, posicaoNome.y);
         // 2. Desenha o Texto do Corpo
         ctx.font = "35px Inter, sans-serif";
-        ctx.fillText(textoCorpo || "", posicao.x, posicao.y + 100);
+        ctx.fillStyle = corCorpo;
+
+        const larguraMaxima = tempCanvas.width * 0.8;
+        const alturaLinha = 45;
+
+        drawWrappedText(
+          ctx, 
+          textoCorpo || "", 
+          posicaoCorpo.x, 
+          posicaoCorpo.y, 
+          larguraMaxima, 
+          alturaLinha,
+          true
+        );
 
         const imgData = tempCanvas.toDataURL("image/png");
         
@@ -198,13 +287,26 @@ const handleMouseMove = (e) => {
         ctx.drawImage(img, 0, 0);
         // 1. Desenha o Nome
         ctx.font = "bold 65px Inter, sans-serif";
-        ctx.fillStyle = cor;
+        ctx.fillStyle = corNome;
         ctx.textAlign = "center";
-        ctx.fillText(nome, posicao.x, posicao.y);
+        ctx.fillText(nome, posicaoNome.x, posicaoNome.y);
 
         // 2. Desenha o Texto do Corpo (NOVO)
         ctx.font = "35px Inter, sans-serif";
-        ctx.fillText(textoCorpo || "", posicao.x, posicao.y + 100);
+        ctx.fillStyle = corCorpo;
+
+        const larguraMaxima = tempCanvas.width * 0.8;
+      const alturaLinha = 45;
+
+      drawWrappedText(
+        ctx, 
+        textoCorpo || "", 
+        posicaoCorpo.x, 
+        posicaoCorpo.y, 
+        larguraMaxima, 
+        alturaLinha,
+        true
+      );
 
         const dataUrl = tempCanvas.toDataURL("image/png").split(",")[1];
         zip.file(`${nome.replace(/\s+/g, "_")}.png`, dataUrl, { base64: true });
@@ -254,8 +356,10 @@ const handleMouseMove = (e) => {
             certificate={certificate}
             nome={nome}
             textoCorpo={textoCorpo}
-            cor={cor}
-            posicao={posicao}
+            corNome={corNome}        // Mudou aqui
+            corCorpo={corCorpo}
+            posicaoNome={posicaoNome}
+            posicaoCorpo={posicaoCorpo}
             isDragging={isDragging}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -277,6 +381,16 @@ const handleMouseMove = (e) => {
         </div>
 
         <div className="control-group">
+          <label>Cor do Texto</label>
+          <input 
+            type="color" 
+            className="editor-input input-color-picker" 
+            value={corNome} 
+            onChange={(e) => setCorNome(e.target.value)} 
+          />
+        </div>
+
+        <div className="control-group">
           <label>Texto do Certificado </label>
           <textarea
             className="editor-input bulk-area"
@@ -292,10 +406,12 @@ const handleMouseMove = (e) => {
           <input 
             type="color" 
             className="editor-input input-color-picker" 
-            value={cor} 
-            onChange={(e) => setCor(e.target.value)} 
+            value={corCorpo} 
+            onChange={(e) => setCorCorpo(e.target.value)} 
           />
         </div>
+
+
 
         {/* Mudei o texto para 'Baixar Tudo' para combinar com a nova lógica */}
         <div className="download-actions" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
