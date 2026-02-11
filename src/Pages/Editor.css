@@ -191,7 +191,13 @@ html, body {
   line-height: 1.5; /* Garante que as quebras de linha apareçam visualmente */
   white-space: pre; /* Garante que as quebras de linha apareçam visualmente */
   font-family: 'Inter', sans-serif;
+
+  white-space: pre-wrap;      
+  word-wrap: break-word;     
+  overflow-wrap: break-word; 
+  
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .input-color-picker {
