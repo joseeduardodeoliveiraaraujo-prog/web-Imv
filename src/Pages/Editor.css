@@ -188,7 +188,7 @@ html, body {
   height: 180px;
   min-height: 100px;
   resize: vertical; /* Permite aumentar o campo puxando o canto */
-  line-height: 1.5;
+  line-height: 1.5; /* Garante que as quebras de linha apareçam visualmente */
   white-space: pre; /* Garante que as quebras de linha apareçam visualmente */
   font-family: 'Inter', sans-serif;
   overflow-y: auto;
