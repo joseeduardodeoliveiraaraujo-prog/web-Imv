@@ -453,7 +453,14 @@ const Editor = () => {
           Agora com classe 'bulk-scroll' para o CSS permitir o rolamento vertical
       */}
       <main className="editor-workspace bulk-scroll">
-        {nomesLista.map((nome, index) => (
+        
+        {nomesLista.length > 100 && (
+          <p style={{ color: "orange", padding: "10px" }}>
+            Mostrando apenas os primeiros 100 certificados para manter a performance.
+          </p>
+        )}
+
+        {nomesLista.slice(0, 100).map((nome, index) => (
           <CertificadoCanvas
             key={index}
             certificate={certificate}
