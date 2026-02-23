@@ -66,6 +66,24 @@ html, body {
   border-top: 1px solid var(--border-color);
 }
 
+.limit-warning {
+  position: fixed;
+  top: 75px;      /* Ajuste a altura aqui */
+  left: 20px;     /* Ajuste a distância da esquerda aqui */
+  z-index: 1000;
+  
+  /* Visual "Informação Embutida" extra-clean */
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.3); /* Fundo bem escuro e sutil */
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px); /* Efeito de vidro fosco */
+  pointer-events: none;
+}
+
+
 /* Área do Canvas (Lado Esquerdo) */
 .editor-workspace {
   background: #020617;

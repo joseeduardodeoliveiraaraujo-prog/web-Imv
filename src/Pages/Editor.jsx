@@ -448,19 +448,13 @@ const Editor = () => {
       </button>
     </header>
 
+  
+
     <div className="editor-container">
-      {/* ÁREA CENTRAL: 
-          Agora com classe 'bulk-scroll' para o CSS permitir o rolamento vertical
-      */}
+
       <main className="editor-workspace bulk-scroll">
         
-        {nomesLista.length > 100 && (
-          <p style={{ color: "orange", padding: "10px" }}>
-            Mostrando apenas os primeiros 100 certificados para manter a performance.
-          </p>
-        )}
-
-        {nomesLista.slice(0, 100).map((nome, index) => (
+        {nomesLista.slice(0, 50).map((nome, index) => (
           <CertificadoCanvas
             key={index}
             certificate={certificate}
@@ -484,6 +478,13 @@ const Editor = () => {
       <aside className="editor-sidebar">
         <div className="control-group">
           <label>Lista de Nomes (Um por linha)</label>
+{/* ------------------------------------------------------------ */}
+            {nomesLista.length > 50 && (
+              <div className="limit-warning">
+                Mostrando apenas os primeiros 50 certificados para manter a performance.
+              </div>
+            )}
+
           <textarea
             className="editor-input bulk-area"
             placeholder="Cole aqui a lista de nomes...&#10;Aperte Enter para cada novo nome"
