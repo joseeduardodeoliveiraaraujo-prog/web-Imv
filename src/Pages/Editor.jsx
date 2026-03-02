@@ -1,6 +1,6 @@
 import "./Editor.css";
 import { useParams, useNavigate } from "react-router-dom";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import {jsPDF} from "jspdf";
@@ -224,6 +224,14 @@ const Editor = () => {
   const [corCorpo, setCorCorpo] = useState("#000000");
   const [posicaoCorpo, setPosicaoCorpo] = useState({ x: 500, y: 500 });
 
+  const nomesValidos = useMemo(() => {
+    const filtrados = nomesLista.filter(nome => nome.trim() !== "");
+  
+    return filtrados.length > 0 
+    ? filtrados 
+    : ["Nome do Participante"];
+  }, [nomesLista]);
+
 
   // Carregar dados do certificado
   useEffect(() => {
@@ -316,7 +324,6 @@ const Editor = () => {
 
   // Download
  const handleDownloadPDF = async () => {
-    const nomesValidos = nomesLista.filter(n => n.trim() !== "");
     if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
 
     const img = new Image();
@@ -372,7 +379,6 @@ const Editor = () => {
 
   const handleDownloadZIP = async () => {
     const zip = new JSZip();
-    const nomesValidos = nomesLista.filter(n => n.trim() !== "");
     if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
 
     const img = new Image();
@@ -422,14 +428,8 @@ const Editor = () => {
 
   // Lógica de nomes em massa (estilo seu CSV anterior)
   const handleBulkNames = (e) => {
-      // Pegamos o valor bruto para permitir quebras de linha (Enter)
-    const novosNomes = e.target.value.split("\n");
-    
-    // Atualizamos a lista mantendo as linhas vazias enquanto o usuário digita
-    setNomesLista(novosNomes);
-    
-    // Opcional: Só volta para o primeiro nome se a lista mudar drasticamente
-    // setIndexAtual(0);
+    const valor = e.target.value.replace(/\r/g, "");
+    setNomesLista(valor.split("\n"));
   };
 
   if (!certificate) return <p>Carregando certificado...</p>;
@@ -452,7 +452,7 @@ const Editor = () => {
 
       <main className="editor-workspace bulk-scroll">
         
-        {nomesLista.slice(0, 50).map((nome, index) => (
+        {nomesValidos.slice(0, 50).map((nome, index) => (
           <CertificadoCanvas
             key={index}
             certificate={certificate}
