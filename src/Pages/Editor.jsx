@@ -448,8 +448,6 @@ const Editor = () => {
       </button>
     </header>
 
-  
-
     <div className="editor-container">
 
       <main className="editor-workspace bulk-scroll">
@@ -476,30 +474,20 @@ const Editor = () => {
 
       {/* SIDEBAR: Mantive seus controles e SVG conforme solicitado */}
       <aside className="editor-sidebar">
+
+        {nomesLista.length > 50 && (
+          <div className="limit-warning">
+            Mostrando apenas os primeiros 50 certificados 
+          </div>
+        )}
+
         <div className="control-group">
           <label>Lista de Nomes (Um por linha)</label>
-{/* ------------------------------------------------------------ */}
-            {nomesLista.length > 50 && (
-              <div className="limit-warning">
-                Mostrando apenas os primeiros 50 certificados para manter a performance.
-              </div>
-            )}
-
           <textarea
             className="editor-input bulk-area"
             placeholder="Cole aqui a lista de nomes...&#10;Aperte Enter para cada novo nome"
             value={nomesLista.join("\n")}
             onChange={handleBulkNames}
-          />
-        </div>
-
-        <div className="control-group">
-          <label>Cor do Texto</label>
-          <input 
-            type="color" 
-            className="editor-input input-color-picker" 
-            value={corNome} 
-            onChange={(e) => setCorNome(e.target.value)} 
           />
         </div>
 
@@ -515,6 +503,16 @@ const Editor = () => {
         </div>
 
         <div className="control-group">
+          <label>Cor do Nome</label>
+          <input 
+            type="color" 
+            className="editor-input input-color-picker" 
+            value={corNome} 
+            onChange={(e) => setCorNome(e.target.value)} 
+          />
+        </div>
+
+        <div className="control-group">
           <label>Cor do Texto</label>
           <input 
             type="color" 
@@ -523,8 +521,6 @@ const Editor = () => {
             onChange={(e) => setCorCorpo(e.target.value)} 
           />
         </div>
-
-
 
         {/* Mudei o texto para 'Baixar Tudo' para combinar com a nova lógica */}
         <div className="download-actions" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

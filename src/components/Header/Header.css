@@ -43,25 +43,21 @@
 .logout-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  
-  background: transparent; /* Fundo leve para o botão */
-  border: 1px solid transparent;
-  border-radius: 8px; /* Cantos arredondados modernos */
-
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 1.1rem;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 600;
   cursor: pointer;
-
-  width: 38px;
-  height: 38px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s;
 }
 
 .logout-btn:hover {
-  background: rgba(230, 57, 70, 0.15);
-  color: #ff4d5a;
-  transform: scale(1.15px); /* Pequeno deslocamento para cima */
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
 }
 
 .logout-btn:active {
