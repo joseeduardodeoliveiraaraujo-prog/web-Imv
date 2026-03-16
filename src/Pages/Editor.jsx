@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useMemo } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import {jsPDF} from "jspdf";
+import Select from 'react-select';
 
 const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) => {
   if (!text) return 0; // Retorna 0 se o texto estiver vazio
@@ -55,7 +56,7 @@ const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) 
   return lines.length * lineHeight;
 };
 
-const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, posicaoNome, posicaoCorpo, isDragging, itemHover, itemArrastado, onMouseDown, onMouseMove, onMouseUp }) => {
+const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, fonteNome, fonteCorpo, tamanhoNome, tamanhoCorpo, posicaoNome, posicaoCorpo, isDragging, itemHover, itemArrastado, onMouseDown, onMouseMove, onMouseUp  }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -92,7 +93,7 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, p
   }
 
   // --- 1. DESENHAR O NOME DO ALUNO ---
-  ctx.font = "bold 65px Inter, sans-serif";
+  ctx.font = `${tamanhoNome}px "${fonteNome}", sans-serif`;
   ctx.fillStyle = corNome;
 
   // Medimos a largura real do texto para que a caixa azul e a centralização fiquem perfeitas
@@ -114,7 +115,7 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, p
   );
 
   // --- 2. DESENHAR O CORPO ---
-  ctx.font = "35px Inter, sans-serif"; 
+  ctx.font = `${tamanhoCorpo}px "${fonteCorpo}", sans-serif`; 
   ctx.fillStyle = corCorpo; 
   
   const larguraMaxCorpo = canvas.width * 0.8;
@@ -188,7 +189,7 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, p
     drawSelectionBox(posicaoCorpo.x, posicaoCorpo.y, larguraMaxCorpo + 40, alturaTotalCorpo);
   }
 };
-  }, [certificate, nome, textoCorpo, corNome, corCorpo, posicaoNome, posicaoCorpo, isDragging, itemHover, itemArrastado, onMouseDown, onMouseMove, onMouseUp]);
+  }, [certificate, nome, textoCorpo, corNome, corCorpo, posicaoNome, posicaoCorpo,fonteNome, fonteCorpo,tamanhoNome, tamanhoCorpo, isDragging, itemHover, itemArrastado, onMouseDown, onMouseMove, onMouseUp]);
 
   return (
     <div className="canvas-wrapper">
@@ -223,6 +224,13 @@ const Editor = () => {
   const [textoCorpo, setTextoCorpo] = useState("");
   const [corCorpo, setCorCorpo] = useState("#000000");
   const [posicaoCorpo, setPosicaoCorpo] = useState({ x: 500, y: 500 });
+  const [itemSelecionado, setItemSelecionado] = useState(null);
+
+  // Estados de fontes
+  const [fonteNome, setFonteNome] = useState("Inter");
+  const [fonteCorpo, setFonteCorpo] = useState("Inter");
+  const [tamanhoNome, setTamanhoNome] = useState(90)
+  const [tamanhoCorpo, setTamanhoCorpo] = useState(40)
 
   const nomesValidos = useMemo(() => {
     const filtrados = nomesLista.filter(nome => nome.trim() !== "");
@@ -260,11 +268,13 @@ const Editor = () => {
 
     if (Math.abs(mouseX - posicaoNome.x) < 300 && Math.abs(mouseY - posicaoNome.y) < 50) {
       setItemArrastado("nome");
+      setItemSelecionado("nome");
       setIsDragging(true);
     }
       // Checa se clicou no Corpo
     else if (Math.abs(mouseX - posicaoCorpo.x) < 400 && Math.abs(mouseY - posicaoCorpo.y) < 100) {
       setItemArrastado("corpo");
+      setItemSelecionado("corpo");
       setIsDragging(true);
     }
   };
@@ -434,6 +444,69 @@ const Editor = () => {
 
   if (!certificate) return <p>Carregando certificado...</p>;
 
+  const fonteOptions = [
+  {
+    label: "Sans-Serif (Modernas)",
+    options: [
+      { value: "Inter", label: "Inter" },
+      { value: "Poppins", label: "Poppins" },
+      { value: "Montserrat", label: "Montserrat" },
+      { value: "KoHo", label: "KoHo" },
+      { value: "Roboto", label: "Roboto" },
+      { value: "Raleway", label: "Raleway" },
+    ]
+  },
+  {
+    label: "Serif (Elegantes)",
+    options: [
+      { value: "Cinzel", label: "Cinzel" },
+      { value: "Playfair Display", label: "Playfair Display" },
+      { value: "Libre Baskerville", label: "Libre Baskerville" },
+      { value: "Lora", label: "Lora" },
+      { value: "Merriweather", label: "Merriweather" },
+      { value: "Cormorant Garamond", label: "Cormorant Garamond" },
+      { value: "EB Garamond", label: "EB Garamond" },
+    ]
+  }
+];
+
+const customStyles = {
+  control: (provided, state) => ({
+    ...provided,
+    background: state.isFocused ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.2)',
+    borderColor: state.isFocused ? '#7dd3fc' : 'rgba(255, 255, 255, 0.08)',
+    borderRadius: '8px',
+    padding: '2px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    '&:hover': { 
+      background: 'rgba(255, 255, 255, 0.08)',
+      borderColor: 'rgba(255, 255, 255, 0.2)', 
+    }
+  }),
+  menu: (provided) => ({
+    ...provided,
+    background: '#1e293b',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '8px',
+    overflow: 'hidden',
+  }),
+  option: (provided, state) => ({
+    ...provided,
+    backgroundColor: state.isFocused ? 'rgba(56, 189, 248, 0.1)' : 'transparent',
+    color: state.isFocused ? '#fff' : '#94a3b8',
+    cursor: 'pointer',
+    padding: '10px 15px'
+  }),
+  singleValue: (provided) => ({ ...provided, color: 'white' }),
+  groupHeading: (provided) => ({
+    ...provided,
+    color: '#38bdf8',
+    fontSize: '0.7rem',
+    textTransform: 'uppercase'
+  })
+};
+
   return (
   <div className="editor">
     <header className="editor-header">
@@ -460,6 +533,10 @@ const Editor = () => {
             textoCorpo={textoCorpo}
             corNome={corNome}        // Mudou aqui
             corCorpo={corCorpo}
+            fonteNome={fonteNome}
+            fonteCorpo={fonteCorpo}
+            tamanhoNome={tamanhoNome}
+            tamanhoCorpo={tamanhoCorpo}
             posicaoNome={posicaoNome}
             posicaoCorpo={posicaoCorpo}
             isDragging={isDragging}
@@ -477,7 +554,7 @@ const Editor = () => {
 
         {nomesLista.length > 50 && (
           <div className="limit-warning">
-            Mostrando apenas os primeiros 50 certificados 
+            Mostrando apenas os primeiros 50 certificados para pré-visualização.
           </div>
         )}
 
@@ -503,23 +580,109 @@ const Editor = () => {
         </div>
 
         <div className="control-group">
-          <label>Cor do Nome</label>
-          <input 
-            type="color" 
-            className="editor-input input-color-picker" 
-            value={corNome} 
-            onChange={(e) => setCorNome(e.target.value)} 
-          />
-        </div>
+          {itemSelecionado === "nome" && (
+            <>
+              <label>Cor do Nome</label>
+              <input
+                type="color"
+                className="editor-input input-color-picker"
+                value={corNome}
+                onChange={(e) => setCorNome(e.target.value)}
+              />
 
-        <div className="control-group">
-          <label>Cor do Texto</label>
-          <input 
-            type="color" 
-            className="editor-input input-color-picker" 
-            value={corCorpo} 
-            onChange={(e) => setCorCorpo(e.target.value)} 
-          />
+              <label>Fonte do Nome</label>
+              <Select
+                options={fonteOptions}
+                styles={customStyles}
+                value={fonteOptions.flatMap(g => g.options).find(o => o.value === fonteNome)}
+                onChange={(selected) => setFonteNome(selected.value)}
+                isSearchable={false}
+                placeholder="Selecione uma fonte..."
+              />
+
+              <label>Tamanho da Fonte</label>
+                <div className="font-size-control">
+                  {/* Ícone indicativo de menor */}
+                  <span className="size-icon small">A</span>
+                  
+                  <input
+                    type="range"
+                    min="20"
+                    max="150"
+                    value={tamanhoNome}
+                    onChange={(e) => setTamanhoNome(Number(e.target.value))}
+                    className="font-range-input"
+                  />
+                  
+                  {/* Ícone indicativo de maior */}
+                  <span className="size-icon large">A</span>
+
+                  <div className="number-wrapper">
+                    <input
+                      type="number"
+                      min="20"
+                      max="150"
+                      value={tamanhoNome}
+                      onChange={(e) => setTamanhoNome(Number(e.target.value))}
+                      className="font-number-input"
+                    />
+                    <span className="unit">px</span>
+                  </div>
+                </div>
+            </>
+          )}
+
+          {itemSelecionado === "corpo" && (
+            <>
+              <label>Cor do Texto</label>
+              <input
+                type="color"
+                className="editor-input input-color-picker"
+                value={corCorpo}
+                onChange={(e) => setCorCorpo(e.target.value)}
+              />
+
+              <label>Fonte do Texto</label>
+              <Select
+                options={fonteOptions}
+                styles={customStyles}
+                value={fonteOptions.flatMap(g => g.options).find(o => o.value === fonteCorpo)}
+                onChange={(selected) => setFonteCorpo(selected.value)}
+                isSearchable={false}
+                placeholder="Selecione uma fonte..."
+              />
+
+              <label>Tamanho da Fonte Corpo</label>
+              <div className="font-size-control">
+                {/* Ícone indicativo de menor */}
+                <span className="size-icon small">A</span>
+                  
+                <input
+                  type="range"
+                  min="20"
+                  max="150"
+                  value={tamanhoCorpo}
+                  onChange={(e) => setTamanhoCorpo(Number(e.target.value))}
+                  className="font-range-input"
+                />
+                  
+                {/* Ícone indicativo de maior */}
+                <span className="size-icon large">A</span>
+                <div className="number-wrapper">
+                  <input
+                      type="number"
+                      min="20"
+                      max="150"
+                      value={tamanhoCorpo}
+                      onChange={(e) => setTamanhoCorpo(Number(e.target.value))}
+                      className="font-number-input"
+                  />
+                  <span className="unit">px</span>
+                </div>
+              </div>
+            </>
+          )}
+
         </div>
 
         {/* Mudei o texto para 'Baixar Tudo' para combinar com a nova lógica */}
