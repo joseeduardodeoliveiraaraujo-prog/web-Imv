@@ -56,7 +56,7 @@ const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) 
   return lines.length * lineHeight;
 };
 
-const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, fonteNome, fonteCorpo, tamanhoNome, tamanhoCorpo, posicaoNome, posicaoCorpo, isDragging, itemHover, itemArrastado, onMouseDown, onMouseMove, onMouseUp  }) => {
+const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, fonteNome, fonteCorpo, tamanhoNome, tamanhoCorpo, posicaoNome, posicaoCorpo, isDragging, itemHover, itemArrastado, itemSelecionado, onMouseDown, onMouseMove, onMouseUp, getBoxRect, getTextBoxSize }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -67,129 +67,154 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
     img.crossOrigin = "anonymous";
     img.src = certificate.previewUrl;
 
-   img.onload = () => {
-  canvas.width = img.width;
-  canvas.height = img.height;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(img, 0, 0);
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
 
-  const centroCanvas = canvas.width / 2;
-  const margemErro = 5;
+      const centroCanvas = canvas.width / 2;
+      const margemErro = 5;
 
-  const nomeNoCentro = Math.abs(posicaoNome.x - centroCanvas) <= margemErro;
-  const corpoNoCentro = Math.abs(posicaoCorpo.x - centroCanvas) <= margemErro;
+      const nomeNoCentro = Math.abs(posicaoNome.x - centroCanvas) <= margemErro;
+      const corpoNoCentro = Math.abs(posicaoCorpo.x - centroCanvas) <= margemErro;
 
-  // --- GUIA ROSA (Correção da lógica nomeNoCentro) ---
-  if (isDragging && (nomeNoCentro || corpoNoCentro)) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.setLineDash([15, 10]);
-    ctx.strokeStyle = "#e056fd";
-    ctx.lineWidth = 4;
-    ctx.moveTo(centroCanvas, 0);
-    ctx.lineTo(centroCanvas, canvas.height);
-    ctx.stroke();
-    ctx.restore();
-  }
+      // --- GUIA ROSA (Correção da lógica nomeNoCentro) ---
+      if (isDragging && (nomeNoCentro || corpoNoCentro)) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([15, 10]);
+        ctx.strokeStyle = "#e056fd";
+        ctx.lineWidth = 4;
+        ctx.moveTo(centroCanvas, 0);
+        ctx.lineTo(centroCanvas, canvas.height);
+        ctx.stroke();
+        ctx.restore();
+      }
 
-  // --- 1. DESENHAR O NOME DO ALUNO ---
-  ctx.font = `${tamanhoNome}px "${fonteNome}", sans-serif`;
-  ctx.fillStyle = corNome;
+      // --- 1. DESENHAR O NOME DO ALUNO ---
+      ctx.font = `${tamanhoNome}px "${fonteNome}", sans-serif`;
+      ctx.fillStyle = corNome;
+      ctx.textBaseline = "middle";
 
-  // Medimos a largura real do texto para que a caixa azul e a centralização fiquem perfeitas
-  const larguraRealTextoNome = ctx.measureText(nome || "Nome do Aluno").width;
-  // A largura da caixa de seleção deve ser o menor valor entre o texto e o limite do canvas
-  const larguraCaixaNome = Math.min(larguraRealTextoNome + 40, canvas.width * 0.85);
+      // Medimos a largura real do texto para que a caixa azul e a centralização fiquem perfeitas
+      const nomeBase = nome || "Nome do Aluno";
 
-  const alturaLinhaNome = 75;
+      const nomeBox = getTextBoxSize(
+        ctx,
+        nomeBase,
+        tamanhoNome,
+        fonteNome,
+        canvas.width * 0.85
+      );
 
-  // Chamamos a função para desenhar
-  const alturaTotalNome = drawWrappedText(
-    ctx, 
-    nome || "Nome do Aluno", 
-    posicaoNome.x, 
-    posicaoNome.y, 
-    larguraCaixaNome, // Usando a largura calculada aqui!
-    alturaLinhaNome, 
-    false // Mantém o justify em false para o nome
-  );
+      const alturaLinhaNome = tamanhoNome * 1.2;
 
-  // --- 2. DESENHAR O CORPO ---
-  ctx.font = `${tamanhoCorpo}px "${fonteCorpo}", sans-serif`; 
-  ctx.fillStyle = corCorpo; 
-  
-  const larguraMaxCorpo = canvas.width * 0.8;
-  const alturaLinhaCorpo = 45;
+      const alturaTotalNome = drawWrappedText(
+        ctx,
+        nomeBase,
+        posicaoNome.x,
+        posicaoNome.y,
+        nomeBox.width,
+        alturaLinhaNome,
+        false
+      );
 
-  const alturaTotalCorpo = drawWrappedText(
-    ctx, 
-    textoCorpo || "Participou com êxito do evento [Nome do Evento], realizado no dia [Data], com carga horária de [X] horas.", 
-    posicaoCorpo.x, 
-    posicaoCorpo.y, 
-    larguraMaxCorpo, 
-    alturaLinhaCorpo,
-    true // Justificar corpo
-  );
+      // --- 2. DESENHAR O CORPO ---
+      ctx.font = `${tamanhoCorpo}px "${fonteCorpo}", sans-serif`; 
+      ctx.fillStyle = corCorpo;
+      ctx.textBaseline = "middle"; 
+      
+      const textoBase = textoCorpo || "Participou com êxito do evento [Nome do Evento], realizado no dia [Data], com carga horária de [X] horas.";
 
-  const drawSelectionBox = (x, y, width, height) => {
-  ctx.save();
+      const corpoBox = getTextBoxSize(
+        ctx,
+        textoBase,
+        tamanhoCorpo,
+        fonteCorpo,
+        canvas.width * 0.8
+      );
 
-  // 1. Definições de Estilo
-  const azulCanva = "#00c4cc"; // Um azul turquesa mais moderno
-  const padding = 10; // Espaço entre o texto e a borda
-  const raioCanto = 8; // Arredondamento da borda
-  
-  const rectX = x - width / 2 - padding;
-  const rectY = y - 60; // Compensação da altura da fonte
-  const rectW = width + (padding * 2);
-  const rectH = height + 20;
+      const alturaLinhaCorpo = tamanhoCorpo * 1.2;
 
-  // 2. Sombra Suave (Dá profundidade e tira o aspecto amador)
-  ctx.shadowColor = "rgba(0, 0, 0, 0.15)";
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 4;
+      const alturaTotalCorpo = drawWrappedText(
+        ctx, 
+        textoBase, 
+        posicaoCorpo.x, 
+        posicaoCorpo.y, 
+        corpoBox.width, 
+        alturaLinhaCorpo,
+        true
+      );
 
-  // 3. Desenhar a Borda Arredondada
-  ctx.beginPath();
-  ctx.roundRect(rectX, rectY, rectW, rectH, raioCanto);
-  ctx.strokeStyle = azulCanva;
-  ctx.lineWidth = 2;
-  ctx.stroke();
+      const drawSelectionBox = (x, y, width, height, showHandles = false) => {
+        ctx.save();
 
-  // 4. Desenhar os Handles (Círculos em vez de quadrados)
-  // Removemos a sombra para os handles para ficarem nítidos
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
-  ctx.fillStyle = "white";
-  ctx.strokeStyle = azulCanva;
-  ctx.lineWidth = 2;
+        const azulCanva = "#00c4cc";
+        const raioCanto = 8;
 
-  const drawCircleHandle = (hx, hy) => {
-    ctx.beginPath();
-    ctx.arc(hx, hy, 6, 0, Math.PI * 2); // Círculo com raio 6
-    ctx.fill();
-    ctx.stroke();
-  };
+        const box = getBoxRect(x, y, width, height);
 
-  // Posiciona os círculos exatamente nos 4 cantos
-  drawCircleHandle(rectX, rectY); // Topo Esquerda
-  drawCircleHandle(rectX + rectW, rectY); // Topo Direita
-  drawCircleHandle(rectX, rectY + rectH); // Baixo Esquerda
-  drawCircleHandle(rectX + rectW, rectY + rectH); // Baixo Direita
+        const rectX = box.x;
+        const rectY = box.y;
+        const rectW = box.w;
+        const rectH = box.h;
 
-  ctx.restore();
-};
+        // sombra
+        ctx.shadowColor = "rgba(0, 0, 0, 0.15)";
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 4;
 
-  // Desenha se hover ou dragging
-  if (itemHover === "nome" || (isDragging && itemArrastado === "nome")) {
-    drawSelectionBox(posicaoNome.x, posicaoNome.y, larguraCaixaNome, alturaTotalNome);
-  }
+        // borda
+        ctx.beginPath();
+        ctx.roundRect(rectX, rectY, rectW, rectH, raioCanto);
+        ctx.strokeStyle = azulCanva;
+        ctx.lineWidth = 2;
+        ctx.stroke();
 
-  if (itemHover === "corpo" || (isDragging && itemArrastado === "corpo")) {
-    drawSelectionBox(posicaoCorpo.x, posicaoCorpo.y, larguraMaxCorpo + 40, alturaTotalCorpo);
-  }
-};
-  }, [certificate, nome, textoCorpo, corNome, corCorpo, posicaoNome, posicaoCorpo,fonteNome, fonteCorpo,tamanhoNome, tamanhoCorpo, isDragging, itemHover, itemArrastado, onMouseDown, onMouseMove, onMouseUp]);
+        // 🔥 SÓ desenha handles se estiver selecionado
+        if (showHandles) {
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetY = 0;
+
+          ctx.fillStyle = "white";
+          ctx.strokeStyle = azulCanva;
+          ctx.lineWidth = 2;
+
+          const drawCircleHandle = (hx, hy) => {
+            ctx.beginPath();
+            ctx.arc(hx, hy, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          };
+
+          drawCircleHandle(rectX, rectY);
+          drawCircleHandle(rectX + rectW, rectY);
+          drawCircleHandle(rectX, rectY + rectH);
+          drawCircleHandle(rectX + rectW, rectY + rectH);
+        }
+
+        ctx.restore();
+      };
+
+      if (itemHover === "nome" && itemSelecionado !== "nome") {
+        drawSelectionBox(posicaoNome.x, posicaoNome.y, nomeBox.width, alturaTotalNome, false);
+      }
+
+      if (itemSelecionado === "nome") {
+        drawSelectionBox(posicaoNome.x, posicaoNome.y, nomeBox.width, alturaTotalNome, true);
+      }
+
+      if (itemHover === "corpo" && itemSelecionado !== "corpo") {
+        drawSelectionBox(posicaoCorpo.x, posicaoCorpo.y, corpoBox.width, alturaTotalCorpo, false);
+      }
+
+      if (itemSelecionado === "corpo") {
+        drawSelectionBox(posicaoCorpo.x, posicaoCorpo.y, corpoBox.width, alturaTotalCorpo, true);
+      }
+    };
+  }, [certificate, nome, textoCorpo, corNome, corCorpo, posicaoNome, posicaoCorpo,fonteNome, fonteCorpo,tamanhoNome, tamanhoCorpo, isDragging, itemHover, itemArrastado, itemSelecionado]);
 
   return (
     <div className="canvas-wrapper">
@@ -232,6 +257,12 @@ const Editor = () => {
   const [tamanhoNome, setTamanhoNome] = useState(90)
   const [tamanhoCorpo, setTamanhoCorpo] = useState(40)
 
+  // Estados de redimensionamento (NOVO)
+  const [isResizing, setIsResizing] = useState(false);
+  const [itemRedimensionando, setItemRedimensionando] = useState(null);
+  const [startY, setStartY] = useState(0);
+  const [startFontSize, setStartFontSize] = useState(0);
+
   const nomesValidos = useMemo(() => {
     const filtrados = nomesLista.filter(nome => nome.trim() !== "");
   
@@ -257,83 +288,287 @@ const Editor = () => {
     setCertificate(found);
   }, [id, navigate]);
 
+  const getBoxRect = (x, y, width, height) => {
+    const padding = 20;
+
+    return {
+      x: x - width / 2 - padding,
+      y: y - height / 2 - padding,
+      w: width + padding * 2,
+      h: height + padding * 2
+    };
+  };
+  
+  const isOnHandle = (mouseX, mouseY, boxX, boxY, width, height) => {
+    const padding = 10;
+
+    const rectX = boxX - width / 2 - padding;
+    const rectY = boxY - 60;
+    const rectW = width + padding * 2;
+    const rectH = height + 20;
+
+    const handles = [
+      { x: rectX, y: rectY }, // TL
+      { x: rectX + rectW, y: rectY }, // TR
+      { x: rectX, y: rectY + rectH }, // BL
+      { x: rectX + rectW, y: rectY + rectH } // BR
+    ];
+
+    return handles.some(
+      h => Math.abs(mouseX - h.x) < 10 && Math.abs(mouseY - h.y) < 10
+    );
+  };
+
+  const isInsideRect = (mouseX, mouseY, box) => {
+    return (
+      mouseX >= box.x &&
+      mouseX <= box.x + box.w &&
+      mouseY >= box.y &&
+      mouseY <= box.y + box.h
+    );
+  };
+    
+  const getTextBoxSize = (ctx, text, fontSize, fontFamily, maxWidth) => {
+    ctx.font = `${fontSize}px "${fontFamily}", sans-serif`;
+
+    const words = text.split(" ");
+    let lines = [];
+    let currentLine = [];
+
+    words.forEach(word => {
+      const testLine = [...currentLine, word].join(" ");
+      const width = ctx.measureText(testLine).width;
+
+      if (width > maxWidth && currentLine.length > 0) {
+        lines.push(currentLine);
+        currentLine = [word];
+      } else {
+        currentLine.push(word);
+      }
+    });
+
+    lines.push(currentLine);
+
+    const lineHeight = fontSize * 1.2;
+
+    return {
+      width: Math.min(
+        Math.max(...lines.map(line => ctx.measureText(line.join(" ")).width)) + 40,
+        maxWidth
+      ),
+      height: lines.length * lineHeight
+    };
+  };
   // Handlers de Mouse
   const handleMouseDown = (e) => {
-    const canvas = e.currentTarget; // Pega o canvas específico que foi clicado
+    const canvas = e.currentTarget;
     const rect = canvas.getBoundingClientRect();
+
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
+
     const mouseX = (e.clientX - rect.left) * scaleX;
     const mouseY = (e.clientY - rect.top) * scaleY;
 
-    if (Math.abs(mouseX - posicaoNome.x) < 300 && Math.abs(mouseY - posicaoNome.y) < 50) {
+    // contexto temporário
+    const tempCanvas = document.createElement("canvas");
+    const ctx = tempCanvas.getContext("2d");
+
+    // --- NOME ---
+    const nomeTexto = nomesValidos[0] || "Nome do Participante";
+
+    const nomeBox = getTextBoxSize(
+      ctx,
+      nomeTexto,
+      tamanhoNome,
+      fonteNome,
+      canvas.width * 0.85
+    );
+
+    const nomeRect = getBoxRect(
+      posicaoNome.x,
+      posicaoNome.y,
+      nomeBox.width,
+      nomeBox.height
+    );
+
+    // --- CORPO ---
+    const corpoBox = getTextBoxSize(
+      ctx,
+      textoCorpo || "Texto padrão",
+      tamanhoCorpo,
+      fonteCorpo,
+      canvas.width * 0.8
+    );
+
+    const corpoRect = getBoxRect(
+      posicaoCorpo.x,
+      posicaoCorpo.y,
+      corpoBox.width,
+      corpoBox.height
+    );
+
+    // 🔥 1. PRIORIDADE: RESIZE (handles)
+
+    if (isOnHandle(mouseX, mouseY, nomeRect)) {
+      setItemSelecionado("nome");
+      setIsResizing(true);
+      setItemRedimensionando("nome");
+      setStartY(mouseY);
+      setStartFontSize(tamanhoNome);
+      return;
+    }
+
+    if (isOnHandle(mouseX, mouseY, corpoRect)) {
+      setItemSelecionado("corpo");
+      setIsResizing(true);
+      setItemRedimensionando("corpo");
+      setStartY(mouseY);
+      setStartFontSize(tamanhoCorpo);
+      return;
+    }
+
+    // 🔥 2. CLICK DENTRO DO BOX (DRAG)
+
+    if (isInsideRect(mouseX, mouseY, nomeRect)) {
       setItemArrastado("nome");
       setItemSelecionado("nome");
       setIsDragging(true);
+      return;
     }
-      // Checa se clicou no Corpo
-    else if (Math.abs(mouseX - posicaoCorpo.x) < 400 && Math.abs(mouseY - posicaoCorpo.y) < 100) {
+
+    if (isInsideRect(mouseX, mouseY, corpoRect)) {
       setItemArrastado("corpo");
       setItemSelecionado("corpo");
       setIsDragging(true);
+      return;
     }
+
+    // 🔥 3. CLICK FORA → DESELECIONA
+
+    setItemSelecionado(null);
   };
 
   const handleMouseMove = (e) => {
-  const canvas = e.currentTarget;
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
+    const canvas = e.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
 
-  let mouseX = (e.clientX - rect.left) * scaleX;
-  let mouseY = (e.clientY - rect.top) * scaleY;
+    let mouseX = (e.clientX - rect.left) * scaleX;
+    let mouseY = (e.clientY - rect.top) * scaleY;
 
-  // --- 1. LÓGICA DE HOVER (Para a borda azul aparecer antes do clique) ---
-  if (!isDragging) {
-    const margemAproximacaoX = 300;
-    const margemAproximacaoY = 60;
+    // --- 1. LÓGICA DE HOVER (Para a borda azul aparecer antes do clique) ---
+    if (isResizing) {
+      const deltaY = mouseY - startY;
+      const sensitivity = 0.3;
 
-    const sobreNome = Math.abs(mouseX - posicaoNome.x) < margemAproximacaoX && 
-                     Math.abs(mouseY - posicaoNome.y) < margemAproximacaoY;
+      const novoTamanho = Math.max(10, startFontSize + deltaY * sensitivity);
 
-    const sobreCorpo = Math.abs(mouseX - posicaoCorpo.x) < 400 && 
-                      Math.abs(mouseY - posicaoCorpo.y) < 150;
+      if (itemRedimensionando === "nome") {
+        setTamanhoNome(novoTamanho);
+      }
 
-    if (sobreNome) {
-      setItemHover("nome");
-    } else if (sobreCorpo) {
-      setItemHover("corpo");
-    } else {
-      setItemHover(null);
+      if (itemRedimensionando === "corpo") {
+        setTamanhoCorpo(novoTamanho);
+      }
+
+      return;
     }
+
+    if (!isDragging) {
+      const tempCanvas = document.createElement("canvas");
+      const ctx = tempCanvas.getContext("2d");
+
+      const nomeTexto = nomesValidos[0] || "Nome do Participante";
+
+      const nomeBox = getTextBoxSize(
+        ctx,
+        nomeTexto,
+        tamanhoNome,
+        fonteNome,
+        canvas.width * 0.85
+      );
+
+      const corpoBox = getTextBoxSize(
+        ctx,
+        textoCorpo || "Texto padrão",
+        tamanhoCorpo,
+        fonteCorpo,
+        canvas.width * 0.8
+      );
+
+      const isInsideBox = (mouseX, mouseY, boxX, boxY, width, height) => {
+        const padding = 10;
+
+        const rectX = boxX - width / 2 - padding;
+        const rectY = boxY - height / 2; 
+        const rectW = width + padding * 2;
+        const rectH = height + 40;
+
+        return (
+          mouseX >= rectX &&
+          mouseX <= rectX + rectW &&
+          mouseY >= rectY &&
+          mouseY <= rectY + rectH
+        );
+      };
+
+      const sobreNome = isInsideBox(
+        mouseX,
+        mouseY,
+        posicaoNome.x,
+        posicaoNome.y,
+        nomeBox.width,
+        nomeBox.height
+      );
+
+      const sobreCorpo = isInsideBox(
+        mouseX,
+        mouseY,
+        posicaoCorpo.x,
+        posicaoCorpo.y,
+        corpoBox.width,
+        corpoBox.height
+      );
+
+      if (sobreCorpo) {
+        setItemHover("corpo");
+      } else if (sobreNome) {
+        setItemHover("nome");
+      } else {
+        setItemHover(null);
+      }
+    }
+
     
-    // Se não está arrastando, paramos aqui.
-    return; 
-  }
+    if (!isDragging) return;
 
-  // --- 2. LÓGICA DE ARRASTE E MAGNETISMO (Só executa se isDragging for true) ---
-  const centroX = canvas.width / 2;
-  const margemMagnetismo = 40;
+    const centroX = canvas.width / 2;
+    const margemMagnetismo = 40;
 
-  if (Math.abs(mouseX - centroX) < margemMagnetismo) {
-    mouseX = centroX;
-  }
+    if (Math.abs(mouseX - centroX) < margemMagnetismo) {
+      mouseX = centroX;
+    }
 
-  if (itemArrastado === "nome") {
-    setPosicaoNome({ x: mouseX, y: mouseY });
-  } 
-  else if (itemArrastado === "corpo") {
-    setPosicaoCorpo({ x: mouseX, y: mouseY });
-  }
-};
+    if (itemArrastado === "nome") {
+      setPosicaoNome({ x: mouseX, y: mouseY });
+    } 
+    else if (itemArrastado === "corpo") {
+      setPosicaoCorpo({ x: mouseX, y: mouseY });
+    }
+  };
 
   const handleMouseUp = () => {
     setIsDragging(false);
     setItemArrastado(null);
+
+    setIsResizing(false);
+    setItemRedimensionando(null);
   }
 
   // Download
- const handleDownloadPDF = async () => {
+  const handleDownloadPDF = async () => {
     if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
 
     const img = new Image();
@@ -353,13 +588,31 @@ const Editor = () => {
       nomesValidos.forEach((nome, index) => {
         ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
         ctx.drawImage(img, 0, 0);
-        // 1. Desenha o Nome
-        ctx.font = "bold 65px Inter, sans-serif";
-        ctx.fillStyle = corNome;
+        // Configuração padrão (igual ao editor)
         ctx.textAlign = "center";
-        ctx.fillText(nome, posicaoNome.x, posicaoNome.y);
-        // 2. Desenha o Texto do Corpo
-        ctx.font = "35px Inter, sans-serif";
+        ctx.textBaseline = "middle";
+
+        // --- 1. DESENHAR O NOME ---
+        ctx.font = `${tamanhoNome}px "${fonteNome}", sans-serif`;
+        ctx.fillStyle = corNome;
+
+        // calcula largura dinâmica igual ao editor
+        const larguraRealTextoNome = ctx.measureText(nome).width;
+        const larguraCaixaNome = Math.min(larguraRealTextoNome + 40, tempCanvas.width * 0.85);
+
+        // desenha com quebra de linha (igual canvas principal)
+        drawWrappedText(
+          ctx,
+          nome,
+          posicaoNome.x,
+          posicaoNome.y,
+          larguraCaixaNome,
+          75,
+          false
+        );
+
+        // --- 2. DESENHAR O CORPO ---
+        ctx.font = `${tamanhoCorpo}px "${fonteCorpo}", sans-serif`;
         ctx.fillStyle = corCorpo;
 
         const larguraMaxima = tempCanvas.width * 0.8;
@@ -369,7 +622,7 @@ const Editor = () => {
           ctx, 
           textoCorpo || "", 
           posicaoCorpo.x, 
-          posicaoCorpo.y, 
+          posicaoCorpo.y,
           larguraMaxima, 
           alturaLinha,
           true
@@ -396,39 +649,69 @@ const Editor = () => {
     img.src = certificate.previewUrl;
 
     img.onload = async () => {
+      // 🔥 garante que as fontes carregaram
+      await document.fonts.load(`${tamanhoNome}px "${fonteNome}"`);
+      await document.fonts.load(`${tamanhoCorpo}px "${fonteCorpo}"`);
+
       const tempCanvas = document.createElement("canvas");
       const ctx = tempCanvas.getContext("2d");
+
       tempCanvas.width = img.width;
       tempCanvas.height = img.height;
 
       for (let nome of nomesValidos) {
         ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
         ctx.drawImage(img, 0, 0);
-        // 1. Desenha o Nome
-        ctx.font = "bold 65px Inter, sans-serif";
-        ctx.fillStyle = corNome;
-        ctx.textAlign = "center";
-        ctx.fillText(nome, posicaoNome.x, posicaoNome.y);
 
-        // 2. Desenha o Texto do Corpo (NOVO)
-        ctx.font = "35px Inter, sans-serif";
+        // 🔥 alinhamento igual ao editor
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        // --- 1. NOME ---
+        ctx.font = `${tamanhoNome}px "${fonteNome}", sans-serif`;
+        ctx.fillStyle = corNome;
+
+        const larguraRealTextoNome = ctx.measureText(nome).width;
+        const larguraCaixaNome = Math.min(
+          larguraRealTextoNome + 40,
+          tempCanvas.width * 0.85
+        );
+
+        drawWrappedText(
+          ctx,
+          nome,
+          posicaoNome.x,
+          posicaoNome.y,
+          larguraCaixaNome,
+          75,
+          false
+        );
+
+        // --- 2. CORPO ---
+        ctx.font = `${tamanhoCorpo}px "${fonteCorpo}", sans-serif`;
         ctx.fillStyle = corCorpo;
 
         const larguraMaxima = tempCanvas.width * 0.8;
-      const alturaLinha = 45;
+        const alturaLinha = 45;
 
-      drawWrappedText(
-        ctx, 
-        textoCorpo || "", 
-        posicaoCorpo.x, 
-        posicaoCorpo.y, 
-        larguraMaxima, 
-        alturaLinha,
-        true
-      );
+        drawWrappedText(
+          ctx,
+          textoCorpo || "",
+          posicaoCorpo.x,
+          posicaoCorpo.y,
+          larguraMaxima,
+          alturaLinha,
+          true
+        );
 
+        // gera imagem
         const dataUrl = tempCanvas.toDataURL("image/png").split(",")[1];
-        zip.file(`${nome.replace(/\s+/g, "_")}.png`, dataUrl, { base64: true });
+
+        zip.file(
+          `${nome.replace(/\s+/g, "_")}.png`,
+          dataUrl,
+          { base64: true }
+        );
       }
 
       const content = await zip.generateAsync({ type: "blob" });
@@ -542,9 +825,12 @@ const customStyles = {
             isDragging={isDragging}
             itemHover={itemHover}       
             itemArrastado={itemArrastado}
+            itemSelecionado={itemSelecionado}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
+            getBoxRect={getBoxRect}
+            getTextBoxSize={getTextBoxSize}
           />
         ))}
       </main>
@@ -702,5 +988,5 @@ const customStyles = {
   </div>
 );
 };
-
+// Exportação do componente
 export default Editor;
