@@ -75,19 +75,19 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
     img.crossOrigin = "anonymous";
     img.src = certificate.previewUrl;
 
-    img.onload = () => {
+    img.onload = () => { // Só desenha depois que a imagem do certificado carrega
       canvas.width = img.width;
       canvas.height = img.height;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0);
 
-      const centroCanvas = canvas.width / 2;
+      const centroCanvas = canvas.width / 2; // usado para alinhar e mostrar a guia central
       const margemErro = 5;
 
       const nomeNoCentro = Math.abs(posicaoNome.x - centroCanvas) <= margemErro;
       const corpoNoCentro = Math.abs(posicaoCorpo.x - centroCanvas) <= margemErro;
 
-      // --- GUIA ROSA (Correção da lógica nomeNoCentro) ---
+      // desenha a linha guia rosa quando arrastando e alinhado ao centro se comunica com estado isDragging e posições dos textos
       if (isDragging && (nomeNoCentro || corpoNoCentro)) {
         ctx.save();
         ctx.beginPath();
@@ -154,14 +154,15 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
         alturaLinhaCorpo,
         true
       );
-
+      // Desenha a caixa azul de seleção e os handles
+      // Se comunica com getBoxRect() para calcular posição correta
       const drawSelectionBox = (x, y, width, height, showHandles = false) => {
         ctx.save();
 
         const azulCanva = "#00c4cc";
         const raioCanto = 8;
 
-        const box = getBoxRect(x, y, width, height);
+        const box = getBoxRect(x, y, width, height);// centraliza corretamente a caixa com base no texto
 
         const rectX = box.x;
         const rectY = box.y;
@@ -180,7 +181,7 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // 🔥 SÓ desenha handles se estiver selecionado
+        // SÓ desenha handles se estiver selecionado
         if (showHandles) {
           ctx.shadowColor = "transparent";
           ctx.shadowBlur = 0;
@@ -222,7 +223,7 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
         drawSelectionBox(posicaoCorpo.x, posicaoCorpo.y, corpoBox.width, alturaTotalCorpo, true);
       }
     };
-  }, [certificate, nome, textoCorpo, corNome, corCorpo, posicaoNome, posicaoCorpo,fonteNome, fonteCorpo,tamanhoNome, tamanhoCorpo, isDragging, itemHover, itemArrastado, itemSelecionado]);
+  }, [certificate, nome, textoCorpo, corNome, corCorpo, posicaoNome, posicaoCorpo,fonteNome, fonteCorpo,tamanhoNome, tamanhoCorpo, isDragging, itemHover, itemArrastado, itemSelecionado]);// Dependências que disparam re-render do canvas comunicação com todo o estado externo do editor
 
   return (
     <div className="canvas-wrapper">
@@ -237,8 +238,13 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
     </div>
   );
 };
-
-
+// Componente principal do editor de certificados
+// Controla estados, interação do canvas, download e passa tudo para CertificadoCanvas
+// Se comunica diretamente com:
+// - CertificadoCanvas (props)
+// - drawWrappedText()
+// - jsPDF / JSZip
+// - React Router (useParams, useNavigate)
 const Editor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -266,12 +272,14 @@ const Editor = () => {
   const [tamanhoNome, setTamanhoNome] = useState(90)
   const [tamanhoCorpo, setTamanhoCorpo] = useState(40)
 
-  // Estados de redimensionamento (NOVO)
+  // Estados de redimensionamento 
   const [isResizing, setIsResizing] = useState(false);
   const [itemRedimensionando, setItemRedimensionando] = useState(null);
   const [startY, setStartY] = useState(0);
   const [startFontSize, setStartFontSize] = useState(0);
 
+  // Filtra a lista de nomes removendo vazios e garante pelo menos um nome padrão
+  // Se comunica com nomesLista e com renderização dos CertificadoCanvas
   const nomesValidos = useMemo(() => {
     const filtrados = nomesLista.filter(nome => nome.trim() !== "");
   
@@ -281,7 +289,7 @@ const Editor = () => {
   }, [nomesLista]);
 
 
-  // Carregar dados do certificado
+  // Carregar dados do certificado baseado no id da rota
   useEffect(() => {
     const saved = localStorage.getItem("certificates");
     if (!saved) {
@@ -297,6 +305,7 @@ const Editor = () => {
     setCertificate(found);
   }, [id, navigate]);
 
+  // Calcula a bounding box com padding para seleção. É usado por CertificadoCanvas e handleMouseDown
   const getBoxRect = (x, y, width, height) => {
     const padding = 20;
 
@@ -307,7 +316,8 @@ const Editor = () => {
       h: height + padding * 2
     };
   };
-  
+
+  // Detecta clique nos handles de redimensionamento
   const isOnHandle = (mouseX, mouseY, boxX, boxY, width, height) => {
     const padding = 10;
 
@@ -328,6 +338,7 @@ const Editor = () => {
     );
   };
 
+  // Detecta clique dentro da caixa de seleção
   const isInsideRect = (mouseX, mouseY, box) => {
     return (
       mouseX >= box.x &&
@@ -336,7 +347,9 @@ const Editor = () => {
       mouseY <= box.y + box.h
     );
   };
-    
+
+  // Calcula largura e altura real do texto com quebra de linha 
+  // Se comunica com CertificadoCanvas
   const getTextBoxSize = (ctx, text, fontSize, fontFamily, maxWidth) => {
     ctx.font = `${fontSize}px "${fontFamily}", sans-serif`;
 
@@ -368,7 +381,14 @@ const Editor = () => {
       height: lines.length * lineHeight
     };
   };
-  // Handlers de Mouse
+
+  // Controla clique no canvas (resize, drag ou seleção)
+  // Se comunica com:
+  // - isOnHandle()
+  // - isInsideRect()
+  // - getTextBoxSize()
+  // - getBoxRect()
+  // - estados de drag e resize
   const handleMouseDown = (e) => {
     const canvas = e.currentTarget;
     const rect = canvas.getBoundingClientRect();
@@ -417,7 +437,7 @@ const Editor = () => {
       corpoBox.height
     );
 
-    // 🔥 1. PRIORIDADE: RESIZE (handles)
+    // 1. PRIORIDADE: RESIZE (handles)
 
     if (isOnHandle(mouseX, mouseY, nomeRect)) {
       setItemSelecionado("nome");
@@ -437,7 +457,7 @@ const Editor = () => {
       return;
     }
 
-    // 🔥 2. CLICK DENTRO DO BOX (DRAG)
+    // 2. CLICK DENTRO DO BOX (DRAG)
 
     if (isInsideRect(mouseX, mouseY, nomeRect)) {
       setItemArrastado("nome");
@@ -453,11 +473,12 @@ const Editor = () => {
       return;
     }
 
-    // 🔥 3. CLICK FORA → DESELECIONA
+    // 3. CLICK FORA → DESELECIONA
 
     setItemSelecionado(null);
   };
 
+  // Controla hover, drag e resize
   const handleMouseMove = (e) => {
     const canvas = e.currentTarget;
     const rect = canvas.getBoundingClientRect();
@@ -467,7 +488,7 @@ const Editor = () => {
     let mouseX = (e.clientX - rect.left) * scaleX;
     let mouseY = (e.clientY - rect.top) * scaleY;
 
-    // --- 1. LÓGICA DE HOVER (Para a borda azul aparecer antes do clique) ---
+    // --- 1. LÓGICA DE HOVER (Para a borda azul aparecer antes do clique) 
     if (isResizing) {
       const deltaY = mouseY - startY;
       const sensitivity = 0.3;
@@ -576,7 +597,7 @@ const Editor = () => {
     setItemRedimensionando(null);
   }
 
-  // Download
+  // Gera um PDF com todos os certificados
   const handleDownloadPDF = async () => {
     if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
 
@@ -586,7 +607,7 @@ const Editor = () => {
 
     img.onload = () => {
       // Criamos o PDF com a orientação baseada na imagem (paisagem ou retrato)
-      const orientation = img.width > img.height ? "l" : "p";
+      const orientation = img.width > img.height ? "l" : "p"; // IMPORTANTE: define orientação automática do PDF
       const pdf = new jsPDF(orientation, "px", [img.width, img.height]);
 
       const tempCanvas = document.createElement("canvas");
@@ -649,6 +670,7 @@ const Editor = () => {
     };
   };
 
+  // Gera imagens PNG individuais dentro de um ZIP
   const handleDownloadZIP = async () => {
     const zip = new JSZip();
     if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
@@ -728,7 +750,7 @@ const Editor = () => {
     };
   };
 
-  // Lógica de nomes em massa (estilo seu CSV anterior)
+  // Lógica de nomes em massa 
   const handleBulkNames = (e) => {
     const valor = e.target.value.replace(/\r/g, "");
     setNomesLista(valor.split("\n"));
@@ -823,7 +845,7 @@ const customStyles = {
             certificate={certificate}
             nome={nome}
             textoCorpo={textoCorpo}
-            corNome={corNome}        // Mudou aqui
+            corNome={corNome}        
             corCorpo={corCorpo}
             fonteNome={fonteNome}
             fonteCorpo={fonteCorpo}
@@ -844,7 +866,6 @@ const customStyles = {
         ))}
       </main>
 
-      {/* SIDEBAR: Mantive seus controles e SVG conforme solicitado */}
       <aside className="editor-sidebar">
 
         {nomesLista.length > 50 && (
@@ -980,7 +1001,6 @@ const customStyles = {
 
         </div>
 
-        {/* Mudei o texto para 'Baixar Tudo' para combinar com a nova lógica */}
         <div className="download-actions" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <button className="btn-primary" onClick={handleDownloadPDF}>
             Baixar Tudo em PDF
