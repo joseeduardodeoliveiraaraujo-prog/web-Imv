@@ -6,19 +6,21 @@ import { saveAs } from "file-saver";
 import {jsPDF} from "jspdf";
 import Select from 'react-select';
 
+// Quebra o texto em várias linhas respeitando maxWidth e desenha no canvas com opção de justificado
+// Se comunica diretamente com o canvas via ctx e retorna a altura total para quem chamou ajustar layout (ex: selection box, cálculo de tamanho, etc.)
 const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) => {
-  if (!text) return 0; // Retorna 0 se o texto estiver vazio
+  if (!text) return 0; 
 
-  const words = text.split(" ");
+  const words = text.split(" ");// define a base da quebra de linha (quebra por palavras)
   let lines = [];
   let currentLine = [];
 
   // 1. Organiza as palavras em linhas
   words.forEach(word => {
     let testLine = [...currentLine, word].join(" ");
-    let metrics = ctx.measureText(testLine);
+    let metrics = ctx.measureText(testLine); // usa o contexto do canvas para medir largura real do texto
     
-    if (metrics.width > maxWidth && currentLine.length > 0) {
+    if (metrics.width > maxWidth && currentLine.length > 0) { // ponto chave: decide quando quebrar a linha
       lines.push(currentLine);
       currentLine = [word];
     } else {
@@ -28,18 +30,18 @@ const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) 
   lines.push(currentLine); 
 
   // 2. Desenha cada linha
-  const xEsquerdo = x - (maxWidth / 2);
+  const xEsquerdo = x - (maxWidth / 2);// centraliza o bloco e depois desenha alinhado à esquerda internamente
   lines.forEach((lineWords, index) => {
     const isLastLine = index === lines.length - 1;
     let currentY = y + (index * lineHeight);
     
-    if (!justify || isLastLine || lineWords.length <= 1) {
+    if (!justify || isLastLine || lineWords.length <= 1) { // controla quando aplicar ou não a justificação (última linha nunca justifica)
       ctx.textAlign = "left"; 
       ctx.fillText(lineWords.join(" "), xEsquerdo, currentY);
     } else {
       let totalWordsWidth = lineWords.reduce((sum, word) => sum + ctx.measureText(word).width, 0);
       let totalSpaceWidth = maxWidth - totalWordsWidth;
-      let spaceBetweenWords = totalSpaceWidth / (lineWords.length - 1);
+      let spaceBetweenWords = totalSpaceWidth / (lineWords.length - 1); // cálculo principal da justificação distribuindo espaços igualmente
       
       let startX = x - (maxWidth / 2); 
       let currentX = startX;
@@ -52,14 +54,20 @@ const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) 
     }
   });
 
-  // NOVIDADE: Retorna a altura total ocupada pelo bloco de texto
-  return lines.length * lineHeight;
+  
+  return lines.length * lineHeight; // Retorna a altura total ocupada pelo bloco de texto
 };
-
+// Componente responsável por renderizar todo o canvas do certificado (imagem, textos, seleção e guias)
+// Se comunica com:
+// - drawWrappedText() → para desenhar texto quebrado
+// - getTextBoxSize() → calcular tamanho do texto
+// - getBoxRect() → calcular bounding box da seleção
+// - handlers externos: onMouseDown, onMouseMove, onMouseUp
+// - estados externos: itemHover, itemSelecionado, isDragging, posições, fontes etc.
 const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, fonteNome, fonteCorpo, tamanhoNome, tamanhoCorpo, posicaoNome, posicaoCorpo, isDragging, itemHover, itemArrastado, itemSelecionado, onMouseDown, onMouseMove, onMouseUp, getBoxRect, getTextBoxSize }) => {
-  const canvasRef = useRef(null);
+  const canvasRef = useRef(null); // Referência direta ao canvas para desenho imperativo
 
-  useEffect(() => {
+  useEffect(() => {// Motor principal de renderização. Sempre que alguma prop muda ele redesenha todo o canvas
     if (!certificate || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -229,6 +237,7 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
     </div>
   );
 };
+
 
 const Editor = () => {
   const { id } = useParams();
@@ -988,5 +997,5 @@ const customStyles = {
   </div>
 );
 };
-// Exportação do componente
+
 export default Editor;
