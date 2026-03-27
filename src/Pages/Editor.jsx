@@ -9,18 +9,20 @@ import Select from 'react-select';
 // Quebra o texto em várias linhas respeitando maxWidth e desenha no canvas com opção de justificado
 // Se comunica diretamente com o canvas via ctx e retorna a altura total para quem chamou ajustar layout (ex: selection box, cálculo de tamanho, etc.)
 const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) => {
-  if (!text) return 0; 
+  if (!text) return 0;
 
-  const words = text.split(" ");// define a base da quebra de linha (quebra por palavras)
+  ctx.textBaseline = "top";
+  ctx.textAlign = "left"; 
+  
+  const words = text.split(" ");
   let lines = [];
   let currentLine = [];
 
-  // 1. Organiza as palavras em linhas
   words.forEach(word => {
     let testLine = [...currentLine, word].join(" ");
-    let metrics = ctx.measureText(testLine); // usa o contexto do canvas para medir largura real do texto
+    let metrics = ctx.measureText(testLine);
     
-    if (metrics.width > maxWidth && currentLine.length > 0) { // ponto chave: decide quando quebrar a linha
+    if (metrics.width > maxWidth && currentLine.length > 0) {
       lines.push(currentLine);
       currentLine = [word];
     } else {
@@ -29,33 +31,33 @@ const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) 
   });
   lines.push(currentLine); 
 
-  // 2. Desenha cada linha
-  const xEsquerdo = x - (maxWidth / 2);// centraliza o bloco e depois desenha alinhado à esquerda internamente
+  const xEsquerdo = x - (maxWidth / 2);
+
   lines.forEach((lineWords, index) => {
     const isLastLine = index === lines.length - 1;
     let currentY = y + (index * lineHeight);
     
-    if (!justify || isLastLine || lineWords.length <= 1) { // controla quando aplicar ou não a justificação (última linha nunca justifica)
-      ctx.textAlign = "left"; 
+    if (!justify || isLastLine || lineWords.length <= 1) {
       ctx.fillText(lineWords.join(" "), xEsquerdo, currentY);
     } else {
-      let totalWordsWidth = lineWords.reduce((sum, word) => sum + ctx.measureText(word).width, 0);
+      let totalWordsWidth = lineWords.reduce(
+        (sum, word) => sum + ctx.measureText(word).width, 
+        0
+      );
+
       let totalSpaceWidth = maxWidth - totalWordsWidth;
-      let spaceBetweenWords = totalSpaceWidth / (lineWords.length - 1); // cálculo principal da justificação distribuindo espaços igualmente
+      let spaceBetweenWords = totalSpaceWidth / (lineWords.length - 1);
       
-      let startX = x - (maxWidth / 2); 
-      let currentX = startX;
+      let currentX = x - (maxWidth / 2);
 
       lineWords.forEach((word) => {
-        ctx.textAlign = "left";
         ctx.fillText(word, currentX, currentY);
         currentX += ctx.measureText(word).width + spaceBetweenWords;
       });
     }
   });
 
-  
-  return lines.length * lineHeight; // Retorna a altura total ocupada pelo bloco de texto
+  return lines.length * lineHeight;
 };
 // Componente responsável por renderizar todo o canvas do certificado (imagem, textos, seleção e guias)
 // Se comunica com:
@@ -102,8 +104,10 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
 
       // --- 1. DESENHAR O NOME DO ALUNO ---
       ctx.font = `${tamanhoNome}px "${fonteNome}", sans-serif`;
+      ctx.textBaseline = "top";
+      ctx.textAlign = "center";
       ctx.fillStyle = corNome;
-      ctx.textBaseline = "middle";
+      
 
       // Medimos a largura real do texto para que a caixa azul e a centralização fiquem perfeitas
       const nomeBase = nome || "Nome do Aluno";
@@ -129,9 +133,11 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
       );
 
       // --- 2. DESENHAR O CORPO ---
-      ctx.font = `${tamanhoCorpo}px "${fonteCorpo}", sans-serif`; 
+      ctx.font = `${tamanhoCorpo}px "${fonteCorpo}", sans-serif`;
+      ctx.textBaseline = "top";
+      ctx.textAlign = "center"; 
       ctx.fillStyle = corCorpo;
-      ctx.textBaseline = "middle"; 
+       
       
       const textoBase = textoCorpo || "Participou com êxito do evento [Nome do Evento], realizado no dia [Data], com carga horária de [X] horas.";
 
@@ -162,7 +168,16 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
         const azulCanva = "#00c4cc";
         const raioCanto = 8;
 
-        const box = getBoxRect(x, y, width, height);// centraliza corretamente a caixa com base no texto
+        const getBoxRect = (x, y, width, height) => {
+          return {
+            x: x - width / 2,
+            y: y, // <- NÃO centraliza verticalmente
+            w: width,
+            h: height
+          };
+        };// centraliza corretamente a caixa com base no texto
+
+        const box = getBoxRect(x, y, width, height);
 
         const rectX = box.x;
         const rectY = box.y;
@@ -245,6 +260,7 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
 // - drawWrappedText()
 // - jsPDF / JSZip
 // - React Router (useParams, useNavigate)
+// 123
 const Editor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -271,12 +287,6 @@ const Editor = () => {
   const [fonteCorpo, setFonteCorpo] = useState("Inter");
   const [tamanhoNome, setTamanhoNome] = useState(90)
   const [tamanhoCorpo, setTamanhoCorpo] = useState(40)
-
-  // Estados de redimensionamento 
-  const [isResizing, setIsResizing] = useState(false);
-  const [itemRedimensionando, setItemRedimensionando] = useState(null);
-  const [startY, setStartY] = useState(0);
-  const [startFontSize, setStartFontSize] = useState(0);
 
   // Filtra a lista de nomes removendo vazios e garante pelo menos um nome padrão
   // Se comunica com nomesLista e com renderização dos CertificadoCanvas
@@ -307,35 +317,13 @@ const Editor = () => {
 
   // Calcula a bounding box com padding para seleção. É usado por CertificadoCanvas e handleMouseDown
   const getBoxRect = (x, y, width, height) => {
-    const padding = 20;
-
+    
     return {
-      x: x - width / 2 - padding,
-      y: y - height / 2 - padding,
-      w: width + padding * 2,
-      h: height + padding * 2
+      x: x - width / 2 ,
+      y: y - height / 2 ,
+      w: width ,
+      h: height
     };
-  };
-
-  // Detecta clique nos handles de redimensionamento
-  const isOnHandle = (mouseX, mouseY, boxX, boxY, width, height) => {
-    const padding = 10;
-
-    const rectX = boxX - width / 2 - padding;
-    const rectY = boxY - 60;
-    const rectW = width + padding * 2;
-    const rectH = height + 20;
-
-    const handles = [
-      { x: rectX, y: rectY }, // TL
-      { x: rectX + rectW, y: rectY }, // TR
-      { x: rectX, y: rectY + rectH }, // BL
-      { x: rectX + rectW, y: rectY + rectH } // BR
-    ];
-
-    return handles.some(
-      h => Math.abs(mouseX - h.x) < 10 && Math.abs(mouseY - h.y) < 10
-    );
   };
 
   // Detecta clique dentro da caixa de seleção
@@ -372,13 +360,14 @@ const Editor = () => {
     lines.push(currentLine);
 
     const lineHeight = fontSize * 1.2;
+    const padding = 20;
 
     return {
       width: Math.min(
-        Math.max(...lines.map(line => ctx.measureText(line.join(" ")).width)) + 40,
+        Math.max(...lines.map(line => ctx.measureText(line.join(" ")).width)) + padding * 2,
         maxWidth
       ),
-      height: lines.length * lineHeight
+      height: lines.length * lineHeight + padding
     };
   };
 
@@ -437,28 +426,7 @@ const Editor = () => {
       corpoBox.height
     );
 
-    // 1. PRIORIDADE: RESIZE (handles)
-
-    if (isOnHandle(mouseX, mouseY, nomeRect)) {
-      setItemSelecionado("nome");
-      setIsResizing(true);
-      setItemRedimensionando("nome");
-      setStartY(mouseY);
-      setStartFontSize(tamanhoNome);
-      return;
-    }
-
-    if (isOnHandle(mouseX, mouseY, corpoRect)) {
-      setItemSelecionado("corpo");
-      setIsResizing(true);
-      setItemRedimensionando("corpo");
-      setStartY(mouseY);
-      setStartFontSize(tamanhoCorpo);
-      return;
-    }
-
-    // 2. CLICK DENTRO DO BOX (DRAG)
-
+    // 1. CLICK DENTRO DO BOX (DRAG)
     if (isInsideRect(mouseX, mouseY, nomeRect)) {
       setItemArrastado("nome");
       setItemSelecionado("nome");
@@ -473,8 +441,7 @@ const Editor = () => {
       return;
     }
 
-    // 3. CLICK FORA → DESELECIONA
-
+    // 2. CLICK FORA → DESELECIONA
     setItemSelecionado(null);
   };
 
@@ -487,24 +454,6 @@ const Editor = () => {
 
     let mouseX = (e.clientX - rect.left) * scaleX;
     let mouseY = (e.clientY - rect.top) * scaleY;
-
-    // --- 1. LÓGICA DE HOVER (Para a borda azul aparecer antes do clique) 
-    if (isResizing) {
-      const deltaY = mouseY - startY;
-      const sensitivity = 0.3;
-
-      const novoTamanho = Math.max(10, startFontSize + deltaY * sensitivity);
-
-      if (itemRedimensionando === "nome") {
-        setTamanhoNome(novoTamanho);
-      }
-
-      if (itemRedimensionando === "corpo") {
-        setTamanhoCorpo(novoTamanho);
-      }
-
-      return;
-    }
 
     if (!isDragging) {
       const tempCanvas = document.createElement("canvas");
@@ -528,39 +477,22 @@ const Editor = () => {
         canvas.width * 0.8
       );
 
-      const isInsideBox = (mouseX, mouseY, boxX, boxY, width, height) => {
-        const padding = 10;
-
-        const rectX = boxX - width / 2 - padding;
-        const rectY = boxY - height / 2; 
-        const rectW = width + padding * 2;
-        const rectH = height + 40;
-
-        return (
-          mouseX >= rectX &&
-          mouseX <= rectX + rectW &&
-          mouseY >= rectY &&
-          mouseY <= rectY + rectH
-        );
-      };
-
-      const sobreNome = isInsideBox(
-        mouseX,
-        mouseY,
+      const nomeRect = getBoxRect(
         posicaoNome.x,
         posicaoNome.y,
         nomeBox.width,
         nomeBox.height
       );
 
-      const sobreCorpo = isInsideBox(
-        mouseX,
-        mouseY,
+      const corpoRect = getBoxRect(
         posicaoCorpo.x,
         posicaoCorpo.y,
         corpoBox.width,
         corpoBox.height
       );
+
+      const sobreNome = isInsideRect(mouseX, mouseY, nomeRect);
+      const sobreCorpo = isInsideRect(mouseX, mouseY, corpoRect);
 
       if (sobreCorpo) {
         setItemHover("corpo");
@@ -571,7 +503,6 @@ const Editor = () => {
       }
     }
 
-    
     if (!isDragging) return;
 
     const centroX = canvas.width / 2;
@@ -592,9 +523,6 @@ const Editor = () => {
   const handleMouseUp = () => {
     setIsDragging(false);
     setItemArrastado(null);
-
-    setIsResizing(false);
-    setItemRedimensionando(null);
   }
 
   // Gera um PDF com todos os certificados

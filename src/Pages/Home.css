@@ -141,7 +141,7 @@
   transition: color 0.3s ease;
 }
 
-/* No hover do card, destacamos um pouco mais o nome */
+/* No hover do card, destaca um pouco mais o nome */
 .certificate-item:has(.certificate-card:hover) .certificate-name,
 .certificate-item:has(.certificate-card-upload-card:hover) .certificate-name {
   color: #38bdf8;
@@ -225,7 +225,6 @@
   align-items: center;
   justify-content: center;
   
-  /* Um fundo levemente diferente ou gradiente ajuda a dar profundidade */
   background: radial-gradient(circle, rgba(30, 41, 59, 0.5) 0%, #0f172a 100%);
   min-height: 400px;
   

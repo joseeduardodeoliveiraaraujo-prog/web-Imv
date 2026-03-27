@@ -49,7 +49,7 @@ html, body {
 .editor-container {
   flex: 1;
   display: grid;
-  /* Mantém suas colunas, mas garante que o workspace não vaze */
+  /* Mantém colunas, mas garante que o workspace não vaze */
   grid-template-columns: 1fr 350px; 
   width: 100%; 
   margin: 0;
@@ -109,9 +109,9 @@ html, body {
   scrollbar-color: var(--accent-color) transparent;
 }
 
-/* O "Pulo do Gato" para o Canvas não ficar gigante */
+
 .editor-canvas {
- /* Removemos o max-height: 100% para ele não tentar caber na tela de uma vez */
+ 
   max-width: 900px; /* Define um tamanho máximo elegante para a lista */
   width: 100%; 
   height: auto; 
@@ -130,7 +130,7 @@ html, body {
 
 /* Sidebar (Lado Direito) */
 .editor-sidebar {
-  /* Usamos uma cor sólida e levemente mais clara que o fundo para destacar */
+  /* uma cor sólida e levemente mais clara que o fundo para destacar */
   background: #0f172a; 
   
   /* Borda esquerda bem definida para marcar a separação */
@@ -368,7 +368,7 @@ html, body {
 
 
 
-/* Botão Sair (Igual ao da imagem que você mandou) */
+/* Botão Sair */
 .btn-exit {
   display: flex;
   align-items: center;
@@ -410,7 +410,7 @@ html, body {
   }
 }
 
-/* Coloque isso no seu Editor.css */
+
 
 .floating-input {
  position: absolute;
