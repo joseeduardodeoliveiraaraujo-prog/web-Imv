@@ -110,8 +110,6 @@
   padding-top: 30px;
 }
 
-
-
 .certificate-name {
   pointer-events: none;
   position: absolute;
@@ -147,7 +145,6 @@
   color: #38bdf8;
   transform: translateY(-8px);
 }
-
 
 /* Fundo escuro com animação de fade */
 .modal-overlay {
@@ -216,7 +213,7 @@
   transform: rotate(90deg);
 }
 
-/* Corpo do modal - Melhor aproveitamento de espaço */
+/* Corpo do modal */
 .modal-body {
   
   padding: 40px; /* Espaço para o fundo aparecer em volta da imagem */
@@ -254,7 +251,6 @@
   flex-direction: column;
   gap: 15px;
   z-index: 20;
-  
 }
 
 /* Estilo do Botão Circular (FAB) */
@@ -299,8 +295,6 @@
   transform: scale(0.95);
 }
 
-
-
 /* Keyframes para as animações */
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -318,7 +312,6 @@
     width: 70%; 
   }
 }
-
 
 /* Ajuste para telas pequenas */
 @media (max-width: 600px) {

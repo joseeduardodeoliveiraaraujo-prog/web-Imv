@@ -80,8 +80,6 @@ const Home = ({ user, onLogout }) => {
 
 
   };
-
-
   //return
   return (
     <>
@@ -159,7 +157,6 @@ const Home = ({ user, onLogout }) => {
         
           )}
 
-
           {certificates.map((cert) => (
             <div className="certificate-item" key={cert.id} >
               <span className="certificate-name" title={cert.name}>
@@ -180,11 +177,7 @@ const Home = ({ user, onLogout }) => {
              </div>
             </div>
           ))}
-
-          
-
         </div>
-      
       </main>
     </>
   );

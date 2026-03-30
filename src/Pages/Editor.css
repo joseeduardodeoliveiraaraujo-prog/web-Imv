@@ -56,7 +56,7 @@ html, body {
   padding: 0;
   
   /* IMPORTANTE: Garante que o container ocupe o resto da tela 
-     subtraindo a altura do seu header (70px) */
+     subtraindo a altura do header (70px) */
   height: calc(100vh - 70px); 
   
   overflow: hidden;
@@ -109,7 +109,6 @@ html, body {
   scrollbar-color: var(--accent-color) transparent;
 }
 
-
 .editor-canvas {
  
   max-width: 900px; /* Define um tamanho máximo elegante para a lista */
@@ -142,7 +141,8 @@ html, body {
   padding: 2.5rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0.5rem;
+  position: relative;
   overflow-y: auto;
   z-index: 10; /* Garante que ela fique "por cima" do scroll do canvas */
   
@@ -176,6 +176,11 @@ html, body {
   padding-bottom: 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   min-width: 0;
+}
+
+.control-group:last-of-type {
+  border-bottom: none !important;
+  padding-bottom: 0.5rem !important;
 }
 
 .control-group label {
@@ -235,7 +240,7 @@ html, body {
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* Isso remove a borda interna feia que alguns navegadores colocam no input color */
+/* Isso remove a borda interna que alguns navegadores colocam no input color */
 .input-color-picker::-webkit-color-swatch-wrapper {
   padding: 0;
 }
@@ -329,44 +334,99 @@ html, body {
   pointer-events: none; /* Não atrapalha o clique no input */
 }
 
-/* Botões */
-.btn-primary {
-  background: transparent;
-  border: 1px solid var(--accent-color);
-  color: var(--accent-color);
-  padding: 12px 16px;
-  border-radius: 10px;
+/* Container Pai */
+.download-group-container {
+  position: relative; /* CRUCIAL para o menu flutuar em cima */
+  width: 100%;
+  margin-top: 0px;
+  padding-top: 5px;
+}
+
+/* Botão Azul Principal */
+.btn-download-trigger {
+  width: 100%;
+  padding: 14px 20px;
+  background-color: #38bdf8; /* Azul claro */
+  color: #0f172a; /* Texto escuro para contraste */
+  border: none;
+  border-radius: 8px;
   font-weight: 700;
+  font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s;
-  transition: all 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-  box-shadow: 0 10px 20px rgba(56, 189, 248, 0.2);
+.btn-download-trigger:hover {
+  background-color: #0ea5e9;
 }
 
-.btn-secondary {
+/* O Menu de Opções (Visual Clear) */
+.download-options-menu {
+  position: absolute;
+  bottom: calc(100% + 10px); /* Flutua 10px acima do botão */
+  left: 0;
+  width: 100%;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  margin-bottom: 8px;
+}
+
+/* Cada Item da Lista */
+.option-item {
+  width: 100%;
+  padding: 12px;
   background: transparent;
-  border: 1px solid var(--accent-color);
-  color: var(--accent-color);
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-weight: 700;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
-
+  display: flex;
+  text-align: left;
+  transition: background 0.2s;
 }
 
-.btn-secondary:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-  box-shadow: 0 10px 20px rgba(56, 189, 248, 0.2);
+.option-item:hover {
+  background: rgba(56, 189, 248, 0.1);
 }
 
+.item-text-wrapper {
+  display: flex;
+  flex-direction: column;
+}
 
+.item-main-title {
+  color: #f8fafc; /* Branco para o título */
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+/* Título fica azul no hover para dar feedback */
+.option-item:hover .item-main-title {
+  color: #38bdf8;
+}
+
+.item-sub-desc {
+  color: #94a3b8; /* Cinza suave para descrição */
+  font-size: 0.8rem;
+}
+
+/* Seta (Chevron) */
+.chevron {
+  border: solid #0f172a;
+  border-width: 0 2.5px 2.5px 0;
+  display: inline-block;
+  padding: 3.5px;
+  transition: transform 0.3s;
+}
+.down { transform: rotate(45deg); }
+.up { transform: rotate(-135deg); }
 
 /* Botão Sair */
 .btn-exit {
@@ -387,6 +447,84 @@ html, body {
   background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
   border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Overlay que cobre toda a tela */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.85); /* Fundo escuro semi-transparente */
+  backdrop-filter: blur(5px); /* Efeito borrado de vidro */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Garante que fica por cima de TUDO */
+}
+
+/* Caixa central do Modal */
+.loading-modal {
+  background: #1e293b;
+  padding: 40px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.loading-modal h3 {
+  color: #fff;
+  margin: 20px 0 10px 0;
+  font-size: 1.5rem;
+}
+
+.loading-modal p {
+  color: #38bdf8; /* Azul claro para o status */
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+}
+
+.warning-text {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  display: block;
+}
+
+.progress-container {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  margin: 20px 0 10px 0;
+  overflow: hidden; /* Garante que a barra interna não saia do limite */
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #818cf8); /* Degradê azul bonitão */
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+  transition: width 0.3s ease; /* Faz o movimento ser suave */
+}
+
+.progress-percentage {
+  color: #38bdf8;
+  font-weight: bold;
+  font-size: 1.2rem;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.loading-modal h3 {
+  min-height: 1.6em; /* Evita que o modal "pule" quando o texto mudar */
+  margin-bottom: 5px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Responsividade */
@@ -410,8 +548,6 @@ html, body {
   }
 }
 
-
-
 .floating-input {
  position: absolute;
   background: rgba(56, 189, 248, 0.05);
@@ -427,7 +563,6 @@ html, body {
   z-index: 10;
   pointer-events: auto;
 }
-
 
 .navigation-controls {
   display: flex;

@@ -9,9 +9,6 @@ import Home from "./Pages/Home";
 import Editor from "./Pages/Editor"
 import "./App.css";
 
-
-
-
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);

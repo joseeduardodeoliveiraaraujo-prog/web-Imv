@@ -8,7 +8,6 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -20,12 +19,6 @@ const Login = () => {
       );
       console.log("Usuário logado:", userCredential.user);
 
-      if (remember) {
-        localStorage.setItem(
-          "user",
-          JSON.stringify(userCredential.user)
-        );
-      }
     } catch (error) {
       console.error("Erro ao logar:", error.code);
       alert("E-mail ou senha inválidos");
@@ -71,17 +64,6 @@ const Login = () => {
             )}
             <FaLock className="icon lock-icon" />
           </div>
-        </div>
-
-        <div className='recall-forget'>
-          <label>
-            <input 
-              type="checkbox" 
-              checked={remember} 
-              onChange={(e) => setRemember(e.target.checked)} 
-            />
-            Lembrar da senha
-          </label>
         </div>
 
         <button type="submit">Entrar</button>

@@ -37,7 +37,7 @@
 .header-left span {
   font-size: 0.8rem;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.6); /* Melhor do que opacidade direta */
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .logout-btn {

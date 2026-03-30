@@ -11,6 +11,9 @@ import Select from 'react-select';
 const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) => {
   if (!text) return 0;
 
+  const PADDING_V = 20; 
+  const PADDING_H = 30; 
+
   ctx.textBaseline = "top";
   ctx.textAlign = "left"; 
   
@@ -18,11 +21,13 @@ const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) 
   let lines = [];
   let currentLine = [];
 
+  const larguraDisponivelTexto = maxWidth - (PADDING_H * 2); // Calcula a largura real disponível para o texto dentro da caixa (considerando o padding)
+
   words.forEach(word => {
     let testLine = [...currentLine, word].join(" ");
     let metrics = ctx.measureText(testLine);
     
-    if (metrics.width > maxWidth && currentLine.length > 0) {
+    if (metrics.width > larguraDisponivelTexto && currentLine.length > 0) {
       lines.push(currentLine);
       currentLine = [word];
     } else {
@@ -31,11 +36,11 @@ const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) 
   });
   lines.push(currentLine); 
 
-  const xEsquerdo = x - (maxWidth / 2);
+  const xEsquerdo = x - (maxWidth / 2) + PADDING_H;
 
   lines.forEach((lineWords, index) => {
     const isLastLine = index === lines.length - 1;
-    let currentY = y + (index * lineHeight);
+    let currentY = y + PADDING_V + (index * lineHeight);
     
     if (!justify || isLastLine || lineWords.length <= 1) {
       ctx.fillText(lineWords.join(" "), xEsquerdo, currentY);
@@ -45,10 +50,10 @@ const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) 
         0
       );
 
-      let totalSpaceWidth = maxWidth - totalWordsWidth;
+      let totalSpaceWidth = larguraDisponivelTexto - totalWordsWidth;
       let spaceBetweenWords = totalSpaceWidth / (lineWords.length - 1);
       
-      let currentX = x - (maxWidth / 2);
+      let currentX = xEsquerdo;
 
       lineWords.forEach((word) => {
         ctx.fillText(word, currentX, currentY);
@@ -57,7 +62,7 @@ const drawWrappedText = (ctx, text, x, y, maxWidth, lineHeight, justify = true) 
     }
   });
 
-  return lines.length * lineHeight;
+  return lines.length * lineHeight + (PADDING_V * 2); // Retorna a altura total ocupada pelo texto (linhas + padding)
 };
 // Componente responsável por renderizar todo o canvas do certificado (imagem, textos, seleção e guias)
 // Se comunica com:
@@ -82,6 +87,11 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
       canvas.height = img.height;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0);
+
+      const nomeParaDesenho = nome && nome.length > 0 ? nome : "Nome do Participante";
+      const corpoParaDesenho = textoCorpo && textoCorpo.length > 0 
+      ? textoCorpo 
+      : "Participou com êxito do evento [Nome do Evento], realizado no dia [Data], com carga horária de [X] horas.";
 
       const centroCanvas = canvas.width / 2; // usado para alinhar e mostrar a guia central
       const margemErro = 5;
@@ -110,7 +120,7 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
       
 
       // Medimos a largura real do texto para que a caixa azul e a centralização fiquem perfeitas
-      const nomeBase = nome || "Nome do Aluno";
+      const nomeBase = nomeParaDesenho;
 
       const nomeBox = getTextBoxSize(
         ctx,
@@ -137,9 +147,8 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
       ctx.textBaseline = "top";
       ctx.textAlign = "center"; 
       ctx.fillStyle = corCorpo;
-       
-      
-      const textoBase = textoCorpo || "Participou com êxito do evento [Nome do Evento], realizado no dia [Data], com carga horária de [X] horas.";
+
+      const textoBase = corpoParaDesenho;
 
       const corpoBox = getTextBoxSize(
         ctx,
@@ -260,7 +269,6 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
 // - drawWrappedText()
 // - jsPDF / JSZip
 // - React Router (useParams, useNavigate)
-// 123
 const Editor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -288,16 +296,26 @@ const Editor = () => {
   const [tamanhoNome, setTamanhoNome] = useState(90)
   const [tamanhoCorpo, setTamanhoCorpo] = useState(40)
 
+  // Estado para controle da tela de carregamento
+  const [estaGerando, setEstaGerando] = useState(false);
+  const [mensagemStatus, setMensagemStatus] = useState("");
+  const [progresso, setProgresso] = useState(0); // Valor de 0 a 100
+
+  // Estado para controle do menu de download (PDF, ZIP, PDF+ZIP)
+  const [menuDownloadAberto, setMenuDownloadAberto] = useState(false);
+
   // Filtra a lista de nomes removendo vazios e garante pelo menos um nome padrão
   // Se comunica com nomesLista e com renderização dos CertificadoCanvas
+  // 1. Filtra apenas o que o usuário REALMENTE digitou
   const nomesValidos = useMemo(() => {
-    const filtrados = nomesLista.filter(nome => nome.trim() !== "");
-  
-    return filtrados.length > 0 
-    ? filtrados 
-    : ["Nome do Participante"];
+    return nomesLista.filter(nome => nome.trim() !== "");
   }, [nomesLista]);
 
+  // 2. Retorna o texto do corpo apenas se o usuário escreveu algo
+  const textoCorpoBase = useMemo(() => {
+    const texto = textoCorpo?.trim();
+    return texto && texto.length > 0 ? texto : "";
+  }, [textoCorpo]);
 
   // Carregar dados do certificado baseado no id da rota
   useEffect(() => {
@@ -319,8 +337,8 @@ const Editor = () => {
   const getBoxRect = (x, y, width, height) => {
     
     return {
-      x: x - width / 2 ,
-      y: y - height / 2 ,
+      x: x - width / 2,
+      y: y,
       w: width ,
       h: height
     };
@@ -359,15 +377,17 @@ const Editor = () => {
 
     lines.push(currentLine);
 
+    const paddingHorizontal = 30; 
+    const paddingVertical = 20;
     const lineHeight = fontSize * 1.2;
-    const padding = 20;
 
+    const larguraTextoPura = Math.max(...lines.map(line => ctx.measureText(line.join(" ")).width));
+    
     return {
-      width: Math.min(
-        Math.max(...lines.map(line => ctx.measureText(line.join(" ")).width)) + padding * 2,
-        maxWidth
-      ),
-      height: lines.length * lineHeight + padding
+
+    width: Math.min(larguraTextoPura + (paddingHorizontal * 2), maxWidth),
+   
+    height: (lines.length * lineHeight) + (paddingVertical * 2)
     };
   };
 
@@ -377,7 +397,7 @@ const Editor = () => {
   // - isInsideRect()
   // - getTextBoxSize()
   // - getBoxRect()
-  // - estados de drag e resize
+  // - estados de drag 
   const handleMouseDown = (e) => {
     const canvas = e.currentTarget;
     const rect = canvas.getBoundingClientRect();
@@ -411,9 +431,13 @@ const Editor = () => {
     );
 
     // --- CORPO ---
+    const corpoTextoParaClique = textoCorpoBase && textoCorpoBase.length > 0 
+    ? textoCorpoBase 
+    : "Participou com êxito do evento [Nome do Evento], realizado no dia [Data], com carga horária de [X] horas.";
+
     const corpoBox = getTextBoxSize(
       ctx,
-      textoCorpo || "Texto padrão",
+      corpoTextoParaClique,
       tamanhoCorpo,
       fonteCorpo,
       canvas.width * 0.8
@@ -461,6 +485,10 @@ const Editor = () => {
 
       const nomeTexto = nomesValidos[0] || "Nome do Participante";
 
+      const corpoTextoParaHover = textoCorpoBase && textoCorpoBase.length > 0 
+      ? textoCorpoBase 
+      : "Participou com êxito do evento [Nome do Evento], realizado no dia [Data], com carga horária de [X] horas.";
+
       const nomeBox = getTextBoxSize(
         ctx,
         nomeTexto,
@@ -471,7 +499,7 @@ const Editor = () => {
 
       const corpoBox = getTextBoxSize(
         ctx,
-        textoCorpo || "Texto padrão",
+        corpoTextoParaHover,
         tamanhoCorpo,
         fonteCorpo,
         canvas.width * 0.8
@@ -525,156 +553,268 @@ const Editor = () => {
     setItemArrastado(null);
   }
 
+  // Função compartilhada para gerar a imagem no canvas temporário igualzinho ao editor
+  const renderizarCertificadoParaDownload = (ctx, img, nome, larguraCanvas) => {
+    ctx.clearRect(0, 0, larguraCanvas, img.height);
+    ctx.drawImage(img, 0, 0);
+
+    //Configuração IDÊNTICA à do editor
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top"; 
+
+    // --- 1. DESENHAR O NOME ---
+    ctx.font = `${tamanhoNome}px "${fonteNome}", sans-serif`;
+    ctx.fillStyle = corNome;
+
+    // Usamos a sua função getTextBoxSize do editor
+    const nomeBox = getTextBoxSize(ctx, nome, tamanhoNome, fonteNome, larguraCanvas * 0.85);
+    const alturaLinhaNome = tamanhoNome * 1.2; // Altura dinâmica do editor
+
+    drawWrappedText(
+      ctx,
+      nome,
+      posicaoNome.x,
+      posicaoNome.y,
+      nomeBox.width,
+      alturaLinhaNome,
+      false
+    );
+
+    // --- 2. DESENHAR O CORPO ---
+    ctx.font = `${tamanhoCorpo}px "${fonteCorpo}", sans-serif`;
+    ctx.fillStyle = corCorpo;
+
+    const corpoBox = getTextBoxSize(ctx, textoCorpoBase, tamanhoCorpo, fonteCorpo, larguraCanvas * 0.8);
+    const alturaLinhaCorpo = tamanhoCorpo * 1.2; // Altura dinâmica do editor
+
+    drawWrappedText(
+      ctx, 
+      textoCorpoBase, 
+      posicaoCorpo.x, 
+      posicaoCorpo.y,
+      corpoBox.width, 
+      alturaLinhaCorpo,
+      true
+    );
+  };
+
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  // 1
   // Gera um PDF com todos os certificados
   const handleDownloadPDF = async () => {
     if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
 
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = certificate.previewUrl;
-
-    img.onload = () => {
-      // Criamos o PDF com a orientação baseada na imagem (paisagem ou retrato)
-      const orientation = img.width > img.height ? "l" : "p"; // IMPORTANTE: define orientação automática do PDF
-      const pdf = new jsPDF(orientation, "px", [img.width, img.height]);
-
-      const tempCanvas = document.createElement("canvas");
-      const ctx = tempCanvas.getContext("2d");
-      tempCanvas.width = img.width;
-      tempCanvas.height = img.height;
-
-      nomesValidos.forEach((nome, index) => {
-        ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-        ctx.drawImage(img, 0, 0);
-        // Configuração padrão (igual ao editor)
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        // --- 1. DESENHAR O NOME ---
-        ctx.font = `${tamanhoNome}px "${fonteNome}", sans-serif`;
-        ctx.fillStyle = corNome;
-
-        // calcula largura dinâmica igual ao editor
-        const larguraRealTextoNome = ctx.measureText(nome).width;
-        const larguraCaixaNome = Math.min(larguraRealTextoNome + 40, tempCanvas.width * 0.85);
-
-        // desenha com quebra de linha (igual canvas principal)
-        drawWrappedText(
-          ctx,
-          nome,
-          posicaoNome.x,
-          posicaoNome.y,
-          larguraCaixaNome,
-          75,
-          false
-        );
-
-        // --- 2. DESENHAR O CORPO ---
-        ctx.font = `${tamanhoCorpo}px "${fonteCorpo}", sans-serif`;
-        ctx.fillStyle = corCorpo;
-
-        const larguraMaxima = tempCanvas.width * 0.8;
-        const alturaLinha = 45;
-
-        drawWrappedText(
-          ctx, 
-          textoCorpo || "", 
-          posicaoCorpo.x, 
-          posicaoCorpo.y,
-          larguraMaxima, 
-          alturaLinha,
-          true
-        );
-
-        const imgData = tempCanvas.toDataURL("image/png");
-        
-        // Adiciona página se não for o primeiro nome
-        if (index > 0) pdf.addPage([img.width, img.height], orientation);
-        
-        pdf.addImage(imgData, "PNG", 0, 0, img.width, img.height);
-      });
-
-      pdf.save("todos-os-certificados.pdf");
-    };
-  };
-
-  // Gera imagens PNG individuais dentro de um ZIP
-  const handleDownloadZIP = async () => {
-    const zip = new JSZip();
-    if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
+    // Ativa o carregamento logo no início
+    setEstaGerando(true);
+    setProgresso(5);
+    setMensagemStatus("Preparando o arquivo PDF...");
+    await sleep(600); // Pausa para o usuário ler a mensagem antes de começar a gerar 
 
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.src = certificate.previewUrl;
 
     img.onload = async () => {
-      // 🔥 garante que as fontes carregaram
-      await document.fonts.load(`${tamanhoNome}px "${fonteNome}"`);
-      await document.fonts.load(`${tamanhoCorpo}px "${fonteCorpo}"`);
+      try {
 
-      const tempCanvas = document.createElement("canvas");
-      const ctx = tempCanvas.getContext("2d");
+        setMensagemStatus("Carregando fontes e estilos...");
+        setProgresso(15);
+        await sleep(600);
+        // Garante o carregamento das fontes antes de começar
+        await document.fonts.load(`${tamanhoNome}px "${fonteNome}"`);
+        await document.fonts.load(`${tamanhoCorpo}px "${fonteCorpo}"`);
 
-      tempCanvas.width = img.width;
-      tempCanvas.height = img.height;
+        const orientation = img.width > img.height ? "l" : "p"; 
+        const pdf = new jsPDF(orientation, "px", [img.width, img.height]);
 
-      for (let nome of nomesValidos) {
-        ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-        ctx.drawImage(img, 0, 0);
+        const tempCanvas = document.createElement("canvas");
+        const ctx = tempCanvas.getContext("2d");
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
 
-        // 🔥 alinhamento igual ao editor
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
+        for (let i = 0; i < nomesValidos.length; i++) {
+          const nome = nomesValidos[i];
 
-        // --- 1. NOME ---
-        ctx.font = `${tamanhoNome}px "${fonteNome}", sans-serif`;
-        ctx.fillStyle = corNome;
+          const p = Math.round(20 + ((i + 1) / nomesValidos.length) * 70);
+          setProgresso(p);
+          setMensagemStatus(`Desenhando certificado ${i + 1} de ${nomesValidos.length}...`);
+          
+          // Renderiza no canvas
+          renderizarCertificadoParaDownload(ctx, img, nome, tempCanvas.width);
 
-        const larguraRealTextoNome = ctx.measureText(nome).width;
-        const larguraCaixaNome = Math.min(
-          larguraRealTextoNome + 40,
-          tempCanvas.width * 0.85
-        );
+          const imgData = tempCanvas.toDataURL("image/png");
+          
+          if (i > 0) pdf.addPage([img.width, img.height], orientation);
+          pdf.addImage(imgData, "PNG", 0, 0, img.width, img.height);
 
-        drawWrappedText(
-          ctx,
-          nome,
-          posicaoNome.x,
-          posicaoNome.y,
-          larguraCaixaNome,
-          75,
-          false
-        );
+          // Se for uma lista gigante, dá um respiro para o navegador a cada 15 certificados
+          if (nomesValidos.length > 30 && i % 15 === 0) await sleep(10);
+        }
 
-        // --- 2. CORPO ---
-        ctx.font = `${tamanhoCorpo}px "${fonteCorpo}", sans-serif`;
-        ctx.fillStyle = corCorpo;
+       // Finalização
+        await sleep(500);
+        setMensagemStatus("Finalizando arquivo e disparando download...");
+        setProgresso(95);
+        await sleep(800);
 
-        const larguraMaxima = tempCanvas.width * 0.8;
-        const alturaLinha = 45;
+        pdf.save("todos-os-certificados.pdf");
 
-        drawWrappedText(
-          ctx,
-          textoCorpo || "",
-          posicaoCorpo.x,
-          posicaoCorpo.y,
-          larguraMaxima,
-          alturaLinha,
-          true
-        );
+        setMensagemStatus("Download concluído!");
+        setProgresso(100);
+        await sleep(600);
 
-        // gera imagem
-        const dataUrl = tempCanvas.toDataURL("image/png").split(",")[1];
-
-        zip.file(
-          `${nome.replace(/\s+/g, "_")}.png`,
-          dataUrl,
-          { base64: true }
-        );
+      } catch (error) {
+        console.error(error);
+        alert("Ocorreu um erro ao gerar o PDF.");
+      } finally {
+        // Desliga o carregamento aconteça o que acontecer (sucesso ou erro)
+        setEstaGerando(false);
+        setMensagemStatus("");
       }
+    };
+  };
+  // 2
+  // Gera imagens PNG individuais dentro de um ZIP
+ const handleDownloadZIP = async () => {
+    const zip = new JSZip();
+    if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
 
-      const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "certificados-individuais.zip");
+    setEstaGerando(true);
+    setProgresso(5);
+    setMensagemStatus("Preparando os arquivos...");
+    await sleep(600);
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = certificate.previewUrl;
+
+    img.onload = async () => {
+      try {
+        setMensagemStatus("Carregando fontes e estilos...");
+        setProgresso(15);
+        await sleep(600);
+
+        // Garante o carregamento das fontes antes de começar
+        await document.fonts.load(`${tamanhoNome}px "${fonteNome}"`);
+        await document.fonts.load(`${tamanhoCorpo}px "${fonteCorpo}"`);
+
+        const tempCanvas = document.createElement("canvas");
+        const ctx = tempCanvas.getContext("2d");
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+
+        for (let i = 0; i < nomesValidos.length; i++) {
+          const nome = nomesValidos[i];
+
+          const p = Math.round(20 + ((i + 1) / nomesValidos.length) * 70);
+          setProgresso(p);
+
+          setMensagemStatus(`Gerando imagens ${i + 1} de ${nomesValidos.length}...`);
+          
+          renderizarCertificadoParaDownload(ctx, img, nome, tempCanvas.width);
+
+          const dataUrl = tempCanvas.toDataURL("image/png").split(",")[1];
+
+          zip.file(
+            `${nome.replace(/\s+/g, "_")}.png`,
+            dataUrl,
+            { base64: true }
+          );
+        }
+
+        await sleep(500);
+        setMensagemStatus("Compactando arquivos no ZIP...");
+        setProgresso(95);
+        await sleep(800);
+
+        const content = await zip.generateAsync({ type: "blob" });
+        saveAs(content, "certificados-individuais.zip");
+
+        setMensagemStatus("Download concluído!");
+        setProgresso(100);
+        await sleep(500);
+
+      } catch (error) {
+        console.error(error);
+        alert("Ocorreu um erro ao gerar os certificados.");
+      } finally {
+        //Desliga o carregamento independente se deu certo ou errado!
+        setEstaGerando(false);
+        setMensagemStatus("");
+      }
+    };
+  };
+  //3
+  // Gera um ZIP contendo vários arquivos PDF individuais
+  const handleDownloadPDFZIP = async () => {
+    if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
+
+    // 1. Ativa o carregamento
+    setEstaGerando(true);
+    setProgresso(5);
+    setMensagemStatus("Preparando os arquivos...");
+    await sleep(600); // Pausa para o usuário ler o início da mensagem antes de começar a gerar 
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = certificate.previewUrl;
+
+    img.onload = async () => {
+      try {
+        setMensagemStatus("Carregando fontes e estilos...");
+        setProgresso(15);
+        await sleep(600); // Pausa para a etapa de fontes
+
+        await document.fonts.load(`${tamanhoNome}px "${fonteNome}"`);
+        await document.fonts.load(`${tamanhoCorpo}px "${fonteCorpo}"`);
+
+        const tempCanvas = document.createElement("canvas");
+        const ctx = tempCanvas.getContext("2d");
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+
+        const orientation = img.width > img.height ? "l" : "p";
+        const zip = new JSZip();
+
+        for (let i = 0; i < nomesValidos.length; i++) {
+          const nome = nomesValidos[i];
+
+          const p = Math.round(20 + ((i + 1) / nomesValidos.length) * 70);
+          setProgresso(p);
+          
+          // 2. Atualiza a mensagem para o usuário ver o progresso real!
+          setMensagemStatus(`Gerando PDF ${i + 1} de ${nomesValidos.length}...`);
+
+          renderizarCertificadoParaDownload(ctx, img, nome, tempCanvas.width);
+
+          const imgData = tempCanvas.toDataURL("image/png");
+          const pdf = new jsPDF(orientation, "px", [img.width, img.height]);
+          pdf.addImage(imgData, "PNG", 0, 0, img.width, img.height);
+
+          const pdfBlob = pdf.output("blob");
+          zip.file(`${nome.replace(/\s+/g, "_")}.pdf`, pdfBlob);
+        }
+        
+        await sleep(500);
+        setMensagemStatus("Compactando arquivos no ZIP...");
+        setProgresso(95);
+        await sleep(800);
+
+        const content = await zip.generateAsync({ type: "blob" });
+        saveAs(content, "certificados-pdf-separados.zip");
+
+        setMensagemStatus("Download concluído!");
+        setProgresso(100);
+        await sleep(500);
+
+      } catch (error) {
+        console.error(error);
+        alert("Ocorreu um erro ao gerar os certificados.");
+      } finally {
+        // Desliga o carregamento independente se deu certo ou errado!
+        setEstaGerando(false);
+        setMensagemStatus("");
+      }
     };
   };
 
@@ -767,12 +907,12 @@ const customStyles = {
 
       <main className="editor-workspace bulk-scroll">
         
-        {nomesValidos.slice(0, 50).map((nome, index) => (
+        {(nomesValidos.length > 0 ? nomesValidos : [""]).slice(0, 50).map((nome, index) => (
           <CertificadoCanvas
             key={index}
             certificate={certificate}
             nome={nome}
-            textoCorpo={textoCorpo}
+            textoCorpo={textoCorpoBase}
             corNome={corNome}        
             corCorpo={corCorpo}
             fonteNome={fonteNome}
@@ -929,19 +1069,63 @@ const customStyles = {
 
         </div>
 
-        <div className="download-actions" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <button className="btn-primary" onClick={handleDownloadPDF}>
-            Baixar Tudo em PDF
-          </button>
-          
-          <button className="btn-secondary" onClick={handleDownloadZIP} style={{ 
-            
-          }}>
-            Baixar Imagens Individuais (.ZIP)
+      <div className="download-group-container">
+          {/* Menu Dropdown */}
+          {menuDownloadAberto && (
+            <div className="download-options-menu">
+              <button className="option-item" onClick={() => { handleDownloadPDF(); setMenuDownloadAberto(false); }}>
+                <div className="item-text-wrapper">
+                  <strong className="item-main-title">PDF Único</strong>
+                  <span className="item-sub-desc">Todos os certificados em um só arquivo</span>
+                </div>
+              </button>
+
+              <button className="option-item" onClick={() => { handleDownloadPDFZIP(); setMenuDownloadAberto(false); }}>
+                <div className="item-text-wrapper">
+                  <strong className="item-main-title">PDFs Individuais (.ZIP)</strong>
+                  <span className="item-sub-desc">Cada certificado em seu próprio PDF</span>
+                </div>
+              </button>
+
+              <button className="option-item" onClick={() => { handleDownloadZIP(); setMenuDownloadAberto(false); }}>
+                <div className="item-text-wrapper">
+                  <strong className="item-main-title">Imagens PNG (.ZIP)</strong>
+                  <span className="item-sub-desc">Fotos individuais de cada certificado</span>
+                </div>
+              </button>
+            </div>
+          )}
+
+          {/* Botão Principal */}
+          <button 
+            className="btn-download-trigger" 
+            onClick={() => setMenuDownloadAberto(!menuDownloadAberto)}
+          >
+            <span>Baixar Certificados</span>
+            <span className={`chevron ${menuDownloadAberto ? 'up' : 'down'}`}></span>
           </button>
         </div>
       </aside>
     </div>
+    {/* TELA DE CARREGAMENTO (OVERLAY) */}
+    {estaGerando && (
+        <div className="loading-overlay">
+          <div className="loading-modal">
+            <h3>{mensagemStatus}</h3>
+            
+            {/* Container da Barra */}
+            <div className="progress-container">
+              <div 
+                className="progress-bar" 
+                style={{ width: `${progresso}%` }}
+              ></div>
+            </div>
+            
+            <span className="progress-percentage">{progresso}%</span>
+            <p className="warning-text">Aguarde, processando certificados...</p>
+          </div>
+        </div>
+      )}
   </div>
 );
 };
