@@ -598,6 +598,7 @@ const Editor = () => {
     );
   };
 
+  // controle de tempo para dar pausas estratégicas durante a geração dos arquivos e melhorar a experiência do usuário com mensagens de status e barra de progresso
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   // 1
   // Gera um PDF com todos os certificados
@@ -625,7 +626,13 @@ const Editor = () => {
         await document.fonts.load(`${tamanhoCorpo}px "${fonteCorpo}"`);
 
         const orientation = img.width > img.height ? "l" : "p"; 
-        const pdf = new jsPDF(orientation, "px", [img.width, img.height]);
+
+        const pdf = new jsPDF({
+          orientation: orientation,
+          unit: "px",
+          format: [img.width, img.height],
+          compress: true 
+        });
 
         const tempCanvas = document.createElement("canvas");
         const ctx = tempCanvas.getContext("2d");
@@ -642,10 +649,10 @@ const Editor = () => {
           // Renderiza no canvas
           renderizarCertificadoParaDownload(ctx, img, nome, tempCanvas.width);
 
-          const imgData = tempCanvas.toDataURL("image/png");
+          const imgData = tempCanvas.toDataURL("image/jpeg", 0.75); // JPEG com qualidade para reduzir tamanho do PDF
           
           if (i > 0) pdf.addPage([img.width, img.height], orientation);
-          pdf.addImage(imgData, "PNG", 0, 0, img.width, img.height);
+          pdf.addImage(imgData, "JPEG", 0, 0, img.width, img.height);
 
           // Se for uma lista gigante, dá um respiro para o navegador a cada 15 certificados
           if (nomesValidos.length > 30 && i % 15 === 0) await sleep(10);
@@ -713,10 +720,10 @@ const Editor = () => {
           
           renderizarCertificadoParaDownload(ctx, img, nome, tempCanvas.width);
 
-          const dataUrl = tempCanvas.toDataURL("image/png").split(",")[1];
+          const dataUrl = tempCanvas.toDataURL("image/jpeg", 0.8).split(",")[1];
 
           zip.file(
-            `${nome.replace(/\s+/g, "_")}.png`,
+            `${nome.replace(/\s+/g, "_")}.jpg`,
             dataUrl,
             { base64: true }
           );
@@ -787,9 +794,14 @@ const Editor = () => {
 
           renderizarCertificadoParaDownload(ctx, img, nome, tempCanvas.width);
 
-          const imgData = tempCanvas.toDataURL("image/png");
-          const pdf = new jsPDF(orientation, "px", [img.width, img.height]);
-          pdf.addImage(imgData, "PNG", 0, 0, img.width, img.height);
+          const imgData = tempCanvas.toDataURL("image/jpeg", 0.75);
+          const pdf = new jsPDF({
+            orientation,
+            unit: "px",
+            format: [img.width, img.height],
+            compress: true
+          });
+          pdf.addImage(imgData, "JPEG", 0, 0, img.width, img.height);
 
           const pdfBlob = pdf.output("blob");
           zip.file(`${nome.replace(/\s+/g, "_")}.pdf`, pdfBlob);
@@ -1089,7 +1101,7 @@ const customStyles = {
 
               <button className="option-item" onClick={() => { handleDownloadZIP(); setMenuDownloadAberto(false); }}>
                 <div className="item-text-wrapper">
-                  <strong className="item-main-title">Imagens PNG (.ZIP)</strong>
+                  <strong className="item-main-title">Imagens JPEG (.ZIP)</strong>
                   <span className="item-sub-desc">Fotos individuais de cada certificado</span>
                 </div>
               </button>
