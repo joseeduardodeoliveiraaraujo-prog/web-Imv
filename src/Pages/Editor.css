@@ -73,12 +73,15 @@ html, body {
   z-index: 1; 
   width: 100%;
   height: calc(100vh - 70px);
-  padding: 60px 0; /* Padding apenas em cima/baixo */
+  padding: 120px 0 60px 0; /* Padding apenas em cima/baixo */
   display: flex;
   flex-direction: column;
   align-items: center;
   overflow-y: auto;
   overflow-x: hidden;
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-color) transparent;
 }
 
 /* Custom Scrollbar para Chrome, Edge e Safari */
@@ -599,7 +602,118 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 80px; /* Distância entre o fim de um e o começo do outro */
-  width: 100%;
+  margin-bottom: 0 auto 120px auto; /* Distância entre o fim de um e o começo do outro */
+  width: fit-content;
   cursor: inherit;
+}
+
+.btn-editar-individual {
+  position: absolute;
+  right: -220px; 
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap; /* Impede o texto de quebrar linha */
+  transition: all 0.3s ease;
+  z-index: 20;
+}
+
+/* Estado quando NÃO está editando */
+.btn-editar-individual:not(.active) {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  color: #94a3b8;
+}
+
+/* Estado quando ESTÁ editando */
+.btn-editar-individual.active {
+  background: #38bdf8; 
+  color: #020617;
+  border: 1px solid #38bdf8;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); /* Efeito de brilho */
+}
+
+.btn-editar-individual:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.btn-editar-individual.active:hover {
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.7);
+}
+
+/* Animação suave para o ícone */
+.btn-editar-individual svg {
+  flex-shrink: 0;
+}
+
+/* --- DESTAQUE NO CANVAS SELECIONADO --- */
+.canvas-wrapper.editando-este .editor-canvas {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 4px;
+  box-shadow: 0 0 40px rgba(56, 189, 248, 0.2);
+}
+
+/* Badge que aparece abaixo do certificado se ele tiver texto custom */
+.badge-custom-text {
+  color: var(--accent-color);
+  font-size: 0.75rem;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Estilo do botão de voltar na Sidebar */
+.btn-voltar-global {
+  font-size: 0.75rem;
+  color: var(--accent-color);
+  cursor: pointer;
+  background: rgba(56, 189, 248, 0.05);
+  border: 1px dashed var(--accent-color);
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin-top: 8px;
+  text-align: center;
+  transition: all 0.2s;
+  width: fit-content;
+}
+
+.btn-voltar-global:hover {
+  background: var(--accent-color);
+  color: #020617;
+}
+
+/* Destaque no Input da Sidebar quando editando individual */
+.editor-input.bulk-area.input-individual {
+  border-color: var(--accent-color);
+  box-shadow: inset 0 0 10px rgba(56, 189, 248, 0.1);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+/* Label Dinâmica na Sidebar */
+.label-dinamico {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: color 0.3s;
+}
+
+/* Se estiver editando, a label da sidebar fica azul */
+.input-individual + .label-dinamico, 
+.control-group:has(.input-individual) label {
+  color: var(--accent-color);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
