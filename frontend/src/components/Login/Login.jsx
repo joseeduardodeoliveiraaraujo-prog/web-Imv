@@ -17,7 +17,20 @@ const Login = () => {
         email,
         password
       );
-      console.log("Usuário logado:", userCredential.user);
+      const user = userCredential.user;
+
+      await fetch("http://localhost:3000/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: user.displayName || "Sem nome",
+          email: user.email,
+          uid: user.uid
+        })
+      });
+      console.log("Usuário logado");
 
     } catch (error) {
       console.error("Erro ao logar:", error.code);

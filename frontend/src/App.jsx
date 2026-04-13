@@ -3,7 +3,6 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./services/firebase";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-
 import Login from "./components/Login/Login";
 import Home from "./Pages/Home";
 import Editor from "./Pages/Editor"
@@ -14,8 +13,27 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+
+      if (currentUser) {
+        try {
+          await fetch("http://localhost:3000/users", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: currentUser.displayName || "Sem nome",
+              email: currentUser.email,
+              uid: currentUser.uid,
+            }),
+          });
+        } catch (error) {
+          console.error("Erro ao salvar usuário:", error);
+        }
+      }
+
       setLoading(false);
     });
 
