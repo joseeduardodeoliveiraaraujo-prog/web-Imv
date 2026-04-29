@@ -1,0 +1,9 @@
+CREATE TABLE certificates (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  image_path TEXT NOT NULL,
+  user_id INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

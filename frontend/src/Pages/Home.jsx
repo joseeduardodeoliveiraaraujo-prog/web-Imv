@@ -15,43 +15,79 @@ const Home = ({ user, onLogout }) => {
 
   //Effect
   useEffect(() => {
-    localStorage.setItem(
-      "certificates",
-      JSON.stringify(certificates)
-    );
-  }, [certificates]);
-  
-  useEffect(() => {
-    const saved = localStorage.getItem("certificates");
-    if (saved) {
-     setCertificates(JSON.parse(saved));
+    if (!user) return;
+    loadCertificates();
+  }, [user?.uid]);
+
+  const loadCertificates = async () => {
+    if (!user) return;
+
+    try {
+      const token = await user.getIdToken();
+
+      const res = await fetch("http://localhost:3000/certificates", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error("Erro ao carregar certificados");
+      }
+
+      const data = await res.json();
+
+      // adapta os dados para o formato do seu frontend
+      const formatted = data.map(cert => ({
+        id: cert.id,
+        name: cert.title,
+        previewUrl: `http://localhost:3000/uploads/${cert.image_path}`
+      }));
+
+      setCertificates(formatted);
+
+    } catch (error) {
+      console.error("Erro ao carregar certificados:", error);
     }
-  }, []);
+  };
 
   //handlers funçoes
   const handleUploadClick = () => {
     fileInputRef.current.click();
 
   }
+  //1 teste
+  const handleFileChange = async (e) => {
+    if (!user) return;
+  const file = e.target.files[0];
+  if (!file) return;
 
-  const handleFileChange = (e) =>{
-    const file = e.target.files[0];
-    if (!file) return;
+    try {
+      const token = await user.getIdToken();
 
-    const previewUrl = URL.createObjectURL(file);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("name", file.name);
 
-      setCertificates(prev => [
-    ...prev,
-    {
-      id: crypto.randomUUID(),
-      file,
-      previewUrl,
-      name: file.name.replace(/\.[^/.]+$/, "")
+      const response = await fetch("http://localhost:3000/certificates", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro no upload");
+      }
+
+      await loadCertificates(); // reutilização
+
+      e.target.value = ""; // permite enviar o mesmo arquivo novamente
+
+    } catch (error) {
+      console.error("Erro ao enviar arquivo:", error);
     }
-  ]);
-
-    e.target.value = null;
-
   };
 
   // Função para limpar o certificado selecionado e fechar o modal
@@ -65,21 +101,37 @@ const Home = ({ user, onLogout }) => {
   navigate(`/editor/${selectedCertificate.id}`);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
+    if (!user) return;
     const confirmDelete = window.confirm(
       "tem certeza que deseja apagar este modelo?"
     );
 
     if (!confirmDelete) return;
-    
-    setCertificates(prev =>
-      prev.filter(cert => cert !== selectedCertificate)
-    );
 
-    closeModal();
+    try {
+      const token = await user.getIdToken();
 
+      const response = await fetch(`http://localhost:3000/certificates/${selectedCertificate.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
+      if (!response.ok) {
+        throw new Error("Erro ao deletar");
+      }
+
+      await loadCertificates();
+
+      closeModal();
+
+    } catch (error) {
+      console.error("Erro ao deletar:", error);
+    }
   };
+
   //return
   return (
     <>
@@ -117,7 +169,7 @@ const Home = ({ user, onLogout }) => {
                 {/* Header do modal */}
                 <div className="modal-header">
                   <span className="modal-title">
-                    {selectedCertificate.file.name}
+                    {selectedCertificate.name}
                   </span>
 
                   <button

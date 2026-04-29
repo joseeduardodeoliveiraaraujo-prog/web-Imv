@@ -5,6 +5,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import {jsPDF} from "jspdf";
 import Select from 'react-select';
+import { auth } from "../services/firebase"; 
 
 // Quebra o texto em várias linhas respeitando maxWidth e desenha no canvas com opção de justificado
 // Se comunica diretamente com o canvas via ctx e retorna a altura total para quem chamou ajustar layout (ex: selection box, cálculo de tamanho, etc.)
@@ -332,7 +333,11 @@ const Editor = () => {
   // Se comunica com nomesLista e com renderização dos CertificadoCanvas
   // 1. Filtra apenas o que o usuário REALMENTE digitou
   const nomesValidos = useMemo(() => {
-    return nomesLista.filter(item => item &&item.nome && item.nome.trim() !== "");
+    return nomesLista.filter(item => 
+      item && 
+      typeof item.nome === 'string' && 
+      item.nome.trim() !== "" // Aqui ele remove as linhas de "Enter" vazias
+    );
   }, [nomesLista]);
 
   // 2. Retorna o texto do corpo apenas se o usuário escreveu algo
@@ -341,20 +346,53 @@ const Editor = () => {
     return texto && texto.length > 0 ? texto : "";
   }, [textoCorpo]);
 
-  // Carregar dados do certificado baseado no id da rota
+  // Carregar dados do certificado baseado no id da rota 1 teste
+  // Dentro do seu useEffect no Editor.js
+ // Dentro do seu useEffect no Editor.js
   useEffect(() => {
-    const saved = localStorage.getItem("certificates");
-    if (!saved) {
-      navigate("/");
-      return;
-    }
-    const certificates = JSON.parse(saved);
-    const found = certificates.find((c) => c.id === id);
-    if (!found) {
-      navigate("/");
-      return;
-    }
-    setCertificate(found);
+    const carregarDados = async () => {
+      try {
+        // 1. Pegar o token do usuário logado (exemplo com Firebase Auth)
+        // Se você salvou o token no localStorage ou usa um context, pegue de lá
+        const user = auth.currentUser; 
+        const token = await user?.getIdToken();
+
+        if (!token) {
+          console.error("Usuário não autenticado");
+          return navigate("/login");
+        }
+
+        const response = await fetch(`http://localhost:3000/certificates/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}` // O seu authMiddleware exige isso
+          }
+        });
+
+        if (!response.ok) throw new Error("Erro ao buscar certificado");
+        
+        const data = await response.json();
+
+        // 2. Mapeamento dos campos para bater com o seu Banco de Dados
+        setCertificate({
+          ...data,
+          name: data.title, // Seu banco usa 'title'
+          previewUrl: `http://localhost:3000/uploads/${data.image_path}` // Adicionei '/uploads/'
+        });
+
+        // Carrega settings se existirem (JSONB)
+        if (data.settings) {
+          setNomesLista(data.settings.nomesLista || [{ nome: "", overrides: {} }]);
+          setCorNome(data.settings.corNome || "#000000");
+          // ... carregar os outros campos de settings
+        }
+
+      } catch (error) {
+        console.error("Falha na conexão:", error);
+        navigate("/");
+      }
+    };
+
+    if (id) carregarDados();
   }, [id, navigate]);
 
   // Calcula a bounding box com padding para seleção. É usado por CertificadoCanvas e handleMouseDown
@@ -380,7 +418,7 @@ const Editor = () => {
 
   // Calcula largura e altura real do texto com quebra de linha 
   // Se comunica com CertificadoCanvas
-  const getTextBoxSize = (ctx, text, fontSize, fontFamily, maxWidth) => {
+ const getTextBoxSize = (ctx, text, fontSize, fontFamily, maxWidth) => {
     ctx.font = `${fontSize}px "${fontFamily}", sans-serif`;
 
     const words = text.split(" ");
@@ -422,7 +460,7 @@ const Editor = () => {
   // - getTextBoxSize()
   // - getBoxRect()
   // - estados de drag 
-  const handleMouseDown = (e) => {
+   const handleMouseDown = (e) => {
     const canvas = e.currentTarget;
     const rect = canvas.getBoundingClientRect();
 
@@ -497,7 +535,7 @@ const Editor = () => {
     };
 
   // Controla hover, drag e resize
-  const handleMouseMove = (e) => {
+   const handleMouseMove = (e) => {
     const canvas = e.currentTarget;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -969,7 +1007,7 @@ const customStyles = {
     <div className="editor-container">
 
       <main className="editor-workspace bulk-scroll">
-      {(nomesLista.length > 0 ? nomesLista : [{ nome: "", overrides: {} }])
+      {(nomesValidos.length > 0 ? nomesValidos : [{ nome: "", overrides: {} }])
         .slice(0, 50)
         .map((item, index) => {
           
