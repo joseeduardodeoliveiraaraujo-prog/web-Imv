@@ -51,15 +51,15 @@ app.post("/users", authMiddleware, async (req, res) => {
     const result = await pool.query(
       `INSERT INTO users (name, email, firebase_uid)
        VALUES ($1, $2, $3)
-       ON CONFLICT (email) DO NOTHING
+       ON CONFLICT (firebase_uid) DO NOTHING
        RETURNING *`,
       [name, email, uid]
     );
 
     if (result.rows.length === 0) {
       const existingUser = await pool.query(
-        "SELECT * FROM users WHERE email = $1",
-        [email]
+        "SELECT * FROM users WHERE firebase_uid = $1",
+        [uid]
       );
       return res.json(existingUser.rows[0]);
     }
