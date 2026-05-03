@@ -8,9 +8,12 @@ import Home from "./Pages/Home";
 import Editor from "./Pages/Editor"
 import "./App.css";
 
+
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -20,7 +23,7 @@ function App() {
         try {
           const token = await currentUser.getIdToken();
 
-          await fetch("http://localhost:3000/users", {
+          await fetch(`${API_URL}/users`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

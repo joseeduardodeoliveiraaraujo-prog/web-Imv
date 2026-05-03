@@ -4,15 +4,23 @@ import pool from "./db.js";
 import authMiddleware from "./middleware/auth.js";
 import multer from "multer";
 import "dotenv/config";
+import fs from "fs";
+import path from "path";
+
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads");
+}
 
 const app = express();
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: process.env.FRONTEND_URL || "http://localhost:5173",
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
+
 app.use(express.json());
+
 app.use("/uploads", express.static("uploads"));
 
 app.get("/", (req, res) => {
@@ -20,14 +28,23 @@ app.get("/", (req, res) => {
 });
 
 app.get("/test-db", async (req, res) => {
-  const result = await pool.query("SELECT NOW()");
-  res.json(result.rows);
+  try {
+    const result = await pool.query("SELECT NOW()");
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: "Erro no banco" });
+  }
 });
 
 // Rota para criar ou obter usuário
 app.post("/users", authMiddleware, async (req, res) => {
   try {
     const { name } = req.body;
+
+    if (!name || name.length < 3) {
+      return res.status(400).json({ error: "Nome inválido" });
+    }
+
     const email = req.user.email;
     const uid = req.user.uid;
 
@@ -55,12 +72,31 @@ app.post("/users", authMiddleware, async (req, res) => {
   }
 });
 
-const upload = multer({ dest: "uploads/" });
+const upload = multer({
+  dest: "uploads/",
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Apenas imagens são permitidas"));
+    }
+  }
+});
 
 app.post("/certificates", authMiddleware, upload.single("file"), async (req, res) => {
   try {
     const { name } = req.body;
+
+    if (!name || name.length < 3) {
+      return res.status(400).json({ error: "Nome inválido" });
+    }
+
     const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: "Arquivo não enviado" });
+    }
 
     const email = req.user.email;
 
@@ -70,6 +106,10 @@ app.post("/certificates", authMiddleware, upload.single("file"), async (req, res
     );
 
     const user = userResult.rows[0];
+
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
 
     const result = await pool.query(
       "INSERT INTO certificates (title, image_path, user_id) VALUES ($1, $2, $3) RETURNING *",
@@ -95,6 +135,10 @@ app.get("/certificates", authMiddleware, async (req, res) => {
 
     const user = userResult.rows[0];
 
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+
     const result = await pool.query(
       "SELECT * FROM certificates WHERE user_id = $1 ORDER BY id DESC",
       [user.id]
@@ -111,6 +155,9 @@ app.get("/certificates", authMiddleware, async (req, res) => {
 app.get("/certificates/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
+      if (isNaN(id)) {
+      return res.status(400).json({ error: "ID inválido" });
+    }
     const email = req.user.email;
 
     // pega o usuário
@@ -120,6 +167,10 @@ app.get("/certificates/:id", authMiddleware, async (req, res) => {
     );
 
     const user = userResult.rows[0];
+
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
 
     // pega o certificado DO USUÁRIO
     const certResult = await pool.query(
@@ -142,6 +193,9 @@ app.get("/certificates/:id", authMiddleware, async (req, res) => {
 app.delete("/certificates/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "ID inválido" });
+    }
     const email = req.user.email;
 
     const userResult = await pool.query(
@@ -164,6 +218,17 @@ app.delete("/certificates/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Certificado não encontrado" });
     }
 
+    const cert = result.rows[0];
+      if (cert.image_path) {
+        const filePath = path.join("uploads", cert.image_path);
+
+        fs.unlink(filePath, (err) => {
+          if (err && err.code !== "ENOENT") {
+            console.error("Erro ao deletar arquivo:", err);
+          }
+        });
+      }
+
     res.json({ message: "Deletado com sucesso" });
 
   } catch (error) {
@@ -176,7 +241,9 @@ app.get("/ping", (req, res) => {
   res.json({ ok: true });
 });
 
-app.listen(3000, () => {
-  console.log("Servidor rodando na porta 3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
 
