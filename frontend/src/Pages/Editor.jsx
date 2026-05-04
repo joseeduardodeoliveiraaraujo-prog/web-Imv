@@ -277,8 +277,10 @@ const Editor = () => {
  // Estados Base
   const [certificate, setCertificate] = useState(null);
   const [nomesLista, setNomesLista] = useState([{ nome: "", overrides: {} }]);
-  const [isDragging, setIsDragging] = useState(false);
-  const [itemArrastado, setItemArrastado] = useState(null);
+  const [bulkText, setBulkText] = useState(""); // usado para controlar o textarea de edição em massa de nomes
+  const isDraggingRef = useRef(false);
+  const itemArrastadoRef = useRef(null);
+  const hoverRef = useRef(null);
   const [itemHover, setItemHover] = useState(null);
 
   // Estados do NOME (Cor e Posição)
@@ -312,25 +314,25 @@ const Editor = () => {
 
 
   const updateStyle = (property, value, globalSetter) => {
-  // Se indexEditando for um número (0, 1, 2...), editamos o individual
-  if (indexEditando !== null) {
-    const novaLista = [...nomesLista];
-    
-    // Atualizamos apenas o objeto no índice que está "focado"
-    novaLista[indexEditando] = {
-      ...novaLista[indexEditando],
-      overrides: {
-        ...novaLista[indexEditando].overrides,
-        [property]: value // Ex: corNome: "#FF0000"
-      }
-    };
-    
-    setNomesLista(novaLista);
-  } else {
-    // Se for null, editamos o estado global (comportamento padrão atual)
-    globalSetter(value);
-  }
-};
+    // Se indexEditando for um número (0, 1, 2...), editamos o individual
+    if (indexEditando !== null) {
+      const novaLista = [...nomesLista];
+      
+      // Atualizamos apenas o objeto no índice que está "focado"
+      novaLista[indexEditando] = {
+        ...novaLista[indexEditando],
+        overrides: {
+          ...novaLista[indexEditando].overrides,
+          [property]: value // Ex: corNome: "#FF0000"
+        }
+      };
+      
+      setNomesLista(novaLista);
+    } else {
+      // Se for null, editamos o estado global (comportamento padrão atual)
+      globalSetter(value);
+    }
+  };
 
   // Filtra a lista de nomes removendo vazios e garante pelo menos um nome padrão
   // Se comunica com nomesLista e com renderização dos CertificadoCanvas
@@ -422,39 +424,57 @@ const Editor = () => {
   // Calcula largura e altura real do texto com quebra de linha 
   // Se comunica com CertificadoCanvas
  const getTextBoxSize = (ctx, text, fontSize, fontFamily, maxWidth) => {
-    ctx.font = `${fontSize}px "${fontFamily}", sans-serif`;
+  ctx.font = `${fontSize}px "${fontFamily}", sans-serif`;
 
-    const words = text.split(" ");
-    let lines = [];
-    let currentLine = [];
+  const words = text.split(" ");
 
-    words.forEach(word => {
-      const testLine = [...currentLine, word].join(" ");
-      const width = ctx.measureText(testLine).width;
+  let line = "";
+  let lines = [];
 
-      if (width > maxWidth && currentLine.length > 0) {
-        lines.push(currentLine);
-        currentLine = [word];
-      } else {
-        currentLine.push(word);
-      }
-    });
+  for (let i = 0; i < words.length; i++) {
+    const testLine = line + words[i] + " ";
+    const width = ctx.measureText(testLine).width;
 
-    lines.push(currentLine);
+    if (width > maxWidth && line !== "") {
+      lines.push(line);
+      line = words[i] + " ";
+    } else {
+      line = testLine;
+    }
+  }
 
-    const paddingHorizontal = 30; 
-    const paddingVertical = 20;
-    const lineHeight = fontSize * 1.2;
+  lines.push(line);
 
-    const larguraTextoPura = Math.max(...lines.map(line => ctx.measureText(line.join(" ")).width));
-    
-    return {
+  const lineHeight = fontSize * 1.2;
 
-    width: Math.min(larguraTextoPura + (paddingHorizontal * 2), maxWidth),
-   
-    height: (lines.length * lineHeight) + (paddingVertical * 2)
-    };
+  const paddingX = 30;
+  const paddingY = 20;
+
+  const width = Math.min(
+    Math.max(...lines.map(l => ctx.measureText(l).width)),
+    maxWidth
+  );
+
+  return {
+    width: width + paddingX * 2,
+    height: lines.length * lineHeight + paddingY * 2,
   };
+};
+
+const textBoxCache = new Map();
+
+function getCachedTextBox(ctx, text, size, font, maxWidth) {
+  const key = text + size + font + maxWidth;
+
+  if (textBoxCache.has(key)) {
+    return textBoxCache.get(key);
+  }
+
+  const result = getTextBoxSize(ctx, text, size, font, maxWidth);
+  textBoxCache.set(key, result);
+
+  return result;
+}
 
   // Controla clique no canvas (resize, drag ou seleção)
   // Se comunica com:
@@ -473,22 +493,19 @@ const Editor = () => {
     const mouseX = (e.clientX - rect.left) * scaleX;
     const mouseY = (e.clientY - rect.top) * scaleY;
 
-    // Contexto temporário para medir o texto
-    const tempCanvas = document.createElement("canvas");
-    const ctx = tempCanvas.getContext("2d");
-
-    // 1. Descobre qual índice usar: o que está sendo editado individualmente ou o primeiro (0)
     const idx = indexEditando !== null ? indexEditando : 0;
-    
-    // 2. Pega o item completo da lista (objeto)
     const itemAlvo = nomesLista[idx] || { nome: "", overrides: {} };
 
-    // 3. Define os textos reais que estão aparecendo naquele Canvas
     const nomeTexto = itemAlvo.nome || "Nome do Participante";
-    const corpoTextoParaClique = itemAlvo.overrides?.textoCorpo || textoCorpoBase || "Participou com êxito do evento [Nome do Evento], realizado no dia [Data], com carga horária de [X] horas.";
+    const corpoTexto =
+      itemAlvo.overrides?.textoCorpo ||
+      textoCorpoBase ||
+      "Participou com êxito...";
 
-    // --- CÁLCULO DAS CAIXAS (BOXES) ---
-    const nomeBox = getTextBoxSize(
+    // usa ctx real (NÃO cria canvas novo)
+    const ctx = canvas.getContext("2d");
+
+    const nomeBox = getCachedTextBox(
       ctx,
       nomeTexto,
       tamanhoNome,
@@ -503,9 +520,9 @@ const Editor = () => {
       nomeBox.height
     );
 
-    const corpoBox = getTextBoxSize(
+    const corpoBox = getCachedTextBox(
       ctx,
-      corpoTextoParaClique,
+      corpoTexto,
       tamanhoCorpo,
       fonteCorpo,
       canvas.width * 0.8
@@ -518,90 +535,103 @@ const Editor = () => {
       corpoBox.height
     );
 
-    // 1. CLICK DENTRO DO BOX (DRAG)
+    // DETECÇÃO DE CLIQUE (SEM STATE PESADO NO INÍCIO)
     if (isInsideRect(mouseX, mouseY, nomeRect)) {
-      setItemArrastado("nome");
-      setItemSelecionado("nome");
-      setIsDragging(true);
+      itemArrastadoRef.current = "nome";
+      hoverRef.current = "nome";
+      isDraggingRef.current = true;
+
+      setItemSelecionado("nome"); 
       return;
     }
 
     if (isInsideRect(mouseX, mouseY, corpoRect)) {
-      setItemArrastado("corpo");
+      itemArrastadoRef.current = "corpo";
+      hoverRef.current = "corpo";
+      isDraggingRef.current = true;
+
       setItemSelecionado("corpo");
-      setIsDragging(true);
       return;
     }
 
-    // 2. CLICK FORA → DESELECIONA
+    // click fora
+    itemArrastadoRef.current = null;
+    isDraggingRef.current = false;
+
     setItemSelecionado(null);
-    };
+  };
 
   // Controla hover, drag e resize
    const handleMouseMove = (e) => {
     const canvas = e.currentTarget;
     const rect = canvas.getBoundingClientRect();
+
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
 
     let mouseX = (e.clientX - rect.left) * scaleX;
     let mouseY = (e.clientY - rect.top) * scaleY;
 
-    // 1. LÓGICA DE HOVER (QUADRADO AZUL)
-    if (!isDragging) {
-      const tempCanvas = document.createElement("canvas");
-      const ctx = tempCanvas.getContext("2d");
+    const ctx = canvas.getContext("2d");
 
-      const idx = indexEditando !== null ? indexEditando : 0;
-      const itemAlvo = nomesLista[idx] || { nome: "", overrides: {} };
+    const idx = indexEditando !== null ? indexEditando : 0;
+    const itemAlvo = nomesLista[idx] || { nome: "", overrides: {} };
 
-      const nomeTexto = itemAlvo.nome || "Nome do Participante";
-      const corpoTextoParaHover = itemAlvo.overrides?.textoCorpo || textoCorpoBase || "Participou com êxito do evento [Nome do Evento], realizado no dia [Data], com carga horária de [X] horas.";
+    const nomeTexto = itemAlvo.nome || "Nome do Participante";
+    const corpoTexto =
+      itemAlvo.overrides?.textoCorpo ||
+      textoCorpoBase ||
+      "Participou com êxito do evento...";
 
-      const nomeBox = getTextBoxSize(
-        ctx,
-        nomeTexto,
-        tamanhoNome,
-        fonteNome,
-        canvas.width * 0.85
-      );
+    const nomeBox = getCachedTextBox(
+      ctx,
+      nomeTexto,
+      tamanhoNome,
+      fonteNome,
+      canvas.width * 0.85
+    );
 
-      const corpoBox = getTextBoxSize(
-        ctx,
-        corpoTextoParaHover,
-        tamanhoCorpo,
-        fonteCorpo,
-        canvas.width * 0.8
-      );
+    const corpoBox = getCachedTextBox(
+      ctx,
+      corpoTexto,
+      tamanhoCorpo,
+      fonteCorpo,
+      canvas.width * 0.8
+    );
 
-      const nomeRect = getBoxRect(
-        posicaoNome.x,
-        posicaoNome.y,
-        nomeBox.width,
-        nomeBox.height
-      );
+    const nomeRect = getBoxRect(
+      posicaoNome.x,
+      posicaoNome.y,
+      nomeBox.width,
+      nomeBox.height
+    );
 
-      const corpoRect = getBoxRect(
-        posicaoCorpo.x,
-        posicaoCorpo.y,
-        corpoBox.width,
-        corpoBox.height
-      );
+    const corpoRect = getBoxRect(
+      posicaoCorpo.x,
+      posicaoCorpo.y,
+      corpoBox.width,
+      corpoBox.height
+    );
 
-      const sobreNome = isInsideRect(mouseX, mouseY, nomeRect);
+    // HOVER (SEM STATE)
+  if (!isDraggingRef.current) {
       const sobreCorpo = isInsideRect(mouseX, mouseY, corpoRect);
+      const sobreNome = isInsideRect(mouseX, mouseY, nomeRect);
 
       if (sobreCorpo) {
-        setItemHover("corpo");
+        hoverRef.current = "corpo";
+        if (itemHover !== "corpo") setItemHover("corpo"); 
       } else if (sobreNome) {
-        setItemHover("nome");
+        hoverRef.current = "nome";
+        if (itemHover !== "nome") setItemHover("nome");   
       } else {
-        setItemHover(null);
+        hoverRef.current = null;
+        if (itemHover !== null) setItemHover(null);       
       }
     }
 
-    // 2. LÓGICA DE ARRASTAR
-    if (!isDragging) return;
+    // DRAG (REF, NÃO STATE)
+    if (!isDraggingRef.current) return;
 
     const centroX = canvas.width / 2;
     const margemMagnetismo = 40;
@@ -610,18 +640,19 @@ const Editor = () => {
       mouseX = centroX;
     }
 
-    if (itemArrastado === "nome") {
+    const item = itemArrastadoRef.current;
+
+    if (item === "nome") {
       setPosicaoNome({ x: mouseX, y: mouseY });
-    } 
-    else if (itemArrastado === "corpo") {
+    } else if (item === "corpo") {
       setPosicaoCorpo({ x: mouseX, y: mouseY });
     }
   };
 
   const handleMouseUp = () => {
-    setIsDragging(false);
-    setItemArrastado(null);
-  }
+    isDraggingRef.current = false;
+    itemArrastadoRef.current = null;
+  };  
 
   // Função compartilhada para gerar a imagem no canvas temporário igualzinho ao editor
   // Adicionamos o parâmetro 'textoIndividual' aqui
@@ -797,7 +828,7 @@ const Editor = () => {
           const dataUrl = tempCanvas.toDataURL("image/jpeg", 0.8).split(",")[1];
 
           zip.file(
-            `${nomeParaDownload.replace(/\s+/g, "_")}.jpg`,
+            `${nomeParaDownload.replace(/\s+/g, "_")}_${i + 1}.jpg`,
             dataUrl,
             { base64: true }
           );
@@ -880,7 +911,7 @@ const Editor = () => {
           pdf.addImage(imgData, "JPEG", 0, 0, img.width, img.height);
 
           const pdfBlob = pdf.output("blob");
-          zip.file(`${nomeParaDownload.replace(/\s+/g, "_")}.pdf`, pdfBlob);
+          zip.file(`${nomeParaDownload.replace(/\s+/g, "_")}_${i + 1}.pdf`, pdfBlob);
         }
         
         await sleep(500);
@@ -908,25 +939,22 @@ const Editor = () => {
 
   // Lógica de nomes em massa 
   const handleBulkNames = (e) => {
-  // 1. Pega o texto do textarea e remove retornos de carro (\r)
-  const valor = e.target.value.replace(/\r/g, "");
-  const linhas = valor.split("\n");
+    const value = e.target.value.replace(/\r/g, "");
 
-  // 2. Mapeia as linhas para o novo formato de objeto
-  const novaLista = linhas.map((linha, i) => {
-    // Se o nome já existia na lista anterior, tentamos manter os "overrides" 
-    // que o usuário já possa ter configurado para não perder o trabalho.
-    const itemExistente = nomesLista[i];
-    
-    return {
-      nome: linha,
-      // Se já era um objeto e tinha overrides, mantém. Se não, cria vazio.
-      overrides: itemExistente?.overrides || {}
-    };
-  });
+    setBulkText(value);
 
-  setNomesLista(novaLista);
-};
+    const linhas = value
+      .split("\n")
+      .map(l => l.trim())
+      .filter(l => l !== ""); // remove espaços vazios
+
+    setNomesLista(prev => {
+      return linhas.map((nome, i) => ({
+        nome,
+        overrides: prev[i]?.overrides || {}
+      }));
+    });
+  };;
 
   if (!certificate) return <p>Carregando certificado...</p>;
 
@@ -1052,9 +1080,9 @@ const customStyles = {
                 tamanhoCorpo={tamanhoCorpo}
                 posicaoNome={posicaoNome}
                 posicaoCorpo={posicaoCorpo}
-                isDragging={isDragging}
+                isDragging={isDraggingRef.current}
                 itemHover={itemHover}       
-                itemArrastado={itemArrastado}
+                itemArrastado={itemArrastadoRef.current}
                 itemSelecionado={itemSelecionado}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
@@ -1076,9 +1104,9 @@ const customStyles = {
 
       <aside className="editor-sidebar">
 
-        {nomesLista.length > 50 && (
+        {nomesLista.length > 20 && (
           <div className="limit-warning">
-            Mostrando apenas os primeiros 50 certificados para pré-visualização.
+            Mostrando apenas os primeiros 20 certificados para pré-visualização.
           </div>
         )}
 
@@ -1087,7 +1115,7 @@ const customStyles = {
           <textarea
             className="editor-input bulk-area"
             placeholder="Cole aqui a lista de nomes...&#10;Aperte Enter para cada novo nome"
-            value={nomesLista.map(item => item.nome).join("\n")}
+            value={bulkText}
             onChange={handleBulkNames}
           />
         </div>
