@@ -12,6 +12,7 @@ const Home = ({ user, onLogout }) => {
   
   //refs
   const fileInputRef = useRef(null);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   //Effect
   useEffect(() => {
@@ -25,7 +26,7 @@ const Home = ({ user, onLogout }) => {
     try {
       const token = await user.getIdToken();
 
-      const res = await fetch("http://localhost:3000/certificates", {
+      const res = await fetch(`${API_URL}/certificates`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -41,7 +42,7 @@ const Home = ({ user, onLogout }) => {
       const formatted = data.map(cert => ({
         id: cert.id,
         name: cert.title,
-        previewUrl: `http://localhost:3000/uploads/${cert.image_path}`
+        previewUrl: `${API_URL}/uploads/${cert.image_path}`
       }));
 
       setCertificates(formatted);
@@ -69,7 +70,7 @@ const Home = ({ user, onLogout }) => {
       formData.append("file", file);
       formData.append("name", file.name);
 
-      const response = await fetch("http://localhost:3000/certificates", {
+      const response = await fetch(`${API_URL}/certificates`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`
@@ -112,7 +113,7 @@ const Home = ({ user, onLogout }) => {
     try {
       const token = await user.getIdToken();
 
-      const response = await fetch(`http://localhost:3000/certificates/${selectedCertificate.id}`, {
+      const response = await fetch(`${API_URL}/certificates/${selectedCertificate.id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`

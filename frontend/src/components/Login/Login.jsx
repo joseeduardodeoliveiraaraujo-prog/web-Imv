@@ -8,10 +8,12 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
+      // Faz o login no Firebase
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
@@ -19,10 +21,18 @@ const Login = () => {
       );
       const user = userCredential.user;
 
-      await fetch("http://localhost:3000/users", {
+      // GERA O TOKEN 
+      const token = await user.getIdToken();
+
+      const API_URL = import.meta.env.VITE_API_URL;
+
+      // ENVIA PARA O BACKEND COM O TOKEN
+      const response = await fetch(`${API_URL}/users`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          //Envia o token no formato Bearer
+          "Authorization": `Bearer ${token}` 
         },
         body: JSON.stringify({
           name: user.displayName || "Sem nome",
@@ -30,11 +40,16 @@ const Login = () => {
           uid: user.uid
         })
       });
-      console.log("Usuário logado");
+
+      if (!response.ok) {
+        throw new Error(`Erro no servidor: ${response.status}`);
+      }
+
+      console.log("Usuário logado e sincronizado com o banco");
 
     } catch (error) {
-      console.error("Erro ao logar:", error.code);
-      alert("E-mail ou senha inválidos");
+      console.error("Erro ao logar:", error.code || error.message);
+      alert("E-mail ou senha inválidos ou erro de conexão.");
     }
   };
 

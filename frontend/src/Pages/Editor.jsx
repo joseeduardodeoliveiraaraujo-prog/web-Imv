@@ -308,6 +308,9 @@ const Editor = () => {
   // Estado para controlar edição em massa de nomes (textarea)
   const [indexEditando, setIndexEditando] = useState(null);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
+
   const updateStyle = (property, value, globalSetter) => {
   // Se indexEditando for um número (0, 1, 2...), editamos o individual
   if (indexEditando !== null) {
@@ -362,7 +365,7 @@ const Editor = () => {
           return navigate("/login");
         }
 
-        const response = await fetch(`http://localhost:3000/certificates/${id}`, {
+        const response = await fetch(`${API_URL}/certificates/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}` // O seu authMiddleware exige isso
           }
@@ -376,7 +379,7 @@ const Editor = () => {
         setCertificate({
           ...data,
           name: data.title, // Seu banco usa 'title'
-          previewUrl: `http://localhost:3000/uploads/${data.image_path}` // Adicionei '/uploads/'
+          previewUrl: `${API_URL}/uploads/${data.image_path}` // Adicionei '/uploads/'
         });
 
         // Carrega settings se existirem (JSONB)
