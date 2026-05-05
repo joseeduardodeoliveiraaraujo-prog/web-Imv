@@ -312,6 +312,26 @@ const Editor = () => {
 
   const API_URL = import.meta.env.VITE_API_URL;
 
+  // Ref para otimizar renderização do canvas e evitar criação de objetos desnecessários durante drag e hover
+  const imageCacheRef = useRef(null);
+
+  // Função para pré-carregar a imagem do certificado e evitar lag durante a renderização no canvas. Retorna a imagem já carregada ou usa o cache se já tiver sido carregada antes.
+  const preloadCertificateImage = async () => {
+    if (imageCacheRef.current) return imageCacheRef.current;
+
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = certificate.previewUrl;
+
+      img.onload = () => {
+        imageCacheRef.current = img;
+        resolve(img);
+      };
+
+      img.onerror = reject;
+    });
+  };
 
   const updateStyle = (property, value, globalSetter) => {
     // Se indexEditando for um número (0, 1, 2...), editamos o individual
@@ -353,12 +373,11 @@ const Editor = () => {
 
   // Carregar dados do certificado baseado no id da rota 1 teste
   // Dentro do seu useEffect no Editor.js
- // Dentro do seu useEffect no Editor.js
+  // Dentro do seu useEffect no Editor.js
   useEffect(() => {
     const carregarDados = async () => {
       try {
-        // 1. Pegar o token do usuário logado (exemplo com Firebase Auth)
-        // Se você salvou o token no localStorage ou usa um context, pegue de lá
+        // 1. Pegar o token do usuário logado 
         const user = auth.currentUser; 
         const token = await user?.getIdToken();
 
@@ -369,7 +388,7 @@ const Editor = () => {
 
         const response = await fetch(`${API_URL}/certificates/${id}`, {
           headers: {
-            'Authorization': `Bearer ${token}` // O seu authMiddleware exige isso
+            'Authorization': `Bearer ${token}` // O authMiddleware exige isso
           }
         });
 
@@ -377,11 +396,11 @@ const Editor = () => {
         
         const data = await response.json();
 
-        // 2. Mapeamento dos campos para bater com o seu Banco de Dados
+        // 2. Mapeamento dos campos para bater com o Banco de Dados
         setCertificate({
           ...data,
-          name: data.title, // Seu banco usa 'title'
-          previewUrl: `${API_URL}/uploads/${data.image_path}` // Adicionei '/uploads/'
+          name: data.title, 
+          previewUrl: `${API_URL}/uploads/${data.image_path}` 
         });
 
         // Carrega settings se existirem (JSONB)
@@ -399,6 +418,14 @@ const Editor = () => {
 
     if (id) carregarDados();
   }, [id, navigate]);
+
+  // Sempre que o certificado muda, pré-carrega a imagem para garantir que o canvas renderize sem lag. Se a imagem já tiver sido carregada antes, usa o cache.
+  useEffect(() => {
+    if (!certificate?.previewUrl) return;
+
+    imageCacheRef.current = null; // limpa cache antigo
+    preloadCertificateImage();
+  }, [certificate?.previewUrl]);
 
   // Calcula a bounding box com padding para seleção. É usado por CertificadoCanvas e handleMouseDown
   const getBoxRect = (x, y, width, height) => {
@@ -712,12 +739,8 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
     setMensagemStatus("Preparando o arquivo PDF...");
     await sleep(600); // Pausa para o usuário ler a mensagem antes de começar a gerar 
 
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = certificate.previewUrl;
-
-    img.onload = async () => {
       try {
+        const img = await preloadCertificateImage();
 
         setMensagemStatus("Carregando fontes e estilos...");
         setProgresso(15);
@@ -781,11 +804,10 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
         setEstaGerando(false);
         setMensagemStatus("");
       }
-    };
   };
   // 2
   // Gera imagens PNG individuais dentro de um ZIP
- const handleDownloadZIP = async () => {
+  const handleDownloadZIP = async () => {
     const zip = new JSZip();
     if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
 
@@ -794,12 +816,10 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
     setMensagemStatus("Preparando os arquivos...");
     await sleep(600);
 
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = certificate.previewUrl;
+    const img = await preloadCertificateImage();
 
-    img.onload = async () => {
       try {
+
         setMensagemStatus("Carregando fontes e estilos...");
         setProgresso(15);
         await sleep(600);
@@ -854,7 +874,7 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
         setEstaGerando(false);
         setMensagemStatus("");
       }
-    };
+    
   };
   //3
   // Gera um ZIP contendo vários arquivos PDF individuais
@@ -867,12 +887,8 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
     setMensagemStatus("Preparando os arquivos...");
     await sleep(600); // Pausa para o usuário ler o início da mensagem antes de começar a gerar 
 
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = certificate.previewUrl;
-
-    img.onload = async () => {
       try {
+        const img = await preloadCertificateImage();
         setMensagemStatus("Carregando fontes e estilos...");
         setProgresso(15);
         await sleep(600); // Pausa para a etapa de fontes
@@ -934,7 +950,6 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
         setEstaGerando(false);
         setMensagemStatus("");
       }
-    };
   };
 
   // Lógica de nomes em massa 
