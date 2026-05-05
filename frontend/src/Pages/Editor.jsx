@@ -400,7 +400,7 @@ const Editor = () => {
         setCertificate({
           ...data,
           name: data.title, 
-          previewUrl: `${API_URL}/uploads/${data.image_path}` 
+          previewUrl: data.image_path 
         });
 
         // Carrega settings se existirem (JSONB)
@@ -527,7 +527,7 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
     const corpoTexto =
       itemAlvo.overrides?.textoCorpo ||
       textoCorpoBase ||
-      "Participou com êxito...";
+      "Participou com êxito do evento [Nome do Evento], realizado no dia [Data], com carga horária de [X] horas.";
 
     // usa ctx real (NÃO cria canvas novo)
     const ctx = canvas.getContext("2d");
@@ -608,7 +608,7 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
     const corpoTexto =
       itemAlvo.overrides?.textoCorpo ||
       textoCorpoBase ||
-      "Participou com êxito do evento...";
+      "Participou com êxito do evento [Nome do Evento], realizado no dia [Data], com carga horária de [X] horas.";
 
     const nomeBox = getCachedTextBox(
       ctx,

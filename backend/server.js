@@ -4,14 +4,15 @@ import pool from "./db.js";
 import authMiddleware from "./middleware/auth.js";
 import multer from "multer";
 import "dotenv/config";
-import fs from "fs";
-import path from "path";
-
-if (!fs.existsSync("uploads")) {
-  fs.mkdirSync("uploads");
-}
+import { createClient } from "@supabase/supabase-js";
+import sharp from "sharp";
 
 const app = express();
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:5173",
@@ -20,8 +21,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
-app.use("/uploads", express.static("uploads"));
 
 app.get("/", (req, res) => {
   res.send("Backend funcionando");
@@ -40,6 +39,7 @@ app.get("/test-db", async (req, res) => {
 app.post("/users", authMiddleware, async (req, res) => {
   try {
     const { name } = req.body;
+    const file = req.file;
 
     if (!name || name.length < 3) {
       return res.status(400).json({ error: "Nome inválido" });
@@ -73,7 +73,7 @@ app.post("/users", authMiddleware, async (req, res) => {
 });
 
 const upload = multer({
-  dest: "uploads/",
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
@@ -111,12 +111,70 @@ app.post("/certificates", authMiddleware, upload.single("file"), async (req, res
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    const result = await pool.query(
-      "INSERT INTO certificates (title, image_path, user_id) VALUES ($1, $2, $3) RETURNING *",
-      [name, file.filename, user.id]
-    );
+    const safeName = file.originalname
+      .replace(/\s+/g, "_")
+      .replace(/[^\w.-]/g, "");
 
-    res.json(result.rows[0]);
+    const fileName = `${Date.now()}_${safeName}`;
+    const thumbname = `thumb_${fileName}`;
+
+    const thumbnailBuffer = await sharp(file.buffer)
+      .resize({ width: 300 }) // largura padrão
+      .webp({ quality: 70 }) // comprime
+      .toBuffer();
+
+    const [originalUpload, thumbUpload] = await Promise.all([
+  supabase.storage.from("certificates").upload(fileName, file.buffer, {
+    cacheControl: "31536000", // 1 ano
+    contentType: file.mimetype
+  }),
+  supabase.storage.from("certificates").upload(thumbname, thumbnailBuffer, {
+    cacheControl: "31536000", // 1 ano
+    contentType: "image/webp"
+  })
+]);
+
+// tratamento de erro
+if (originalUpload.error || thumbUpload.error) {
+  console.error("Erro no upload:", originalUpload.error || thumbUpload.error);
+
+  // rollback se algum falhar
+  await supabase.storage
+    .from("certificates")
+    .remove([fileName, thumbname]);
+
+  return res.status(500).json({ error: "Erro ao fazer upload do arquivo" });
+}
+
+    const { data: imageData } = supabase.storage
+      .from("certificates")
+      .getPublicUrl(fileName);
+
+    const { data: thumbData } = supabase.storage
+      .from("certificates")
+      .getPublicUrl(thumbname);
+    
+    if (!imageData?.publicUrl || !thumbData?.publicUrl) {
+      return res.status(500).json({ error: "Erro ao obter URLs do arquivo" });
+    }
+
+    try {
+      const result = await pool.query(
+        "INSERT INTO certificates (title, image_path, thumbnail_path, user_id) VALUES ($1, $2, $3, $4) RETURNING *",
+        [name, imageData.publicUrl, thumbData.publicUrl, user.id]
+      );
+
+      res.json(result.rows[0]);
+
+    } catch (dbError) {
+      console.error("Erro no banco, rollback do storage...");
+
+      await supabase.storage
+        .from("certificates")
+        .remove([fileName, thumbname]);
+
+      return res.status(500).json({ error: "Erro ao salvar certificado" });
+    }
 
   } catch (error) {
     console.error(error);
@@ -139,12 +197,12 @@ app.get("/certificates", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    const result = await pool.query(
+    const certResult = await pool.query(
       "SELECT * FROM certificates WHERE user_id = $1 ORDER BY id DESC",
       [user.id]
     );
 
-    res.json(result.rows);
+    res.json(certResult.rows);
 
   } catch (error) {
     console.error(error);
@@ -193,9 +251,11 @@ app.get("/certificates/:id", authMiddleware, async (req, res) => {
 app.delete("/certificates/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
+
     if (isNaN(id)) {
       return res.status(400).json({ error: "ID inválido" });
     }
+
     const email = req.user.email;
 
     const userResult = await pool.query(
@@ -209,25 +269,49 @@ app.delete("/certificates/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    const result = await pool.query(
-      "DELETE FROM certificates WHERE id = $1 AND user_id = $2 RETURNING *",
+    const certResult = await pool.query(
+      "SELECT * FROM certificates WHERE id = $1 AND user_id = $2",
       [id, user.id]
     );
 
-    if (result.rows.length === 0) {
+    if (certResult.rows.length === 0) {
       return res.status(404).json({ error: "Certificado não encontrado" });
     }
 
-    const cert = result.rows[0];
-      if (cert.image_path) {
-        const filePath = path.join("uploads", cert.image_path);
+    const cert = certResult.rows[0];
 
-        fs.unlink(filePath, (err) => {
-          if (err && err.code !== "ENOENT") {
-            console.error("Erro ao deletar arquivo:", err);
-          }
-        });
+    const extractPath = (urlString) => {
+      try {
+        const url = new URL(urlString);
+        const parts = url.pathname.split("/certificates/");
+        return parts.length > 1 ? parts[1] : null;
+      } catch {
+        return null;
       }
+    };
+
+    const filesToDelete = [];
+
+    const originalPath = extractPath(cert.image_path);
+    const thumbPath = extractPath(cert.thumbnail_path);
+
+    if (originalPath) filesToDelete.push(originalPath);
+    if (thumbPath) filesToDelete.push(thumbPath);
+
+    if (filesToDelete.length > 0) {
+      const { error: deleteError } = await supabase.storage
+        .from("certificates")
+        .remove(filesToDelete);
+
+      if (deleteError) {
+        console.error("Erro ao deletar arquivos do storage:", deleteError);
+      }
+    }
+
+     await pool.query(
+      "DELETE FROM certificates WHERE id = $1 AND user_id = $2",
+      [id, user.id]
+    );
 
     res.json({ message: "Deletado com sucesso" });
 

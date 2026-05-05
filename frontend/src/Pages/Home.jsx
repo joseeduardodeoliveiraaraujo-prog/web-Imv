@@ -18,7 +18,7 @@ const Home = ({ user, onLogout }) => {
   useEffect(() => {
     if (!user) return;
     loadCertificates();
-  }, [user?.uid]);
+  }, [user]);
 
   const loadCertificates = async () => {
     if (!user) return;
@@ -42,7 +42,8 @@ const Home = ({ user, onLogout }) => {
       const formatted = data.map(cert => ({
         id: cert.id,
         name: cert.title,
-        previewUrl: `${API_URL}/uploads/${cert.image_path}`
+        previewUrl: cert.thumbnail_path,
+        originalUrl: cert.image_path // teste1
       }));
 
       setCertificates(formatted);
@@ -82,7 +83,17 @@ const Home = ({ user, onLogout }) => {
         throw new Error("Erro no upload");
       }
 
-      await loadCertificates(); // reutilização
+      const newCert = await response.json(); // reutilização
+
+      setCertificates(prev => [
+        {
+          id: newCert.id,
+          name: newCert.title,
+          previewUrl: newCert.thumbnail_path,
+          originalUrl: newCert.image_path
+        },
+        ...prev
+      ]);
 
       e.target.value = ""; // permite enviar o mesmo arquivo novamente
 
@@ -184,8 +195,12 @@ const Home = ({ user, onLogout }) => {
                 {/* Imagem ampliada */}
                 <div className="modal-body">
                   <img
-                    src={selectedCertificate.previewUrl}
+                    src={selectedCertificate.originalUrl || selectedCertificate.previewUrl} // teste1
                     alt="Preview do certificado"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "/fallback.png";
+                    }}
                   />
                 </div>
               </div>
@@ -226,6 +241,11 @@ const Home = ({ user, onLogout }) => {
                 <img
                   src={cert.previewUrl}
                   alt={cert.name}
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "/fallback.png";
+                  }}
                 />  
              </div>
             </div>
