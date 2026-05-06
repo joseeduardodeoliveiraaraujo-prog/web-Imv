@@ -324,3 +324,103 @@
     grid-template-columns: 1fr; /* Coluna única no mobile */
   }
 }
+
+/* =========================
+   RECENTES
+========================= */
+
+.recentes-container {
+  margin-top: 50px;
+  padding: 25px;
+  border-radius: 20px;
+
+  /* Glassmorphism igual seu padrão */
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.recentes-container h2 {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  color: #e2e8f0;
+  letter-spacing: 1px;
+}
+
+/* Lista com scroll */
+.recentes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+/* Scroll custom (opcional mas bonito) */
+.recentes-lista::-webkit-scrollbar {
+  width: 6px;
+}
+
+.recentes-lista::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 10px;
+}
+
+/* Card */
+.recente-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  padding: 10px;
+  border-radius: 14px;
+
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.recente-card:hover {
+  transform: translateY(-5px);
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+/* Preview */
+.recente-card img {
+  width: 120px;
+  height: 70px;
+  object-fit: contain;
+  border-radius: 8px;
+
+  border: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Info */
+.recente-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.recente-info h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #f1f5f9;
+}
+
+.recente-info p {
+  margin: 4px 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.recente-info span {
+  font-size: 0.75rem;
+  color: #64748b;
+}

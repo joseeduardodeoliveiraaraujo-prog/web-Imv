@@ -952,6 +952,47 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
       }
   };
 
+  const handleSaveProject = async () => {
+    if (!user) return;
+
+    try {
+      const token = await user.getIdToken();
+
+      const payload = {
+        nomesLista,
+        textoCorpo,
+        estilos: {
+          corNome,
+          fonteNome,
+          tamanhoNome,
+          corCorpo,
+          fonteCorpo,
+          tamanhoCorpo
+        },
+        certificadoId: idDoCertificado // pega da URL ou state
+      };
+
+      const response = await fetch(`${API_URL}/projects`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao salvar projeto");
+      }
+
+      alert("Projeto salvo com sucesso!");
+
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao salvar projeto");
+    }
+  };
+
   // Lógica de nomes em massa 
   const handleBulkNames = (e) => {
     const value = e.target.value.replace(/\r/g, "");
@@ -1267,42 +1308,48 @@ const customStyles = {
 
         </div>
 
-      <div className="download-group-container">
-          {/* Menu Dropdown */}
-          {menuDownloadAberto && (
-            <div className="download-options-menu">
-              <button className="option-item" onClick={() => { handleDownloadPDF(); setMenuDownloadAberto(false); }}>
-                <div className="item-text-wrapper">
-                  <strong className="item-main-title">PDF Único</strong>
-                  <span className="item-sub-desc">Todos os certificados em um só arquivo</span>
-                </div>
-              </button>
+        <div className="download-group-container">
+            {/* Menu Dropdown */}
+            {menuDownloadAberto && (
+              <div className="download-options-menu">
+                <button className="option-item" onClick={() => { handleDownloadPDF(); setMenuDownloadAberto(false); }}>
+                  <div className="item-text-wrapper">
+                    <strong className="item-main-title">PDF Único</strong>
+                    <span className="item-sub-desc">Todos os certificados em um só arquivo</span>
+                  </div>
+                </button>
 
-              <button className="option-item" onClick={() => { handleDownloadPDFZIP(); setMenuDownloadAberto(false); }}>
-                <div className="item-text-wrapper">
-                  <strong className="item-main-title">PDFs Individuais (.ZIP)</strong>
-                  <span className="item-sub-desc">Cada certificado em seu próprio PDF</span>
-                </div>
-              </button>
+                <button className="option-item" onClick={() => { handleDownloadPDFZIP(); setMenuDownloadAberto(false); }}>
+                  <div className="item-text-wrapper">
+                    <strong className="item-main-title">PDFs Individuais (.ZIP)</strong>
+                    <span className="item-sub-desc">Cada certificado em seu próprio PDF</span>
+                  </div>
+                </button>
 
-              <button className="option-item" onClick={() => { handleDownloadZIP(); setMenuDownloadAberto(false); }}>
-                <div className="item-text-wrapper">
-                  <strong className="item-main-title">Imagens JPEG (.ZIP)</strong>
-                  <span className="item-sub-desc">Fotos individuais de cada certificado</span>
-                </div>
-              </button>
-            </div>
-          )}
+                <button className="option-item" onClick={() => { handleDownloadZIP(); setMenuDownloadAberto(false); }}>
+                  <div className="item-text-wrapper">
+                    <strong className="item-main-title">Imagens JPEG (.ZIP)</strong>
+                    <span className="item-sub-desc">Fotos individuais de cada certificado</span>
+                  </div>
+                </button>
+              </div>
+            )}
 
-          {/* Botão Principal */}
+            {/* Botão Principal */}
           <button 
-            className="btn-download-trigger" 
-            onClick={() => setMenuDownloadAberto(!menuDownloadAberto)}
+              className="btn-download-trigger" 
+              onClick={() => setMenuDownloadAberto(!menuDownloadAberto)}
           >
             <span>Baixar Certificados</span>
             <span className={`chevron ${menuDownloadAberto ? 'up' : 'down'}`}></span>
           </button>
         </div>
+        <button 
+          className="btn-save"
+          onClick={handleSaveProject}
+        >
+          💾 Salvar Projeto
+        </button>
       </aside>
     </div>
     {/* TELA DE CARREGAMENTO (OVERLAY) */}

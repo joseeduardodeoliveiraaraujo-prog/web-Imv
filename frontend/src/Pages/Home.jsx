@@ -9,6 +9,7 @@ const Home = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const [selectedCertificate, setSelectedCertificate] = useState (null);
   const [certificates, setCertificates] = useState([]);
+  const [recentes, setRecentes] = useState([]);
   
   //refs
   const fileInputRef = useRef(null);
@@ -19,6 +20,25 @@ const Home = ({ user, onLogout }) => {
     if (!user) return;
     loadCertificates();
   }, [user]);
+
+  useEffect(() => {
+  setRecentes([
+    {
+      id: 1,
+      nomeProjeto: "Certificado Evento X",
+      preview: "https://via.placeholder.com/150",
+      data: "10/05/2024",
+      autor: "oliveira"
+    },
+    {
+      id: 2,
+      nomeProjeto: "Workshop React",
+      preview: "https://via.placeholder.com/150",
+      data: "09/05/2024",
+      autor: "oliveira"
+    }
+  ]);
+}, []);
 
   const loadCertificates = async () => {
     if (!user) return;
@@ -100,6 +120,10 @@ const Home = ({ user, onLogout }) => {
     } catch (error) {
       console.error("Erro ao enviar arquivo:", error);
     }
+  };
+
+  const handleAbrirProjeto = (id) => {
+    navigate(`/editor/${id}`);
   };
 
   // Função para limpar o certificado selecionado e fechar o modal
@@ -251,6 +275,29 @@ const Home = ({ user, onLogout }) => {
             </div>
           ))}
         </div>
+
+        <div className="recentes-container">
+          <h2>EDITADOS RECENTEMENTE</h2>
+
+          <div className="recentes-lista">
+            {recentes.map((item) => (
+              <div 
+                key={item.id} 
+                className="recente-card"
+                onClick={() => handleAbrirProjeto(item.id)}
+              >
+                <img src={item.preview} alt="preview" />
+
+                <div>
+                  <h3>{item.nomeProjeto}</h3>
+                  <p>Última edição: {item.data}</p>
+                  <span>by {item.autor}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
       </main>
     </>
   );
