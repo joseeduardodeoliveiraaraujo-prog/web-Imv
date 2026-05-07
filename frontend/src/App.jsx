@@ -71,6 +71,12 @@ function App() {
             element={<Editor user={user} />} 
           />
 
+          {/* abrir projeto salvo */}
+          <Route
+            path="/project/:id"
+            element={<Editor user={user} />}
+          />
+
           {/* segurança extra */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

@@ -5,7 +5,8 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import {jsPDF} from "jspdf";
 import Select from 'react-select';
-import { auth } from "../services/firebase"; 
+import { auth } from "../services/firebase";
+import { useLocation } from "react-router-dom"; 
 
 // Quebra o texto em várias linhas respeitando maxWidth e desenha no canvas com opção de justificado
 // Se comunica diretamente com o canvas via ctx e retorna a altura total para quem chamou ajustar layout (ex: selection box, cálculo de tamanho, etc.)
@@ -270,9 +271,11 @@ const CertificadoCanvas = ({ certificate, nome, textoCorpo, corNome, corCorpo, f
 // - drawWrappedText()
 // - jsPDF / JSZip
 // - React Router (useParams, useNavigate)
-const Editor = () => {
+const Editor = ({ user }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isProjectRoute = location.pathname.startsWith("/project/");
 
  // Estados Base
   const [certificate, setCertificate] = useState(null);
@@ -309,6 +312,9 @@ const Editor = () => {
 
   // Estado para controlar edição em massa de nomes (textarea)
   const [indexEditando, setIndexEditando] = useState(null);
+
+  // Estado para controlar o projeto atual (pode ser usado para futuras features de múltiplos projetos, organização, etc.)
+  const [projectId, setProjectId] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -375,49 +381,97 @@ const Editor = () => {
   // Dentro do seu useEffect no Editor.js
   // Dentro do seu useEffect no Editor.js
   useEffect(() => {
-    const carregarDados = async () => {
-      try {
-        // 1. Pegar o token do usuário logado 
-        const user = auth.currentUser; 
-        const token = await user?.getIdToken();
 
-        if (!token) {
-          console.error("Usuário não autenticado");
-          return navigate("/login");
+  const carregarDados = async () => {
+
+    try {
+
+      const user = auth.currentUser;
+
+      const token = await user?.getIdToken();
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      // decide endpoint
+      const endpoint = isProjectRoute
+        ? `${API_URL}/projects/${id}`
+        : `${API_URL}/certificates/${id}`;
+
+      const response = await fetch(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
+      });
 
-        const response = await fetch(`${API_URL}/certificates/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}` // O authMiddleware exige isso
-          }
+      if (!response.ok) {
+        throw new Error("Erro ao carregar");
+      }
+
+      const data = await response.json();
+
+      // =========================
+      // ABRINDO PROJETO SALVO
+      // =========================
+      if (isProjectRoute) {
+
+        setProjectId(data.id);
+
+        setCertificate({
+          id: data.certificate_id,
+          name: data.title,
+          previewUrl: data.image_path
         });
 
-        if (!response.ok) throw new Error("Erro ao buscar certificado");
-        
-        const data = await response.json();
+        setNomesLista(
+          data.nomes_lista || [{ nome: "", overrides: {} }]
+        );
 
-        // 2. Mapeamento dos campos para bater com o Banco de Dados
+        setTextoCorpo(data.texto_corpo || "");
+
+        setCorNome(data.cor_nome || "#000000");
+
+        setFonteNome(data.fonte_nome || "Inter");
+
+        setTamanhoNome(data.tamanho_nome || 90);
+
+        setCorCorpo(data.cor_corpo || "#000000");
+
+        setFonteCorpo(data.fonte_corpo || "Inter");
+
+        setTamanhoCorpo(data.tamanho_corpo || 40);
+
+      }
+
+      // =========================
+      // ABRINDO CERTIFICADO NORMAL
+      // =========================
+      else {
+
         setCertificate({
           ...data,
-          name: data.title, 
-          previewUrl: data.image_path 
+          name: data.title,
+          previewUrl: data.image_path
         });
 
-        // Carrega settings se existirem (JSONB)
-        if (data.settings) {
-          setNomesLista(data.settings.nomesLista || [{ nome: "", overrides: {} }]);
-          setCorNome(data.settings.corNome || "#000000");
-          // ... carregar os outros campos de settings
-        }
-
-      } catch (error) {
-        console.error("Falha na conexão:", error);
-        navigate("/");
       }
-    };
 
-    if (id) carregarDados();
-  }, [id, navigate]);
+    } catch (error) {
+
+      console.error(error);
+
+      navigate("/");
+
+    }
+  };
+
+  if (id) {
+    carregarDados();
+  }
+
+}, [id, navigate, isProjectRoute]);
 
   // Sempre que o certificado muda, pré-carrega a imagem para garantir que o canvas renderize sem lag. Se a imagem já tiver sido carregada antes, usa o cache.
   useEffect(() => {
@@ -953,13 +1007,22 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
   };
 
   const handleSaveProject = async () => {
-    if (!user) return;
+    if (!user || !certificate) return;
 
     try {
       const token = await user.getIdToken();
 
+      // GARANTIA: Limpa a lista para garantir que é um Array de Objetos 
+      // e remove possíveis campos vazios ou nulos.
+      const nomesParaSalvar = nomesLista
+        .filter(item => item.nome && item.nome.trim() !== "")
+        .map(item => ({
+          nome: item.nome,
+          overrides: item.overrides || {}
+        }));
+
       const payload = {
-        nomesLista,
+        nomesLista: nomesParaSalvar, // Enviamos o array limpo
         textoCorpo,
         estilos: {
           corNome,
@@ -969,27 +1032,42 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
           fonteCorpo,
           tamanhoCorpo
         },
-        certificadoId: idDoCertificado // pega da URL ou state
+        certificadoId: certificate.id
       };
 
-      const response = await fetch(`${API_URL}/projects`, {
-        method: "POST",
+      // O console.log aqui ajuda a debugar antes do envio:
+      console.log("Payload enviado:", payload);
+
+      const url = projectId ? `${API_URL}/projects/${projectId}` : `${API_URL}/projects`;
+      const method = projectId ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload) // O fetch transforma o objeto em string JSON uma única vez
       });
 
       if (!response.ok) {
         throw new Error("Erro ao salvar projeto");
       }
 
+      const data = await response.json();
+
+      // salva o id após primeiro POST
+      if (!projectId) {
+        setProjectId(data.id);
+      }
+
       alert("Projeto salvo com sucesso!");
 
     } catch (err) {
+
       console.error(err);
       alert("Erro ao salvar projeto");
+
     }
   };
 

@@ -22,23 +22,38 @@ const Home = ({ user, onLogout }) => {
   }, [user]);
 
   useEffect(() => {
-  setRecentes([
-    {
-      id: 1,
-      nomeProjeto: "Certificado Evento X",
-      preview: "https://via.placeholder.com/150",
-      data: "10/05/2024",
-      autor: "oliveira"
-    },
-    {
-      id: 2,
-      nomeProjeto: "Workshop React",
-      preview: "https://via.placeholder.com/150",
-      data: "09/05/2024",
-      autor: "oliveira"
-    }
-  ]);
-}, []);
+    const carregarRecentes = async () => {
+
+      if (!user) return;
+
+      try {
+
+        const token = await user.getIdToken();
+
+        const response = await fetch(`${API_URL}/projects`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Erro ao buscar projetos");
+        }
+
+        const data = await response.json();
+
+        setRecentes(data);
+
+      } catch (err) {
+
+        console.error(err);
+
+      }
+    };
+
+    carregarRecentes();
+
+  }, [user]);
 
   const loadCertificates = async () => {
     if (!user) return;
@@ -123,7 +138,7 @@ const Home = ({ user, onLogout }) => {
   };
 
   const handleAbrirProjeto = (id) => {
-    navigate(`/editor/${id}`);
+    navigate(`/project/${id}`);
   };
 
   // Função para limpar o certificado selecionado e fechar o modal
@@ -169,58 +184,41 @@ const Home = ({ user, onLogout }) => {
   };
 
   //return
-  return (
-    <>
-      <Header user={user} onLogout={onLogout} />
+ return (
+  <>
+    <Header user={user} onLogout={onLogout} />
 
+    <div className="home-wrapper">
       <main className="home-content">
         <h1 className="home-title">Modelo de Certificados</h1>
 
         <input
-          type="file" 
-          accept="image/*" 
-          ref={fileInputRef} 
-          style={{display:"none"}} 
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          style={{ display: "none" }}
           onChange={handleFileChange}
         />
 
         <div className="certificates-grid">
-          {/*card de upload*/}
           <div className="certificate-item">
             <span className="certificate-name">Novo modelo</span>
-  
-            <div 
-            className="certificate-card-upload-card" 
-            onClick={handleUploadClick}
-            >
-            <FaPlus />
-             {/* Removi o span daqui de dentro para ele não duplicar */}
+            <div className="certificate-card-upload-card" onClick={handleUploadClick}>
+              <FaPlus />
             </div>
           </div>
 
           {selectedCertificate && (
             <div className="modal-overlay">
               <div className="modal-content">
-
-                {/* Header do modal */}
                 <div className="modal-header">
-                  <span className="modal-title">
-                    {selectedCertificate.name}
-                  </span>
-
-                  <button
-                    className="modal-close"
-                    onClick={closeModal}
-                  >
-                    ✕
-                  </button>
+                  <span className="modal-title">{selectedCertificate.name}</span>
+                  <button className="modal-close" onClick={closeModal}>✕</button>
                 </div>
-
-                {/* Imagem ampliada */}
                 <div className="modal-body">
                   <img
-                    src={selectedCertificate.originalUrl || selectedCertificate.previewUrl} // teste1
-                    alt="Preview do certificado"
+                    src={selectedCertificate.originalUrl || selectedCertificate.previewUrl}
+                    alt="Preview"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = "/fallback.png";
@@ -228,14 +226,12 @@ const Home = ({ user, onLogout }) => {
                   />
                 </div>
               </div>
-              {/* Ações Flutuantes - Substituem o footer */}
               <div className="floating-actions">
                 <button className="btn-fab edit" title="Editar" onClick={handleEdit}>
                   <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                   </svg>
                 </button>
-                    
                 <button className="btn-fab delete" title="Excluir" onClick={handleDelete}>
                   <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
@@ -246,22 +242,12 @@ const Home = ({ user, onLogout }) => {
                 </button>
               </div>
             </div>
-        
           )}
 
           {certificates.map((cert) => (
-            <div className="certificate-item" key={cert.id} >
-              <span className="certificate-name" title={cert.name}>
-                {cert.name}
-              </span>
-            
-              <div className="certificate-card"
-                role="button"
-                tabIndex={0}
-                onClick={() => setSelectedCertificate(cert)}
-                onKeyDown={(e) => e.key === "Enter" && setSelectedCertificate(cert)}
-              >
-             
+            <div className="certificate-item" key={cert.id}>
+              <span className="certificate-name" title={cert.name}>{cert.name}</span>
+              <div className="certificate-card" role="button" tabIndex={0} onClick={() => setSelectedCertificate(cert)}>
                 <img
                   src={cert.previewUrl}
                   alt={cert.name}
@@ -270,37 +256,35 @@ const Home = ({ user, onLogout }) => {
                     e.currentTarget.onerror = null;
                     e.currentTarget.src = "/fallback.png";
                   }}
-                />  
-             </div>
+                />
+              </div>
             </div>
           ))}
         </div>
 
         <div className="recentes-container">
           <h2>EDITADOS RECENTEMENTE</h2>
-
           <div className="recentes-lista">
             {recentes.map((item) => (
-              <div 
-                key={item.id} 
-                className="recente-card"
-                onClick={() => handleAbrirProjeto(item.id)}
-              >
-                <img src={item.preview} alt="preview" />
-
+              <div key={item.id} className="recente-card" onClick={() => handleAbrirProjeto(item.id)}>
+                <img src={item.thumbnail_path} alt="preview" />
                 <div>
-                  <h3>{item.nomeProjeto}</h3>
-                  <p>Última edição: {item.data}</p>
-                  <span>by {item.autor}</span>
+                  <h3>{item.title}</h3>
+                  <p>Última edição: {new Date(item.created_at).toLocaleDateString("pt-BR")}</p>
+                  <span>
+                    {typeof item.nomes_lista?.[0] === "object"
+                      ? item.nomes_lista?.[0]?.nome
+                      : item.nomes_lista?.[0] || "Projeto"}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
         </div>
-        
       </main>
-    </>
-  );
+    </div>
+  </>
+);
 };
 
 export default Home;

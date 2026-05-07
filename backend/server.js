@@ -248,6 +248,206 @@ app.get("/certificates/:id", authMiddleware, async (req, res) => {
   }
 });
 
+app.post("/projects", authMiddleware, async (req, res) => {
+  try {
+    const { nomesLista, textoCorpo, estilos, certificadoId } = req.body;
+    const email = req.user.email;
+
+    const userResult = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+    const user = userResult.rows[0];
+
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+
+    const result = await pool.query(
+      `INSERT INTO projects (
+        user_id, certificate_id, nomes_lista, texto_corpo,
+        cor_nome, fonte_nome, tamanho_nome,
+        cor_corpo, fonte_corpo, tamanho_corpo
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *`,
+      [
+        user.id,
+        certificadoId,
+        JSON.stringify(nomesLista), // <--- CORREÇÃO AQUI
+        textoCorpo,
+        estilos.corNome,
+        estilos.fonteNome,
+        estilos.tamanhoNome,
+        estilos.corCorpo,
+        estilos.fonteCorpo,
+        estilos.tamanhoCorpo
+      ]
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao salvar projeto" });
+  }
+});
+
+app.get("/projects", authMiddleware, async (req, res) => {
+  try {
+
+    const email = req.user.email;
+
+    const userResult = await pool.query(
+      "SELECT * FROM users WHERE email = $1",
+      [email]
+    );
+
+    const user = userResult.rows[0];
+
+    if (!user) {
+      return res.status(404).json({
+        error: "Usuário não encontrado"
+      });
+    }
+
+    const projectsResult = await pool.query(
+      `
+      SELECT
+        p.*,
+        c.title,
+        c.thumbnail_path
+      FROM projects p
+      JOIN certificates c
+        ON c.id = p.certificate_id
+      WHERE p.user_id = $1
+      ORDER BY p.updated_at DESC
+      LIMIT 10
+      `,
+      [user.id]
+    );
+
+    res.json(projectsResult.rows);
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Erro ao buscar projetos"
+    });
+  }
+});
+
+app.get("/projects/:id", authMiddleware, async (req, res) => {
+  try {
+
+    const { id } = req.params;
+
+    if (isNaN(id)) {
+      return res.status(400).json({
+        error: "ID inválido"
+      });
+    }
+
+    const email = req.user.email;
+
+    // busca usuário
+    const userResult = await pool.query(
+      "SELECT * FROM users WHERE email = $1",
+      [email]
+    );
+
+    const user = userResult.rows[0];
+
+    if (!user) {
+      return res.status(404).json({
+        error: "Usuário não encontrado"
+      });
+    }
+
+    // busca projeto do usuário
+    const projectResult = await pool.query(
+      `
+      SELECT
+        p.*,
+        c.title,
+        c.image_path,
+        c.thumbnail_path
+      FROM projects p
+      JOIN certificates c
+        ON c.id = p.certificate_id
+      WHERE p.id = $1
+      AND p.user_id = $2
+      `,
+      [id, user.id]
+    );
+
+    if (projectResult.rows.length === 0) {
+      return res.status(404).json({
+        error: "Projeto não encontrado"
+      });
+    }
+
+    res.json(projectResult.rows[0]);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: "Erro ao buscar projeto"
+    });
+
+  }
+});
+
+app.put("/projects/:id", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
+
+    const { nomesLista, textoCorpo, estilos } = req.body;
+    const email = req.user.email;
+
+    const userResult = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+    const user = userResult.rows[0];
+
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+
+    // Verifica e atualiza em uma única operação para ser mais eficiente
+    const updatedProject = await pool.query(
+      `UPDATE projects
+       SET
+        nomes_lista = $1,
+        texto_corpo = $2,
+        cor_nome = $3,
+        fonte_nome = $4,
+        tamanho_nome = $5,
+        cor_corpo = $6,
+        fonte_corpo = $7,
+        tamanho_corpo = $8,
+        updated_at = NOW()
+       WHERE id = $9 AND user_id = $10
+       RETURNING *`,
+      [
+        JSON.stringify(nomesLista), // <--- CORREÇÃO AQUI
+        textoCorpo,
+        estilos.corNome,
+        estilos.fonteNome,
+        estilos.tamanhoNome,
+        estilos.corCorpo,
+        estilos.fonteCorpo,
+        estilos.tamanhoCorpo,
+        id,
+        user.id
+      ]
+    );
+
+    if (updatedProject.rows.length === 0) {
+      return res.status(404).json({ error: "Projeto não encontrado ou sem permissão" });
+    }
+
+    res.json(updatedProject.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao atualizar projeto" });
+  }
+});
+
 app.delete("/certificates/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;

@@ -1,12 +1,41 @@
 /* Container Principal */
-.home-content {
-  padding: 110px 4% 40px; /* Mais respiro nas laterais */
-  min-height: 100vh;
-  color: #fff;
-  max-width: 1200px; /* Centraliza o conteúdo em telas ultra-wide */
-  margin: 0 auto;
+/* Bloqueia o scroll do body para não bugar o layout */
+body {
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Container que cria o scroll na tela toda (abaixo do header) */
+.home-wrapper {
   width: 100%;
-  
+  height: calc(100vh - 10px); /* Ajuste os 80px para a altura do seu Header */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Conteúdo centralizado em 1500px */
+.home-content {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 80px 4% 100px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Estilização da barra de rolagem no canto da tela */
+.home-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.home-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+.home-wrapper::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .home-title {
@@ -354,8 +383,6 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
-
-  max-height: 300px;
   overflow-y: auto;
   padding-right: 5px;
 }
