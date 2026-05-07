@@ -250,7 +250,7 @@ app.get("/certificates/:id", authMiddleware, async (req, res) => {
 
 app.post("/projects", authMiddleware, async (req, res) => {
   try {
-    const { nomesLista, textoCorpo, estilos, certificadoId } = req.body;
+    const { nomesLista, textoCorpo, estilos, certificadoId, posicoes } = req.body;
     const email = req.user.email;
 
     const userResult = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
@@ -262,9 +262,10 @@ app.post("/projects", authMiddleware, async (req, res) => {
       `INSERT INTO projects (
         user_id, certificate_id, nomes_lista, texto_corpo,
         cor_nome, fonte_nome, tamanho_nome,
-        cor_corpo, fonte_corpo, tamanho_corpo
+        cor_corpo, fonte_corpo, tamanho_corpo,
+        posicao_nome, posicao_corpo
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *`,
       [
         user.id,
@@ -276,9 +277,39 @@ app.post("/projects", authMiddleware, async (req, res) => {
         estilos.tamanhoNome,
         estilos.corCorpo,
         estilos.fonteCorpo,
-        estilos.tamanhoCorpo
+        estilos.tamanhoCorpo,
+        JSON.stringify(posicoes.nome),
+        JSON.stringify(posicoes.corpo)
       ]
     );
+
+    const projectsResult = await pool.query(
+      `
+      SELECT id
+      FROM projects
+      WHERE user_id = $1
+      ORDER BY updated_at DESC
+      `,
+      [user.id]
+    );
+
+    const projects = projectsResult.rows;
+
+    // SE TIVER MAIS DE 3, REMOVE OS MAIS ANTIGOS
+    if (projects.length > 3) {
+
+      const idsParaRemover = projects
+        .slice(3)
+        .map(project => project.id);
+
+      await pool.query(
+        `
+        DELETE FROM projects
+        WHERE id = ANY($1::int[])
+        `,
+        [idsParaRemover]
+      );
+    }
 
     res.json(result.rows[0]);
   } catch (error) {
@@ -316,7 +347,7 @@ app.get("/projects", authMiddleware, async (req, res) => {
         ON c.id = p.certificate_id
       WHERE p.user_id = $1
       ORDER BY p.updated_at DESC
-      LIMIT 10
+      LIMIT 3
       `,
       [user.id]
     );
@@ -400,7 +431,7 @@ app.put("/projects/:id", authMiddleware, async (req, res) => {
     const { id } = req.params;
     if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
 
-    const { nomesLista, textoCorpo, estilos } = req.body;
+    const { nomesLista, textoCorpo, estilos, posicoes } = req.body;
     const email = req.user.email;
 
     const userResult = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
@@ -420,8 +451,10 @@ app.put("/projects/:id", authMiddleware, async (req, res) => {
         cor_corpo = $6,
         fonte_corpo = $7,
         tamanho_corpo = $8,
+        posicao_nome = $9,
+        posicao_corpo = $10,
         updated_at = NOW()
-       WHERE id = $9 AND user_id = $10
+       WHERE id = $11 AND user_id = $12
        RETURNING *`,
       [
         JSON.stringify(nomesLista), // <--- CORREÇÃO AQUI
@@ -432,6 +465,8 @@ app.put("/projects/:id", authMiddleware, async (req, res) => {
         estilos.corCorpo,
         estilos.fonteCorpo,
         estilos.tamanhoCorpo,
+        JSON.stringify(posicoes.nome),
+        JSON.stringify(posicoes.corpo),
         id,
         user.id
       ]

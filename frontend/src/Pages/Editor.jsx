@@ -381,97 +381,77 @@ const Editor = ({ user }) => {
   // Dentro do seu useEffect no Editor.js
   // Dentro do seu useEffect no Editor.js
   useEffect(() => {
+    const carregarDados = async () => {
+      try {
+        const user = auth.currentUser;
+        const token = await user?.getIdToken();
 
-  const carregarDados = async () => {
-
-    try {
-
-      const user = auth.currentUser;
-
-      const token = await user?.getIdToken();
-
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-
-      // decide endpoint
-      const endpoint = isProjectRoute
-        ? `${API_URL}/projects/${id}`
-        : `${API_URL}/certificates/${id}`;
-
-      const response = await fetch(endpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`
+        if (!token) {
+          navigate("/login");
+          return;
         }
-      });
 
-      if (!response.ok) {
-        throw new Error("Erro ao carregar");
-      }
+        const endpoint = isProjectRoute
+          ? `${API_URL}/projects/${id}`
+          : `${API_URL}/certificates/${id}`;
 
-      const data = await response.json();
-
-      // =========================
-      // ABRINDO PROJETO SALVO
-      // =========================
-      if (isProjectRoute) {
-
-        setProjectId(data.id);
-
-        setCertificate({
-          id: data.certificate_id,
-          name: data.title,
-          previewUrl: data.image_path
+        const response = await fetch(endpoint, {
+          headers: { Authorization: `Bearer ${token}` }
         });
 
-        setNomesLista(
-          data.nomes_lista || [{ nome: "", overrides: {} }]
-        );
+        if (!response.ok) throw new Error("Erro ao carregar");
 
-        setTextoCorpo(data.texto_corpo || "");
+        const data = await response.json();
 
-        setCorNome(data.cor_nome || "#000000");
+        if (isProjectRoute) {
+          setProjectId(data.id);
 
-        setFonteNome(data.fonte_nome || "Inter");
+          setCertificate({
+            id: data.certificate_id,
+            name: data.title,
+            previewUrl: data.image_path
+          });
 
-        setTamanhoNome(data.tamanho_nome || 90);
+          // --- SOLUÇÃO PARA O TEXTAREA DE NOMES ---
+          const listaSincronizada = data.nomes_lista || [{ nome: "", overrides: {} }];
+          setNomesLista(listaSincronizada);
+          
+          // Transformamos o array de objetos de volta em texto separado por linhas
+          const textoNomes = listaSincronizada
+            .map(item => item.nome)
+            .filter(nome => nome.trim() !== "")
+            .join("\n");
+          setBulkText(textoNomes); 
+          // ----------------------------------------
 
-        setCorCorpo(data.cor_corpo || "#000000");
+          setTextoCorpo(data.texto_corpo || "");
+          setCorNome(data.cor_nome || "#000000");
+          setFonteNome(data.fonte_nome || "Inter");
+          setTamanhoNome(data.tamanho_nome || 90);
+          setCorCorpo(data.cor_corpo || "#000000");
+          setFonteCorpo(data.fonte_corpo || "Inter");
+          setTamanhoCorpo(data.tamanho_corpo || 40);
 
-        setFonteCorpo(data.fonte_corpo || "Inter");
+          setPosicaoNome(data.posicao_nome || { x: 0, y: 0 });
+          setPosicaoCorpo(data.posicao_corpo || { x: 0, y: 0 });
 
-        setTamanhoCorpo(data.tamanho_corpo || 40);
+        } else {
+          setCertificate({
+            ...data,
+            name: data.title,
+            previewUrl: data.image_path
+          });
+        }
 
+      } catch (error) {
+        console.error(error);
+        navigate("/");
       }
+    };
 
-      // =========================
-      // ABRINDO CERTIFICADO NORMAL
-      // =========================
-      else {
+    if (id) carregarDados();
 
-        setCertificate({
-          ...data,
-          name: data.title,
-          previewUrl: data.image_path
-        });
-
-      }
-
-    } catch (error) {
-
-      console.error(error);
-
-      navigate("/");
-
-    }
-  };
-
-  if (id) {
-    carregarDados();
-  }
-
-}, [id, navigate, isProjectRoute]);
+  }, [id, navigate, isProjectRoute]);
 
   // Sempre que o certificado muda, pré-carrega a imagem para garantir que o canvas renderize sem lag. Se a imagem já tiver sido carregada antes, usa o cache.
   useEffect(() => {
@@ -1032,6 +1012,19 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
           fonteCorpo,
           tamanhoCorpo
         },
+
+         posicoes: {
+          nome: {
+            x: posicaoNome?.x ?? 0,
+            y: posicaoNome?.y ?? 0
+          },
+
+          corpo: {
+            x: posicaoCorpo?.x ?? 0,
+            y: posicaoCorpo?.y ?? 0
+          }
+},
+
         certificadoId: certificate.id
       };
 
