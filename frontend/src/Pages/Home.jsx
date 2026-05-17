@@ -268,7 +268,7 @@ const Home = ({ user, onLogout }) => {
             {recentes.map((item) => (
               <div key={item.id} className="recente-card" onClick={() => handleAbrirProjeto(item.id)}>
                 <img src={item.thumbnail_path} alt="preview" />
-                <div>
+                <div className="recente-info">
                   <h3>{item.title}</h3>
                   <p>Última edição: {new Date(item.created_at).toLocaleDateString("pt-BR")}</p>
                   <span>
