@@ -431,6 +431,60 @@ html, body {
 .down { transform: rotate(45deg); }
 .up { transform: rotate(-135deg); }
 
+/* Container do botão salvar */
+.save-group-container {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Botão Salvar Projeto */
+.btn-save {
+  width: 100%;
+  padding: 14px 20px;
+  background-color: #22c55e; /* Verde principal */
+  color: #052e16; /* Texto escuro */
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+}
+
+/* Hover */
+.btn-save:hover {
+  background-color: #16a34a;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.3);
+}
+
+/* Clique */
+.btn-save:active {
+  transform: scale(0.98);
+}
+
+/* Estado desabilitado */
+.btn-save:disabled {
+  background-color: #64748b;
+  color: #cbd5e1;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Ícone opcional */
+.btn-save .save-icon {
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+}
+
 /* Botão Sair */
 .btn-exit {
   display: flex;

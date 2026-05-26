@@ -361,6 +361,7 @@ body {
   margin-top: 50px;
   padding: 30px;
   border-radius: 20px;
+  justify-content: flex-start;
 
   /* Seu padrão de Glassmorphism */
   background: rgba(255, 255, 255, 0.04);
@@ -388,10 +389,11 @@ body {
 /* LISTA: Mudamos para center e controlamos o espaçamento fixo ideal */
 .recentes-lista {
   display: flex;
-  justify-content: center; /* Centraliza o bloco expandido na tela */
-  align-items: center;
+  justify-content: flex-start; /* Centraliza o bloco expandido na tela */
+  align-items: flex-start; /* Alinha os cards ao topo */
   gap: 32px; /* Um espaço robusto e bem distribuído entre os 3 cards */
   width: 100%;
+  flex-wrap: nowrap; /* Permite que os cards se ajustem em telas menores */
 }
 
 /* CARD: Aumentamos o limite de largura e o padding para ele encorpar */
@@ -400,9 +402,7 @@ body {
   align-items: center; 
   gap: 18px; /* Aumentado levemente para afastar o texto da imagem */
   
-  flex: 1; /* Faz os cards crescerem para ocupar o espaço */
-  max-width: 460px; /* Expandido de 380px para 460px para os lados */
-  min-width: 280px; 
+  width: 420px;
   
   padding: 16px 20px; /* Mais padding interno deixa o card mais imponente e alto */
   border-radius: 14px;
@@ -426,9 +426,8 @@ body {
 
 /* PREVIEW DA IMAGEM: Ajustada milimetricamente para o novo tamanho do card */
 .recente-card img {
-  width: 110px; /* Aumentada para equilibrar com o card maior */
-  height: 68px; 
-  object-fit: cover;
+  width: 100px; /* Aumentada para equilibrar com o card maior */
+  object-fit: contain;
   border-radius: 0px; 
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);

@@ -766,6 +766,7 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
   // Gera um PDF com todos os certificados
   const handleDownloadPDF = async () => {
     if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
+    if (textoCorpoBase.trim() === "") return alert("Insira um texto para o certificado!");
 
     // Ativa o carregamento logo no início
     setEstaGerando(true);
@@ -844,6 +845,7 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
   const handleDownloadZIP = async () => {
     const zip = new JSZip();
     if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
+    if (textoCorpoBase.trim() === "") return alert("Insira um texto para o certificado!");
 
     setEstaGerando(true);
     setProgresso(5);
@@ -914,7 +916,8 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
   // Gera um ZIP contendo vários arquivos PDF individuais
   const handleDownloadPDFZIP = async () => {
     if (nomesValidos.length === 0) return alert("Insira nomes na lista!");
-
+    if (textoCorpoBase.trim() === "") return alert("Insira um texto para o certificado!");
+    
     // 1. Ativa o carregamento
     setEstaGerando(true);
     setProgresso(5);
@@ -989,17 +992,21 @@ function getCachedTextBox(ctx, text, size, font, maxWidth) {
   const handleSaveProject = async () => {
     if (!user || !certificate) return;
 
+    // GARANTIA: Limpa a lista para garantir que é um Array de Objetos 
+    // e remove possíveis campos vazios ou nulos.
+    const nomesParaSalvar = nomesLista
+      .filter(item => item.nome && item.nome.trim() !== "")
+      .map(item => ({
+        nome: item.nome,
+        overrides: item.overrides || {}
+    }));
+
+    if (nomesParaSalvar.length === 0) {
+      return alert("Insira nomes na lista!");
+    }
+
     try {
       const token = await user.getIdToken();
-
-      // GARANTIA: Limpa a lista para garantir que é um Array de Objetos 
-      // e remove possíveis campos vazios ou nulos.
-      const nomesParaSalvar = nomesLista
-        .filter(item => item.nome && item.nome.trim() !== "")
-        .map(item => ({
-          nome: item.nome,
-          overrides: item.overrides || {}
-        }));
 
       const payload = {
         nomesLista: nomesParaSalvar, // Enviamos o array limpo
@@ -1415,12 +1422,17 @@ const customStyles = {
             <span className={`chevron ${menuDownloadAberto ? 'up' : 'down'}`}></span>
           </button>
         </div>
-        <button 
-          className="btn-save"
-          onClick={handleSaveProject}
-        >
-          💾 Salvar Projeto
-        </button>
+
+        <div className="save-group-container">
+          <button 
+            className="btn-save"
+            onClick={handleSaveProject}
+          >
+            <span className="save-icon">💾</span>
+            <span>Salvar Projeto</span>
+          </button>
+        </div>
+
       </aside>
     </div>
     {/* TELA DE CARREGAMENTO (OVERLAY) */}
