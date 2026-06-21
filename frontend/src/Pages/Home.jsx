@@ -270,7 +270,7 @@ const Home = ({ user, onLogout }) => {
                 <img src={item.thumbnail_path} alt="preview" />
                 <div className="recente-info">
                   <h3>{item.title}</h3>
-                  <p>Última edição: {new Date(item.created_at).toLocaleDateString("pt-BR")}</p>
+                  <p>Última edição: {new Date(item.updated_at).toLocaleDateString("pt-BR")}</p>
                   <span>
                     {typeof item.nomes_lista?.[0] === "object"
                       ? item.nomes_lista?.[0]?.nome

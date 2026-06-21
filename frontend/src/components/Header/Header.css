@@ -1,45 +1,65 @@
+/**
+ * DESCRIPTION: Container principal do cabeçalho.
+ * RESPONSIBILITY: Fixar no topo, aplicar efeito de vidro fosco e alinhar elementos nas extremidades.
+ */
 .header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 72px; /* Aumentado levemente para respirar melhor */
+  height: 72px; 
 
-  /* Cores mais profundas e borda sutil inferior */
+  /* Efeito Glassmorphism e borda inferior */
   background: rgba(18, 18, 18, 0.7); 
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px); /* Suporte para Safari */
+  -webkit-backdrop-filter: blur(12px); /* Suporte Safari */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
+  /* Alinhamento flexbox e empilhamento */
   display: flex;
   justify-content: space-between;
   align-items: center;
-
-  padding: 0 32px; /* Mais respiro nas laterais */
+  padding: 0 32px; 
   color: #ffffff;
   z-index: 1000;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
+/**
+ * DESCRIPTION: Agrupador do bloco de texto à esquerda.
+ * RESPONSIBILITY: Alinhar verticalmente o título e o subtítulo com espaçamento controlado.
+ */
 .header-left {
   display: flex;
   flex-direction: column;
-  gap: 2px; /* Controle preciso do espaço entre título e subtítulo */
+  gap: 2px; 
 }
 
+/**
+ * DESCRIPTION: Título principal do cabeçalho.
+ * RESPONSIBILITY: Definir peso visual e ajuste microtipográfico do elemento h2.
+ */
 .header-left h2 {
   font-size: 1.1rem;
   font-weight: 600;
-  letter-spacing: -0.02em; /* Estética moderna de UI */
+  letter-spacing: -0.02em; 
   margin: 0;
 }
 
+/**
+ * DESCRIPTION: Subtítulo descritivo.
+ * RESPONSIBILITY: Reduzir a escala tipográfica e aplicar opacidade para hierarquia visual.
+ */
 .header-left span {
   font-size: 0.8rem;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.6);
 }
 
+/**
+ * DESCRIPTION: Botão de encerramento de sessão (Logout).
+ * RESPONSIBILITY: Estilizar a ação destrutiva com transição suave de estados.
+ */
 .logout-btn {
   display: flex;
   align-items: center;
@@ -51,15 +71,23 @@
   border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s; /* Suavização dos estados hover/active */
 }
 
+/**
+ * DESCRIPTION: Estado de interação do botão (Hover).
+ * RESPONSIBILITY: Elevar o contraste e a intensidade das cores ao passar o cursor.
+ */
 .logout-btn:hover {
   background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
   border-color: rgba(239, 68, 68, 0.4);
 }
 
+/**
+ * DESCRIPTION: Estado de clique do botão (Active).
+ * RESPONSIBILITY: Aplicar micro-interação de escala para feedback tátil instantâneo.
+ */
 .logout-btn:active {
-  transform: scale(0.95); /* Feedback de clique */
+  transform: scale(0.95); 
 }

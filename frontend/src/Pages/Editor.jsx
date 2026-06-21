@@ -484,58 +484,58 @@ const Editor = ({ user }) => {
 
   // Calcula largura e altura real do texto com quebra de linha 
   // Se comunica com CertificadoCanvas
- const getTextBoxSize = (ctx, text, fontSize, fontFamily, maxWidth) => {
-  ctx.font = `${fontSize}px "${fontFamily}", sans-serif`;
+  const getTextBoxSize = (ctx, text, fontSize, fontFamily, maxWidth) => {
+    ctx.font = `${fontSize}px "${fontFamily}", sans-serif`;
 
-  const words = text.split(" ");
+    const words = text.split(" ");
 
-  let line = "";
-  let lines = [];
+    let line = "";
+    let lines = [];
 
-  for (let i = 0; i < words.length; i++) {
-    const testLine = line + words[i] + " ";
-    const width = ctx.measureText(testLine).width;
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + words[i] + " ";
+      const width = ctx.measureText(testLine).width;
 
-    if (width > maxWidth && line !== "") {
-      lines.push(line);
-      line = words[i] + " ";
-    } else {
-      line = testLine;
+      if (width > maxWidth && line !== "") {
+        lines.push(line);
+        line = words[i] + " ";
+      } else {
+        line = testLine;
+      }
     }
-  }
 
-  lines.push(line);
+    lines.push(line);
 
-  const lineHeight = fontSize * 1.2;
+    const lineHeight = fontSize * 1.2;
 
-  const paddingX = 30;
-  const paddingY = 20;
+    const paddingX = 30;
+    const paddingY = 20;
 
-  const width = Math.min(
-    Math.max(...lines.map(l => ctx.measureText(l).width)),
-    maxWidth
-  );
+    const width = Math.min(
+      Math.max(...lines.map(l => ctx.measureText(l).width)),
+      maxWidth
+    );
 
-  return {
-    width: width + paddingX * 2,
-    height: lines.length * lineHeight + paddingY * 2,
+    return {
+      width: width + paddingX * 2,
+      height: lines.length * lineHeight + paddingY * 2,
+    };
   };
-};
 
-const textBoxCache = new Map();
+  const textBoxCache = new Map();
 
-function getCachedTextBox(ctx, text, size, font, maxWidth) {
-  const key = text + size + font + maxWidth;
+  function getCachedTextBox(ctx, text, size, font, maxWidth) {
+    const key = text + size + font + maxWidth;
 
-  if (textBoxCache.has(key)) {
-    return textBoxCache.get(key);
+    if (textBoxCache.has(key)) {
+      return textBoxCache.get(key);
+    }
+
+    const result = getTextBoxSize(ctx, text, size, font, maxWidth);
+    textBoxCache.set(key, result);
+
+    return result;
   }
-
-  const result = getTextBoxSize(ctx, text, size, font, maxWidth);
-  textBoxCache.set(key, result);
-
-  return result;
-}
 
   // Controla clique no canvas (resize, drag ou seleção)
   // Se comunica com:
@@ -1173,7 +1173,7 @@ const customStyles = {
 
       <main className="editor-workspace bulk-scroll">
       {(nomesValidos.length > 0 ? nomesValidos : [{ nome: "", overrides: {} }])
-        .slice(0, 50)
+        .slice(0, 20)
         .map((item, index) => {
           
           // Se o item individual tiver um texto próprio no 'overrides', usa ele.

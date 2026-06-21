@@ -270,7 +270,7 @@ app.post("/projects", authMiddleware, async (req, res) => {
       [
         user.id,
         certificadoId,
-        JSON.stringify(nomesLista), // <--- CORREÇÃO AQUI
+        JSON.stringify(nomesLista), 
         textoCorpo,
         estilos.corNome,
         estilos.fonteNome,
@@ -457,7 +457,7 @@ app.put("/projects/:id", authMiddleware, async (req, res) => {
        WHERE id = $11 AND user_id = $12
        RETURNING *`,
       [
-        JSON.stringify(nomesLista), // <--- CORREÇÃO AQUI
+        JSON.stringify(nomesLista), 
         textoCorpo,
         estilos.corNome,
         estilos.fonteNome,
