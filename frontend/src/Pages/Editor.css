@@ -1,11 +1,19 @@
+/**
+ * DESCRIPTION: Reset global do documento.
+ * RESPONSIBILITY: Eliminar margens e preenchimentos nativos e travar o scroll principal do ecossistema.
+ */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* Evita scroll duplo na página inteira */
+  overflow: hidden; 
 }
 
+/**
+ * DESCRIPTION: Declaração de variáveis globais (:root).
+ * RESPONSIBILITY: Centralizar a paleta de cores, tokens de design e efeitos reutilizáveis.
+ */
 :root {
   --bg-main: #020617;
   --bg-card: rgba(15, 23, 42, 0.6);
@@ -16,19 +24,24 @@ html, body {
   --glass-effect: blur(12px) saturate(180%);
 }
 
-
-/* Base do Editor */
+/**
+ * DESCRIPTION: Root container da aplicação do Editor.
+ * RESPONSIBILITY: Fixar o layout em tela cheia isolando o ambiente sobre a Home (z-index agressivo).
+ */
 .editor {
-  width: 100vw; /* Força ocupar a largura total da janela */
+  width: 100vw; 
   height: 100vh;
-  position: fixed; /* Fixa o editor no topo de tudo */
+  position: fixed; 
   top: 0;
   left: 0;
-  z-index: 9999; /* Garante que fique acima de qualquer elemento da Home */
+  z-index: 9999; 
   background-color: var(--bg-main);
 }
 
-/* Header */
+/**
+ * DESCRIPTION: Barra superior do Editor (Header).
+ * RESPONSIBILITY: Alinhar marcações textuais e ações de topo, mantendo altura rígida não maleável.
+ */
 .editor-header {
   height: 70px;
   display: flex;
@@ -39,125 +52,130 @@ html, body {
   flex-shrink: 0;
 }
 
+/**
+ * DESCRIPTION: Elemento de título do cabeçalho do editor.
+ * RESPONSIBILITY: Controlar dimensões e peso da tipografia primária.
+ */
 .editor-header h1 {
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-/* Container Principal (Grid) */
+/**
+ * DESCRIPTION: Grid mestre de distribuição interna.
+ * RESPONSIBILITY: Dividir o espaço restante da tela em duas colunas assíncronas (Workspace e Sidebar).
+ */
 .editor-container {
   flex: 1;
   display: grid;
-  /* Mantém colunas, mas garante que o workspace não vaze */
   grid-template-columns: 1fr 350px; 
   width: 100%; 
   margin: 0;
   padding: 0;
-  
-  /* IMPORTANTE: Garante que o container ocupe o resto da tela 
-     subtraindo a altura do header (70px) */
-  height: calc(100vh - 70px); 
-  
+  height: calc(100vh - 70px); /* Subtração exata da altura do header */
   overflow: hidden;
   background: var(--bg-main);
-  
-  /* Uma borda sutil no topo do container para separar do header */
   border-top: 1px solid var(--border-color);
 }
-/* Área do Canvas (Lado Esquerdo) */
+
+/**
+ * DESCRIPTION: Área ativa de renderização dos certificados (Lado Esquerdo).
+ * RESPONSIBILITY: Centralizar a esteira de canvas e gerenciar o fluxo de rolagem vertical independente.
+ */
 .editor-workspace {
   background: #020617;
   box-shadow: inset -10px 0 20px rgba(0, 0, 0, 0.4); 
-  border-right: 2px solid rgba(255, 255, 255, 0.05); /* Linha divisória fina */
+  border-right: 2px solid rgba(255, 255, 255, 0.05); 
   z-index: 1; 
   width: 100%;
   height: calc(100vh - 70px);
-  padding: 120px 0 60px 0; /* Padding apenas em cima/baixo */
+  padding: 120px 0 60px 0; 
   display: flex;
   flex-direction: column;
   align-items: center;
   overflow-y: auto;
   overflow-x: hidden;
-
   scrollbar-width: thin;
   scrollbar-color: var(--accent-color) transparent;
 }
 
-/* Custom Scrollbar para Chrome, Edge e Safari */
+/**
+ * DESCRIPTION: Pseudo-elementos de estilização de scrollbars (Webkit).
+ * RESPONSIBILITY: Sobrescrever a barra nativa do sistema operacional por um modelo estilizado e minimalista.
+ */
 .editor-workspace::-webkit-scrollbar,
 .editor-sidebar::-webkit-scrollbar {
-  width: 8px; /* Largura da barra */
+  width: 8px; 
 }
-
 .editor-workspace::-webkit-scrollbar-track,
 .editor-sidebar::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2); /* Fundo da calha */
+  background: rgba(0, 0, 0, 0.2); 
 }
-
 .editor-workspace::-webkit-scrollbar-thumb,
 .editor-sidebar::-webkit-scrollbar-thumb {
-  background: var(--accent-color); /* Cor da barra (o azul claro) */
+  background: var(--accent-color); 
   border-radius: 10px;
-  border: 2px solid var(--bg-main); /* Cria um respiro ao redor da barra */
+  border: 2px solid var(--bg-main); 
 }
-
 .editor-workspace::-webkit-scrollbar-thumb:hover {
-  background: #7dd3fc; /* Brilho leve ao passar o mouse */
+  background: #7dd3fc; 
 }
 
-/* Suporte para Firefox */
+/**
+ * DESCRIPTION: Fallback de scrollbar para motor Gecko.
+ * RESPONSIBILITY: Sincronizar o padrão visual fino da barra de rolagem no navegador Firefox.
+ */
 .editor-workspace, .editor-sidebar {
   scrollbar-width: thin;
   scrollbar-color: var(--accent-color) transparent;
 }
 
+/**
+ * DESCRIPTION: Componente de renderização do Canvas.
+ * RESPONSIBILITY: Definir o bloco de desenho, travar arrastos de imagens nativas do navegador e desativar seleção.
+ */
 .editor-canvas {
- 
-  max-width: 900px; /* Define um tamanho máximo elegante para a lista */
+  max-width: 900px; 
   width: 100%; 
   height: auto; 
-  
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
   display: block;
   user-select: none;
   background-color: white;
   border-radius: 4px;
   margin-bottom: 10px;
-
   cursor: inherit; 
   -webkit-user-drag: none; 
   touch-action: none;
 }
 
-/* Sidebar (Lado Direito) */
+/**
+ * DESCRIPTION: Painel lateral de ferramentas e configurações (Lado Direito).
+ * RESPONSIBILITY: Fixar controles, isolar contexto de empilhamento e garantir rolagem isolada de formulários.
+ */
 .editor-sidebar {
-  /* uma cor sólida e levemente mais clara que o fundo para destacar */
   background: #0f172a; 
-  
-  /* Borda esquerda bem definida para marcar a separação */
   border-left: 1px solid rgba(255, 255, 255, 0.1); 
-  
-  /* Sombra voltada para a esquerda para dar profundidade sobre o workspace */
   box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
-  
   padding: 2.5rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   position: relative;
   overflow-y: auto;
-  z-index: 10; /* Garante que ela fique "por cima" do scroll do canvas */
-  
-  /* Remove o glass effect para não vazar cores do fundo */
+  z-index: 10; 
   backdrop-filter: none;
 }
 
+/**
+ * DESCRIPTION: Alerta ou informativo de restrições operacionais.
+ * RESPONSIBILITY: Exibir aviso em formato dashed e desativar interações físicas (cliques) para segurança do fluxo.
+ */
 .limit-warning {
   width: 100%;
   box-sizing: border-box; 
   text-align: center; 
-  
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.75rem;
   background: rgba(56, 189, 248, 0.05); 
@@ -166,12 +184,13 @@ html, body {
   border: 1px dashed rgba(56, 189, 248, 0.3); 
   backdrop-filter: blur(4px);
   margin-bottom: 1rem; 
-  
-  /* Garante que não interfira no clique */
   pointer-events: none;
 }
 
-/* Controles e Inputs */
+/**
+ * DESCRIPTION: Agrupador semântico de blocos de formulário.
+ * RESPONSIBILITY: Estabelecer margens, lacunas e linhas divisórias discretas entre grupos de inputs.
+ */
 .control-group {
   display: flex;
   flex-direction: column;
@@ -180,12 +199,15 @@ html, body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   min-width: 0;
 }
-
 .control-group:last-of-type {
   border-bottom: none !important;
   padding-bottom: 0.5rem !important;
 }
 
+/**
+ * DESCRIPTION: Rótulos identificadores (Labels) de controles.
+ * RESPONSIBILITY: Formatar títulos de inputs em caixa alta, aumentando o espaçamento de caracteres para legibilidade.
+ */
 .control-group label {
   font-size: 0.75rem;
   font-weight: 600;
@@ -194,6 +216,10 @@ html, body {
   letter-spacing: 0.05em;
 }
 
+/**
+ * DESCRIPTION: Campos de entrada de dados padrão do editor (Inputs).
+ * RESPONSIBILITY: Padronizar caixas de texto com fundo translúcido, bordas finas e transição suave.
+ */
 .editor-input {
   background: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(4px);
@@ -204,12 +230,10 @@ html, body {
   font-size: 0.9rem;
   transition: all 0.2s, border-color 0.2s;
 }
-
 .editor-input:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
 }
-
 .editor-input:focus {
   border-color: var(--accent-color);
   outline: none;
@@ -217,33 +241,37 @@ html, body {
   box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2);
 }
 
+/**
+ * DESCRIPTION: Campo de texto em lote de múltiplas linhas (Textarea).
+ * RESPONSIBILITY: Permitir redimensionamento vertical, preservar quebras de linha e forçar quebra de palavras longas.
+ */
 .bulk-area {
   height: 180px;
   min-height: 100px;
-  resize: vertical; /* Permite aumentar o campo puxando o canto */
-  line-height: 1.5; /* Garante que as quebras de linha apareçam visualmente */
-  white-space: pre-wrap; /* Garante que as quebras de linha apareçam visualmente */
+  resize: vertical; 
+  line-height: 1.5; 
+  white-space: pre-wrap; 
   font-family: 'Inter', sans-serif;
-
   word-wrap: break-word;     
   overflow-wrap: break-word; 
-  
   overflow-y: auto;
   overflow-x: hidden;
 }
 
+/**
+ * DESCRIPTION: Seletor de cores nativo personalizado (Color Picker).
+ * RESPONSIBILITY: Resetar a aparência do navegador para transformar o input em um bloco clicável limpo.
+ */
 .input-color-picker {
-  height: 45px !important; /* Define a altura específica */
+  height: 45px !important; 
   width: 100%;
   padding: 5px !important;
   cursor: pointer;
-  appearance: none; /* Remove estilos padrão do navegador */
+  appearance: none; 
   -webkit-appearance: none;
   border: 1px solid var(--border-color);
   background: rgba(0, 0, 0, 0.2);
 }
-
-/* Isso remove a borda interna que alguns navegadores colocam no input color */
 .input-color-picker::-webkit-color-swatch-wrapper {
   padding: 0;
 }
@@ -252,7 +280,10 @@ html, body {
   border-radius: 4px;
 }
 
-/* Container Principal */
+/**
+ * DESCRIPTION: Container modular de ajuste de tamanho de fonte.
+ * RESPONSIBILITY: Alinhar horizontalmente ícones guias, o slider de arrasto e o display numérico em linha única.
+ */
 .font-size-control {
   display: flex;
   gap: 12px;
@@ -267,7 +298,10 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Ícones laterais */
+/**
+ * DESCRIPTION: Ícones de referência de escala tipográfica (A+ / A-).
+ * RESPONSIBILITY: Indicar visualmente os extremos de tamanho mínimo e máximo do controle slider.
+ */
 .size-icon {
   color: rgba(255, 255, 255, 0.4);
   user-select: none;
@@ -276,7 +310,10 @@ html, body {
 .size-icon.small { font-size: 12px; }
 .size-icon.large { font-size: 18px; }
 
-/* Estilização do Slider (Range) */
+/**
+ * DESCRIPTION: Campo de controle deslizante (Slider Range).
+ * RESPONSIBILITY: Customizar o trilho horizontal do slider limpando as propriedades de renderização nativa.
+ */
 .font-range-input {
   -webkit-appearance: none;
   flex: 1;
@@ -286,8 +323,6 @@ html, body {
   border-radius: 5px;
   outline: none;
 }
-
-/* A "bolinha" do slider no Chrome/Safari */
 .font-range-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 16px;
@@ -298,21 +333,27 @@ html, body {
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
   transition: transform 0.1s ease-in-out;
 }
-
 .font-range-input::-webkit-slider-thumb:hover {
   transform: scale(1.2);
 }
 
-/* Input de Número com Unidade */
+/**
+ * DESCRIPTION: Bloco de posicionamento para o campo numérico.
+ * RESPONSIBILITY: Servir de container de escopo relativo para acoplamento da unidade de medida estática (px).
+ */
 .number-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
 
+/**
+ * DESCRIPTION: Input numérico para ajuste manual preciso.
+ * RESPONSIBILITY: Centralizar o valor e ocultar as setas de incremento nativas do sistema (spin-buttons).
+ */
 .font-number-input {
   width: 70px;
-  padding: 6px 28px 6px 10px; /* Espaço para o "px" */
+  padding: 6px 28px 6px 10px; 
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
@@ -322,35 +363,43 @@ html, body {
   appearance: textfield;
   -moz-appearance: textfield;
 }
-
-/* Remove setinhas do input number */
 .font-number-input::-webkit-inner-spin-button,
 .font-number-input::-webkit-outer-spin-button {
   -webkit-appearance: none;
 }
 
+/**
+ * DESCRIPTION: Sufixo identificador de unidade de medida (Texto "px").
+ * RESPONSIBILITY: Fixar o texto de forma absoluta à direita e anular interações físicas para não bloquear o input.
+ */
 .unit {
   position: absolute;
   right: 8px;
   font-size: 10px;
   color: rgba(255, 255, 255, 0.3);
-  pointer-events: none; /* Não atrapalha o clique no input */
+  pointer-events: none; 
 }
 
-/* Container Pai */
+/**
+ * DESCRIPTION: Âncora estrutural do módulo de exportação (Download).
+ * RESPONSIBILITY: Isolar o contexto posicional relativo para permitir a flutuação do menu suspenso de formatos.
+ */
 .download-group-container {
-  position: relative; /* CRUCIAL para o menu flutuar em cima */
+  position: relative; 
   width: 100%;
   margin-top: 0px;
   padding-top: 5px;
 }
 
-/* Botão Azul Principal */
+/**
+ * DESCRIPTION: Gatilho principal de abertura do menu de download.
+ * RESPONSIBILITY: Destacar a ação primária de exportação com cor contrastante vibrante e flexbox interno.
+ */
 .btn-download-trigger {
   width: 100%;
   padding: 14px 20px;
-  background-color: #38bdf8; /* Azul claro */
-  color: #0f172a; /* Texto escuro para contraste */
+  background-color: #38bdf8; 
+  color: #0f172a; 
   border: none;
   border-radius: 8px;
   font-weight: 700;
@@ -361,15 +410,17 @@ html, body {
   align-items: center;
   transition: background 0.2s;
 }
-
 .btn-download-trigger:hover {
   background-color: #0ea5e9;
 }
 
-/* O Menu de Opções (Visual Clear) */
+/**
+ * DESCRIPTION: Painel flutuante de formatos de arquivo (Dropdown Menu).
+ * RESPONSIBILITY: Posicionar de forma absoluta o menu acima do botão gatilho, isolando o z-index.
+ */
 .download-options-menu {
   position: absolute;
-  bottom: calc(100% + 10px); /* Flutua 10px acima do botão */
+  bottom: calc(100% + 10px); 
   left: 0;
   width: 100%;
   background: #1e293b;
@@ -381,7 +432,10 @@ html, body {
   margin-bottom: 8px;
 }
 
-/* Cada Item da Lista */
+/**
+ * DESCRIPTION: Botão seletor de opção de formato individual.
+ * RESPONSIBILITY: Criar bloco de clique inteiro para o item e aplicar transição de cor de fundo no hover.
+ */
 .option-item {
   width: 100%;
   padding: 12px;
@@ -393,34 +447,46 @@ html, body {
   text-align: left;
   transition: background 0.2s;
 }
-
 .option-item:hover {
   background: rgba(56, 189, 248, 0.1);
 }
 
+/**
+ * DESCRIPTION: Bloco empilhado de informações da opção.
+ * RESPONSIBILITY: Organizar em coluna os metadados e os títulos explicativos do formato.
+ */
 .item-text-wrapper {
   display: flex;
   flex-direction: column;
 }
 
+/**
+ * DESCRIPTION: Título de identificação do formato (Ex: PNG, PDF).
+ * RESPONSIBILITY: Definir o peso do texto principal e responder dinamicamente ao hover do elemento pai.
+ */
 .item-main-title {
-  color: #f8fafc; /* Branco para o título */
+  color: #f8fafc; 
   font-size: 0.95rem;
   font-weight: 600;
   margin-bottom: 2px;
 }
-
-/* Título fica azul no hover para dar feedback */
 .option-item:hover .item-main-title {
   color: #38bdf8;
 }
 
+/**
+ * DESCRIPTION: Texto auxiliar descritivo da extensão de arquivo.
+ * RESPONSIBILITY: Suavizar o tom de cor para criar contraste hierárquico inferior ao título.
+ */
 .item-sub-desc {
-  color: #94a3b8; /* Cinza suave para descrição */
+  color: #94a3b8; 
   font-size: 0.8rem;
 }
 
-/* Seta (Chevron) */
+/**
+ * DESCRIPTION: Indicador geométrico de estado vetorial (Seta/Chevron).
+ * RESPONSIBILITY: Criar formas de setas puras via CSS manipulando bordas adjacentes e rotações em graus.
+ */
 .chevron {
   border: solid #0f172a;
   border-width: 0 2.5px 2.5px 0;
@@ -431,46 +497,44 @@ html, body {
 .down { transform: rotate(45deg); }
 .up { transform: rotate(-135deg); }
 
-/* Container do botão salvar */
+/**
+ * DESCRIPTION: Container do bloco secundário de salvamento.
+ * RESPONSIBILITY: Controlar margens superiores e garantir largura total para o botão de persistência de dados.
+ */
 .save-group-container {
   width: 100%;
   margin-top: 10px;
 }
 
-/* Botão Salvar Projeto */
+/**
+ * DESCRIPTION: Botão primário de persistência de dados (Salvar).
+ * RESPONSIBILITY: Configurar a identidade do botão de sucesso com sombras projetadas em verde e alinhamento centralizado.
+ */
 .btn-save {
   width: 100%;
   padding: 14px 20px;
-  background-color: #22c55e; /* Verde principal */
-  color: #052e16; /* Texto escuro */
+  background-color: #22c55e; 
+  color: #052e16; 
   border: none;
   border-radius: 8px;
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
-
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 10px;
-
   transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
 }
-
-/* Hover */
 .btn-save:hover {
   background-color: #16a34a;
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(34, 197, 94, 0.3);
 }
-
-/* Clique */
 .btn-save:active {
   transform: scale(0.98);
 }
-
-/* Estado desabilitado */
 .btn-save:disabled {
   background-color: #64748b;
   color: #cbd5e1;
@@ -478,14 +542,20 @@ html, body {
   box-shadow: none;
 }
 
-/* Ícone opcional */
+/**
+ * DESCRIPTION: Embrulho estrito do ícone interno do botão salvar.
+ * RESPONSIBILITY: Forçar o alinhamento flexível verticalizado do SVG interno.
+ */
 .btn-save .save-icon {
   font-size: 1rem;
   display: flex;
   align-items: center;
 }
 
-/* Botão Sair */
+/**
+ * DESCRIPTION: Botão secundário de escape da aplicação (Sair).
+ * RESPONSIBILITY: Aplicar estilização baseada em paleta destrutiva tênue com transições de opacidade.
+ */
 .btn-exit {
   display: flex;
   align-items: center;
@@ -499,29 +569,34 @@ html, body {
   cursor: pointer;
   transition: all 0.3s;
 }
-
 .btn-exit:hover {
   background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
   border-color: rgba(239, 68, 68, 0.4);
 }
 
-/* Overlay que cobre toda a tela */
+/**
+ * DESCRIPTION: Cortina de bloqueio global de interface (Loading Overlay).
+ * RESPONSIBILITY: Fixar-se sobre a totalidade da janela gráfica, desfocar o fundo e impedir cliques externos.
+ */
 .loading-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.85); /* Fundo escuro semi-transparente */
-  backdrop-filter: blur(5px); /* Efeito borrado de vidro */
+  background: rgba(15, 23, 42, 0.85); 
+  backdrop-filter: blur(5px); 
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999; /* Garante que fica por cima de TUDO */
+  z-index: 9999; 
 }
 
-/* Caixa central do Modal */
+/**
+ * DESCRIPTION: Card centralizador do status de carregamento.
+ * RESPONSIBILITY: Isolar o bloco do modal com borda fina e sombra projetada de alto contraste.
+ */
 .loading-modal {
   background: #1e293b;
   padding: 40px;
@@ -531,42 +606,58 @@ html, body {
   max-width: 400px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
 }
-
 .loading-modal h3 {
   color: #fff;
   margin: 20px 0 10px 0;
   font-size: 1.5rem;
+  min-height: 1.6em; /* Preserva altura mínima para conter flutuações de layout ao trocar textos */
+  margin-bottom: 5px;
 }
-
 .loading-modal p {
-  color: #38bdf8; /* Azul claro para o status */
+  color: #38bdf8; 
   font-size: 1.1rem;
   margin-bottom: 15px;
 }
 
+/**
+ * DESCRIPTION: Texto secundário de aviso interno.
+ * RESPONSIBILITY: Alterar a escala cromática para tons neutros indicando menor hierarquia visual.
+ */
 .warning-text {
   color: #94a3b8;
   font-size: 0.85rem;
   display: block;
 }
 
+/**
+ * DESCRIPTION: Calha externa do indicador de progresso (Trilho).
+ * RESPONSIBILITY: Servir de base escura estática e mascarar estouros de largura da barra interna (overflow).
+ */
 .progress-container {
   width: 100%;
   height: 12px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   margin: 20px 0 10px 0;
-  overflow: hidden; /* Garante que a barra interna não saia do limite */
+  overflow: hidden; 
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/**
+ * DESCRIPTION: Preenchimento dinâmico do progresso (Fill).
+ * RESPONSIBILITY: Aplicar gradiente linear animado via JavaScript e emitir reflexo luminoso sutil nas bordas.
+ */
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #38bdf8, #818cf8); /* Degradê azul bonitão */
+  background: linear-gradient(90deg, #38bdf8, #818cf8); 
   box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
-  transition: width 0.3s ease; /* Faz o movimento ser suave */
+  transition: width 0.3s ease; 
 }
 
+/**
+ * DESCRIPTION: Display numérico da porcentagem.
+ * RESPONSIBILITY: Destacar a contagem matemática de progresso em negrito com a cor de acento do sistema.
+ */
 .progress-percentage {
   color: #38bdf8;
   font-weight: bold;
@@ -575,22 +666,23 @@ html, body {
   margin-bottom: 10px;
 }
 
-.loading-modal h3 {
-  min-height: 1.6em; /* Evita que o modal "pule" quando o texto mudar */
-  margin-bottom: 5px;
-}
-
+/**
+ * DESCRIPTION: Declaração de animação de rotação cíclica (Keyframes).
+ * RESPONSIBILITY: Mapear a transição angular contínua de 0 a 360 graus para spinners e loadings.
+ */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-/* Responsividade */
+/**
+ * DESCRIPTION: Media Queries (Responsividade para Viewports médias e menores).
+ * RESPONSIBILITY: Readequar as colunas do grid mestre e reorganizar fluxos de blocos para visualização mobile.
+ */
 @media (max-width: 1024px) {
   .editor-container {
     grid-template-columns: 1fr 300px;
   }
 }
-
 @media (max-width: 768px) {
   .editor-container {
     grid-template-columns: 1fr;
@@ -605,13 +697,16 @@ html, body {
   }
 }
 
+/**
+ * DESCRIPTION: Área de entrada de texto flutuante em overlays.
+ * RESPONSIBILITY: Posicionar inputs de forma absoluta no workspace com suporte a manipulações de coordenadas via translate.
+ */
 .floating-input {
- position: absolute;
+  position: absolute;
   background: rgba(56, 189, 248, 0.05);
   border: 1px dashed var(--accent-color);
   transform: translate(-50%, -50%);
   text-align: center;
-  /* Usar 'vw' ou '%' ajuda a manter o tamanho relativo ao zoom */
   font-size: 2rem; 
   font-weight: bold;
   font-family: 'Inter', sans-serif;
@@ -621,6 +716,10 @@ html, body {
   pointer-events: auto;
 }
 
+/**
+ * DESCRIPTION: Bloco agregador de controles direcionais e de paginação.
+ * RESPONSIBILITY: Alinhar em linha os botões de paginação, gerando fundo contrastante e cantos arredondados.
+ */
 .navigation-controls {
   display: flex;
   justify-content: space-between;
@@ -630,7 +729,6 @@ html, body {
   border-radius: 8px;
   margin-bottom: 1rem;
 }
-
 .navigation-controls button {
   background: var(--accent-color);
   color: #000;
@@ -640,27 +738,39 @@ html, body {
   cursor: pointer;
 }
 
+/**
+ * DESCRIPTION: Especialização do container de workspace em lote (Bulk Workflow).
+ * RESPONSIBILITY: Redefinir lacunas amplas (gap) entre os blocos de canvas na esteira de visualização em massa.
+ */
 .editor-workspace.bulk-scroll {
   flex: 1;
-  overflow-y: auto; /* Permite scroll vertical */
+  overflow-y: auto; 
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 60px; /* Espaço entre os certificados */
+  gap: 60px; 
   padding: 40px;
   background: #0f172a;
 }
 
+/**
+ * DESCRIPTION: Moldura de escopo e envolvimento de cada bloco de certificado (Canvas).
+ * RESPONSIBILITY: Agrupar o canvas e seus botões satélites de forma relativa, ajustando margens e fluxo em coluna.
+ */
 .canvas-wrapper {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 0 auto 120px auto; /* Distância entre o fim de um e o começo do outro */
+  margin-bottom: 0 auto 120px auto; 
   width: fit-content;
   cursor: inherit;
 }
 
+/**
+ * DESCRIPTION: Botão flutuante de ativação da edição individual.
+ * RESPONSIBILITY: Posicionar de forma absoluta na extremidade externa direita e travar quebras textuais.
+ */
 .btn-editar-individual {
   position: absolute;
   right: -220px; 
@@ -672,48 +782,66 @@ html, body {
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  white-space: nowrap; /* Impede o texto de quebrar linha */
+  white-space: nowrap; 
   transition: all 0.3s ease;
   z-index: 20;
 }
 
-/* Estado quando NÃO está editando */
+/**
+ * DESCRIPTION: Estado de repouso do botão de edição individual (Inativo).
+ * RESPONSIBILITY: Aplicar paleta escura sutil integrada ao tema para manter foco primário no canvas.
+ */
 .btn-editar-individual:not(.active) {
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(56, 189, 248, 0.2);
   color: #94a3b8;
 }
 
-/* Estado quando ESTÁ editando */
+/**
+ * DESCRIPTION: Estado ativo de edição em execução (Modo Individual Ativo).
+ * RESPONSIBILITY: Inverter o contraste do elemento injetando cor sólida viva e sombras de dispersão luminosa.
+ */
 .btn-editar-individual.active {
   background: #38bdf8; 
   color: #020617;
   border: 1px solid #38bdf8;
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); /* Efeito de brilho */
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); 
 }
 
+/**
+ * DESCRIPTION: Pseudo-classes de interação (Hover) do botão de edição.
+ * RESPONSIBILITY: Elevar o brilho do elemento e aplicar micro-interações de elevação geométrica e sombras.
+ */
 .btn-editar-individual:hover {
   transform: translateY(-2px);
   filter: brightness(1.1);
 }
-
 .btn-editar-individual.active:hover {
   box-shadow: 0 0 25px rgba(56, 189, 248, 0.7);
 }
 
-/* Animação suave para o ícone */
+/**
+ * DESCRIPTION: Nó vetorial interno (Ícone SVG).
+ * RESPONSIBILITY: Anular a maleabilidade flexível nativa impedindo o esmagamento estrutural do ícone.
+ */
 .btn-editar-individual svg {
   flex-shrink: 0;
 }
 
-/* --- DESTAQUE NO CANVAS SELECIONADO --- */
+/**
+ * DESCRIPTION: Marcador de destaque para o Canvas ativo no escopo selecionado.
+ * RESPONSIBILITY: Aplicar outline em contraste de cor e deslocamento sutil (offset) para indicar foco de edição.
+ */
 .canvas-wrapper.editando-este .editor-canvas {
   outline: 3px solid var(--accent-color);
   outline-offset: 4px;
   box-shadow: 0 0 40px rgba(56, 189, 248, 0.2);
 }
 
-/* Badge que aparece abaixo do certificado se ele tiver texto custom */
+/**
+ * DESCRIPTION: Etiqueta informativa de customização (Badge).
+ * RESPONSIBILITY: Exibir aviso abaixo do canvas com animação controlada e alinhamento flexível em linha.
+ */
 .badge-custom-text {
   color: var(--accent-color);
   font-size: 0.75rem;
@@ -725,7 +853,10 @@ html, body {
   animation: fadeIn 0.3s ease;
 }
 
-/* Estilo do botão de voltar na Sidebar */
+/**
+ * DESCRIPTION: Botão de reversão e escape de contexto na Sidebar (Voltar Global).
+ * RESPONSIBILITY: Estilizar o gatilho com bordas tracejadas e fundo translúcido, invertendo as cores no hover.
+ */
 .btn-voltar-global {
   font-size: 0.75rem;
   color: var(--accent-color);
@@ -739,20 +870,25 @@ html, body {
   transition: all 0.2s;
   width: fit-content;
 }
-
 .btn-voltar-global:hover {
   background: var(--accent-color);
   color: #020617;
 }
 
-/* Destaque no Input da Sidebar quando editando individual */
+/**
+ * DESCRIPTION: Especialização tática do campo de área de texto em lote (Textarea).
+ * RESPONSIBILITY: Destacar a caixa de entrada da sidebar quando o foco estiver voltado à customização unitária.
+ */
 .editor-input.bulk-area.input-individual {
   border-color: var(--accent-color);
   box-shadow: inset 0 0 10px rgba(56, 189, 248, 0.1);
   background: rgba(15, 23, 42, 0.9);
 }
 
-/* Label Dinâmica na Sidebar */
+/**
+ * DESCRIPTION: Rótulo com transição de propriedade cromática (Label Dinâmica).
+ * RESPONSIBILITY: Gerenciar a exibição em bloco da legenda para acoplamentos funcionais.
+ */
 .label-dinamico {
   display: block;
   margin-bottom: 8px;
@@ -761,12 +897,19 @@ html, body {
   transition: color 0.3s;
 }
 
-/* Se estiver editando, a label da sidebar fica azul */
+/**
+ * DESCRIPTION: Seletores combinatórios avançados e condicionais (:has).
+ * RESPONSIBILITY: Alterar a cor da label ou rótulo de escopo pai se o elemento de entrada possuir a classe individual ativa.
+ */
 .input-individual + .label-dinamico, 
 .control-group:has(.input-individual) label {
   color: var(--accent-color);
 }
 
+/**
+ * DESCRIPTION: Mapeamento de animação de surgimento gradual (Keyframes).
+ * RESPONSIBILITY: Interpolar opacidades e deslocamentos verticais simultâneos para suavizar entradas em tela.
+ */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }

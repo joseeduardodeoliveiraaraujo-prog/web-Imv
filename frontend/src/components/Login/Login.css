@@ -1,6 +1,7 @@
-/* =========================
-   CONTAINER PRINCIPAL
-========================= */
+/**
+ * DESCRIPTION: Configuração do container estrutural do formulário.
+ * RESPONSIBILITY: Centralizar o bloco, definir limites de largura e aplicar sombras de profundidade.
+ */
 .container {
   width: 100%;
   max-width: 400px;
@@ -12,7 +13,10 @@
   box-sizing: border-box;
 }
 
-/* Glassmorphism */
+/**
+ * DESCRIPTION: Regra condicional para suporte a recursos modernos (Feature Query).
+ * RESPONSIBILITY: Injetar o efeito Glassmorphism caso o motor do navegador suporte desfoque nativo.
+ */
 @supports (backdrop-filter: blur(20px)) {
   .container {
     background: rgba(255, 255, 255, 0.12);
@@ -21,9 +25,10 @@
   }
 }
 
-/* =========================
-   TÍTULO
-========================= */
+/**
+ * DESCRIPTION: Elemento de título principal da interface.
+ * RESPONSIBILITY: Alinhar o texto centralizadamente e definir hierarquia com peso tipográfico nítido.
+ */
 .container h1 {
   text-align: center;
   color: #fff;
@@ -32,19 +37,24 @@
   font-weight: 700;
 }
 
-/* WRAPPER DOS INPUTS*/
+/**
+ * DESCRIPTION: Wrapper de contexto de posicionamento para os campos de entrada.
+ * RESPONSIBILITY: Estabelecer ponto de referência relativo para o alinhamento absoluto dos ícones internos.
+ */
 .input-box {
   position: relative;
   width: 100%;
   margin-bottom: 20px;
 }
 
-/* INPUTS (Correção de Autofill e Padding) */
+/**
+ * DESCRIPTION: Estilização padrão dos campos de entrada de dados (Inputs).
+ * RESPONSIBILITY: Aplicar padding amplo à direita para proteger o texto de sobreposições com os ícones.
+ */
 form input[type="email"],
 form input[type="password"],
 form input[type="text"] {
   width: 100%;
-  /* Padding aumentado para 95px para garantir que o texto não sobreponha os dois ícones */
   padding: 15px 95px 15px 20px; 
   background: rgba(255, 255, 255, 0.08);
   border: 1.5px solid rgba(255, 255, 255, 0.15);
@@ -56,7 +66,10 @@ form input[type="text"] {
   box-sizing: border-box;
 }
 
-/* Remove o fundo branco/azul do preenchimento automático do Chrome */
+/**
+ * DESCRIPTION: Pseudo-classe para sanitização do comportamento nativo de autofill (Chrome/Webkit).
+ * RESPONSIBILITY: Sobrescrever a cor de fundo injetada e forçar a persistência da paleta escura definida.
+ */
 form input:-webkit-autofill,
 form input:-webkit-autofill:hover, 
 form input:-webkit-autofill:focus {
@@ -65,19 +78,28 @@ form input:-webkit-autofill:focus {
   transition: background-color 5000s ease-in-out 0s;
 }
 
+/**
+ * DESCRIPTION: Pseudo-elemento de texto de marcação (Placeholder).
+ * RESPONSIBILITY: Suavizar o tom do texto de instrução interna sem quebrar regras de acessibilidade de contraste.
+ */
 form input::placeholder {
   color: rgba(255, 255, 255, 0.7);
 }
 
+/**
+ * DESCRIPTION: Estado ativo de foco de digitação (Focus).
+ * RESPONSIBILITY: Destacar a borda do input e emitir brilho sutil para guiar a atenção do usuário.
+ */
 form input:focus {
   background: rgba(255, 255, 255, 0.15);
   border-color: #00d2ff;
   box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
 }
 
-/*ESTILO DOS ÍCONES (NOVO)*/
-
-/* Ícone de Usuário (E-mail) */
+/**
+ * DESCRIPTION: Alinhamento do ícone posicionado à direita (Contexto E-mail).
+ * RESPONSIBILITY: Fixar o elemento centralizado verticalmente e desativar interações físicas de mouse.
+ */
 .right-icon {
   position: absolute;
   right: 18px;
@@ -88,19 +110,25 @@ form input:focus {
   pointer-events: none;
 }
 
-/* Container dos ícones de Senha */
+/**
+ * DESCRIPTION: Grupo flexível de ícones acoplados (Contexto Senha).
+ * RESPONSIBILITY: Agrupar horizontalmente o botão de visualização e o cadeado de segurança com espaçamento fixo.
+ */
 .password-icons {
   position: absolute;
-  right: 18px; /* Mantém o conjunto alinhado à direita */
+  right: 18px; 
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
-  gap: 15px; /* Espaço entre o olho e o cadeado */
+  gap: 15px; 
   z-index: 10;
 }
 
-/* Botão do Olho */
+/**
+ * DESCRIPTION: Botão interativo para revelar senha.
+ * RESPONSIBILITY: Limpar estilos nativos de botão e configurar a transição e o cursor adequados.
+ */
 .toggle-password {
   background: none;
   border: none;
@@ -108,26 +136,34 @@ form input:focus {
   cursor: pointer;
   display: flex;
   align-items: center;
-  
-  /* Cor mais clara para o estilo "outline" fino */
   color: rgba(255, 255, 255, 0.4); 
   font-size: 1rem; 
   transition: all 0.2s ease;
 }
 
+/**
+ * DESCRIPTION: Micro-interação de hover do gatilho de senha.
+ * RESPONSIBILITY: Escalar levemente o tamanho do ícone e aumentar sua opacidade para feedback de interação.
+ */
 .toggle-password:hover {
   color: #ffffff;
   transform: scale(1.15);
 }
 
-/* Ícone do Cadeado */
+/**
+ * DESCRIPTION: Ícone estático de cadeado.
+ * RESPONSIBILITY: Aplicar consistência visual de cor e desativar eventos de ponteiro para não interceptar cliques.
+ */
 .lock-icon {
   color: rgba(255, 255, 255, 0.5);
   font-size: 1.1rem;
   pointer-events: none;
 }
 
-/*BOTÃO ENTRAR*/
+/**
+ * DESCRIPTION: Botão de submissão do formulário (Submit).
+ * RESPONSIBILITY: Aplicar gradiente linear, sombras projetadas pesadas e comportamento tátil ao passar o mouse.
+ */
 form button[type="submit"] {
   width: 100%;
   height: 55px;
@@ -142,12 +178,19 @@ form button[type="submit"] {
   transition: all 0.3s ease;
 }
 
+/**
+ * DESCRIPTION: Estado de hover do botão submit.
+ * RESPONSIBILITY: Elevar sutilmente a posição do botão e ampliar o espalhamento do raio de sombra projetada.
+ */
 form button[type="submit"]:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 20px rgba(58, 123, 213, 0.45);
 }
 
-/*RESPONSIVO*/
+/**
+ * DESCRIPTION: Media Query direcionada a dispositivos móveis (Viewports estreitas).
+ * RESPONSIBILITY: Ajustar o recuo interno e reduzir o tamanho da fonte do título para manter a harmonia estrutural.
+ */
 @media (max-width: 480px) {
   .container {
     padding: 40px 25px;
@@ -158,13 +201,19 @@ form button[type="submit"]:hover {
   }
 }
 
-/* Esconde o ícone de 'olho' nativo do Edge e navegadores baseados em Webkit */
+/**
+ * DESCRIPTION: Ocultação de elementos nativos do ecossistema Microsoft Edge/IE.
+ * RESPONSIBILITY: Forçar a remoção dos ícones de limpeza automática e revelação de senha inseridos pelo browser.
+ */
 input::-ms-reveal,
 input::-ms-clear {
   display: none;
 }
 
-/* Tenta forçar o navegador a não injetar ícones de gerenciadores */
+/**
+ * DESCRIPTION: Mitigação de sobreposição de elementos terceiros (Navegador/Extensões).
+ * RESPONSIBILITY: Esconder de forma agressiva os ícones injetados por gerenciadores de senhas nativos no bloco direito.
+ */
 input::-webkit-contacts-auto-fill-button,
 input::-webkit-credentials-auto-fill-button {
   visibility: hidden;
