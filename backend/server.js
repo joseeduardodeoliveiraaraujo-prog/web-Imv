@@ -1,11 +1,21 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import pool from "./db.js";
 import authMiddleware from "./middleware/auth.js";
 import multer from "multer";
 import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
+import { generalLimiter, uploadLimiter } from "./middleware/rateLimiter.js";
+import {
+  validate,
+  createUserSchema,
+  createCertificateSchema,
+  idParamSchema,
+  createProjectSchema,
+  updateProjectSchema,
+} from "./middleware/validate.js";
 
 // Inicialização da instância principal da API Express
 const app = express();
@@ -17,18 +27,60 @@ const supabase = createClient(
 );
 
 // ==========================================================================
-// MIDDLEWARES GLOBAIS
+// MIDDLEWARES GLOBAIS DE SEGURANÇA
 // ==========================================================================
 
-// Configuração de segurança e compartilhamento de recursos de origem cruzada (CORS)
-app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
+app.use(helmet());
 
-// Habilita o parse automático de payloads de entrada formatados em JSON
-app.use(express.json());
+app.use(generalLimiter);
+
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",")
+  : ["http://localhost:5173"];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Origem não permitida pelo CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
+app.use(express.json({ limit: "1mb" }));
+
+// ==========================================================================
+// TRATAMENTO CENTRALIZADO DE ERROS
+// ==========================================================================
+
+function errorHandler(err, req, res, _next) {
+  console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
+
+  if (err.message === "Origem não permitida pelo CORS") {
+    return res.status(403).json({ error: "Acesso negado" });
+  }
+
+  if (err.type === "entity.too.large") {
+    return res.status(413).json({ error: "Payload excede o tamanho máximo" });
+  }
+
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res
+      .status(413)
+      .json({ error: "Arquivo excede o tamanho máximo de 5MB" });
+  }
+
+  if (err.message === "Apenas imagens são permitidas") {
+    return res.status(400).json({ error: "Apenas imagens são permitidas" });
+  }
+
+  res.status(500).json({ error: "Erro interno do servidor" });
+}
 
 // ==========================================================================
 // ROTAS DE VERIFICAÇÃO / HEALTH CHECK
@@ -43,6 +95,7 @@ app.get("/test-db", async (req, res) => {
     const result = await pool.query("SELECT NOW()");
     res.json(result.rows);
   } catch (error) {
+    console.error("[ERROR] /test-db:", error.message);
     res.status(500).json({ error: "Erro no banco" });
   }
 });
@@ -51,20 +104,14 @@ app.get("/test-db", async (req, res) => {
 // ROTAS DE GERENCIAMENTO DE USUÁRIOS
 // ==========================================================================
 
-/**
- * ROUTE: POST /users
- * RESPONSIBILITY: Sincronizar o login do usuário do Firebase com o banco PostgreSQL. 
- * Se o UID não existir, cria o registro; se já existir, retorna os dados atuais (Idempotência).
- */
 app.post("/users", authMiddleware, async (req, res) => {
   try {
-    const { name } = req.body;
-    const file = req.file; // Nota: Propriedade disponível se houver upload multipart, sem uso direto nesta lógica
-
-    if (!name || name.length < 3) {
-      return res.status(400).json({ error: "Nome inválido" });
+    const validation = validate(createUserSchema, req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: validation.errors.join(", ") });
     }
 
+    const { name } = validation.data;
     const email = req.user.email;
     const uid = req.user.uid;
 
@@ -76,7 +123,6 @@ app.post("/users", authMiddleware, async (req, res) => {
       [name, email, uid]
     );
 
-    // Se o registro já existia (ON CONFLICT disparado), busca o usuário existente
     if (result.rows.length === 0) {
       const existingUser = await pool.query(
         "SELECT * FROM users WHERE firebase_uid = $1",
@@ -86,9 +132,8 @@ app.post("/users", authMiddleware, async (req, res) => {
     }
 
     res.json(result.rows[0]);
-
   } catch (error) {
-    console.error(error);
+    console.error("[ERROR] POST /users:", error.message);
     res.status(500).json({ error: "Erro ao salvar usuário" });
   }
 });
@@ -97,10 +142,9 @@ app.post("/users", authMiddleware, async (req, res) => {
 // CONFIGURAÇÃO DO MULTER (MIDDLEWARE DE ARQUIVOS)
 // ==========================================================================
 
-// Configura o buffer temporário em memória e travas de segurança de tamanho/tipo de mídia
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // Teto operacional: 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
     if (allowedTypes.includes(file.mimetype)) {
@@ -108,126 +152,116 @@ const upload = multer({
     } else {
       cb(new Error("Apenas imagens são permitidas"));
     }
-  }
+  },
 });
 
 // ==========================================================================
 // ROTAS DE MODELOS DE CERTIFICADOS
 // ==========================================================================
 
-/**
- * ROUTE: POST /certificates
- * RESPONSIBILITY: Receber um arquivo de imagem, sanitizar o nome, gerar uma versão minificada
- * (Thumbnail) via Sharp, efetuar o upload concorrente de ambas para o Supabase Storage e persistir o modelo no banco.
- * PATTERN: Implementa Rollback em cascata caso ocorra falha no Storage ou no PostgreSQL.
- */
-app.post("/certificates", authMiddleware, upload.single("file"), async (req, res) => {
-  try {
-    const { name } = req.body;
-
-    if (!name || name.length < 3) {
-      return res.status(400).json({ error: "Nome inválido" });
-    }
-
-    const file = req.file;
-    if (!file) {
-      return res.status(400).json({ error: "Arquivo não enviado" });
-    }
-
-    const email = req.user.email;
-
-    // Resolução de Dependência: Localiza a Primary Key interna do usuário associado
-    const userResult = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
-      [email]
-    );
-
-    const user = userResult.rows[0];
-
-    if (!user) {
-      return res.status(404).json({ error: "Usuário não encontrado" });
-    }
-
-    // Sanitização de string para evitar falhas de encoding ou quebras de URL no Bucket
-    const safeName = file.originalname
-      .replace(/\s+/g, "_")
-      .replace(/[^\w.-]/g, "");
-
-    const fileName = `${Date.now()}_${safeName}`;
-    const thumbname = `thumb_${fileName}`;
-
-    // Processamento de Imagem: Otimização e compressão da miniatura de preview
-    const thumbnailBuffer = await sharp(file.buffer)
-      .resize({ width: 300 }) 
-      .webp({ quality: 70 }) 
-      .toBuffer();
-
-    // Upload Concorrente Assíncrono: Dispara ambos os arquivos em paralelo otimizando o tempo de resposta (I/O)
-    const [originalUpload, thumbUpload] = await Promise.all([
-      supabase.storage.from("certificates").upload(fileName, file.buffer, {
-        cacheControl: "31536000", // Cache persistente no cliente por 1 ano
-        contentType: file.mimetype
-      }),
-      supabase.storage.from("certificates").upload(thumbname, thumbnailBuffer, {
-        cacheControl: "31536000", 
-        contentType: "image/webp"
-      })
-    ]);
-
-    // Mecanismo de Defesa: Valida se houve falha em algum dos uploads e limpa arquivos órfãos (Rollback)
-    if (originalUpload.error || thumbUpload.error) {
-      console.error("Erro no upload:", originalUpload.error || thumbUpload.error);
-
-      await supabase.storage
-        .from("certificates")
-        .remove([fileName, thumbname]);
-
-      return res.status(500).json({ error: "Erro ao fazer upload do arquivo" });
-    }
-
-    // Captura as URLs públicas geradas no Supabase Storage
-    const { data: imageData } = supabase.storage
-      .from("certificates")
-      .getPublicUrl(fileName);
-
-    const { data: thumbData } = supabase.storage
-      .from("certificates")
-      .getPublicUrl(thumbname);
-    
-    if (!imageData?.publicUrl || !thumbData?.publicUrl) {
-      return res.status(500).json({ error: "Erro ao obter URLs do arquivo" });
-    }
-
+app.post(
+  "/certificates",
+  authMiddleware,
+  uploadLimiter,
+  upload.single("file"),
+  async (req, res) => {
     try {
-      // Persistência relacional final no banco de dados
-      const result = await pool.query(
-        "INSERT INTO certificates (title, image_path, thumbnail_path, user_id) VALUES ($1, $2, $3, $4) RETURNING *",
-        [name, imageData.publicUrl, thumbData.publicUrl, user.id]
+      const validation = validate(createCertificateSchema, req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.errors.join(", ") });
+      }
+
+      const { name } = validation.data;
+
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: "Arquivo não enviado" });
+      }
+
+      const email = req.user.email;
+
+      const userResult = await pool.query(
+        "SELECT * FROM users WHERE email = $1",
+        [email]
       );
 
-      res.json(result.rows[0]);
+      const user = userResult.rows[0];
 
-    } catch (dbError) {
-      console.error("Erro no banco, rollback do storage...");
+      if (!user) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
 
-      // Rollback Estratégico: Se o SQL falhar, remove as imagens do Bucket para não poluir o Storage
-      await supabase.storage
+      const safeName = file.originalname
+        .replace(/\s+/g, "_")
+        .replace(/[^\w.-]/g, "");
+
+      const fileName = `${Date.now()}_${safeName}`;
+      const thumbname = `thumb_${fileName}`;
+
+      const thumbnailBuffer = await sharp(file.buffer)
+        .resize({ width: 300 })
+        .webp({ quality: 70 })
+        .toBuffer();
+
+      const [originalUpload, thumbUpload] = await Promise.all([
+        supabase.storage.from("certificates").upload(fileName, file.buffer, {
+          cacheControl: "31536000",
+          contentType: file.mimetype,
+        }),
+        supabase.storage.from("certificates").upload(thumbname, thumbnailBuffer, {
+          cacheControl: "31536000",
+          contentType: "image/webp",
+        }),
+      ]);
+
+      if (originalUpload.error || thumbUpload.error) {
+        console.error(
+          "Erro no upload:",
+          originalUpload.error || thumbUpload.error
+        );
+
+        await supabase.storage
+          .from("certificates")
+          .remove([fileName, thumbname]);
+
+        return res.status(500).json({ error: "Erro ao fazer upload do arquivo" });
+      }
+
+      const { data: imageData } = supabase.storage
         .from("certificates")
-        .remove([fileName, thumbname]);
+        .getPublicUrl(fileName);
 
-      return res.status(500).json({ error: "Erro ao salvar certificado" });
+      const { data: thumbData } = supabase.storage
+        .from("certificates")
+        .getPublicUrl(thumbname);
+
+      if (!imageData?.publicUrl || !thumbData?.publicUrl) {
+        return res.status(500).json({ error: "Erro ao obter URLs do arquivo" });
+      }
+
+      try {
+        const result = await pool.query(
+          "INSERT INTO certificates (title, image_path, thumbnail_path, user_id) VALUES ($1, $2, $3, $4) RETURNING *",
+          [name, imageData.publicUrl, thumbData.publicUrl, user.id]
+        );
+
+        res.json(result.rows[0]);
+      } catch (dbError) {
+        console.error("[ERROR] POST /certificates DB:", dbError.message);
+
+        await supabase.storage
+          .from("certificates")
+          .remove([fileName, thumbname]);
+
+        return res.status(500).json({ error: "Erro ao salvar certificado" });
+      }
+    } catch (error) {
+      console.error("[ERROR] POST /certificates:", error.message);
+      res.status(500).json({ error: "Erro ao salvar certificado" });
     }
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erro ao salvar certificado" });
   }
-});
+);
 
-/**
- * ROUTE: GET /certificates
- * RESPONSIBILITY: Retornar a coleção completa de modelos de certificados pertencentes exclusivamente ao usuário requisitante.
- */
 app.get("/certificates", authMiddleware, async (req, res) => {
   try {
     const email = req.user.email;
@@ -249,9 +283,8 @@ app.get("/certificates", authMiddleware, async (req, res) => {
     );
 
     res.json(certResult.rows);
-
   } catch (error) {
-    console.error(error);
+    console.error("[ERROR] GET /certificates:", error.message);
     res.status(500).json({ error: "Erro ao buscar certificados" });
   }
 });
@@ -260,22 +293,16 @@ app.get("/certificates", authMiddleware, async (req, res) => {
 // ROTAS DE CONSULTA DE MODELOS ESPECÍFICOS
 // ==========================================================================
 
-/**
- * ROUTE: GET /certificates/:id
- * RESPONSIBILITY: Localizar e retornar os metadados de um modelo de certificado específico.
- * SECURITY: Valida se o ID é numérico e restringe o SELECT estritamente ao user_id do token autenticado.
- */
 app.get("/certificates/:id", authMiddleware, async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    // Validação de Entrada: Impede falhas de casting e SQL Injection validando o formato do parâmetro
-    if (isNaN(id)) {
+    const paramValidation = validate(idParamSchema, { id: req.params.id });
+    if (!paramValidation.success) {
       return res.status(400).json({ error: "ID inválido" });
     }
+
+    const { id } = paramValidation.data;
     const email = req.user.email;
 
-    // Resolução de Dependência: Localiza a Primary Key interna do usuário associado
     const userResult = await pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
@@ -287,7 +314,6 @@ app.get("/certificates/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    // Escopo Seguro: Garante que um usuário não consiga acessar modelos pertencentes a terceiros
     const certResult = await pool.query(
       "SELECT * FROM certificates WHERE id = $1 AND user_id = $2",
       [id, user.id]
@@ -298,9 +324,8 @@ app.get("/certificates/:id", authMiddleware, async (req, res) => {
     }
 
     res.json(certResult.rows[0]);
-
   } catch (error) {
-    console.error(error);
+    console.error("[ERROR] GET /certificates/:id:", error.message);
     res.status(500).json({ error: "Erro ao buscar certificado" });
   }
 });
@@ -309,23 +334,26 @@ app.get("/certificates/:id", authMiddleware, async (req, res) => {
 // ROTAS DE GERENCIAMENTO DE PROJETOS (WORKSPACES DE EDIÇÃO)
 // ==========================================================================
 
-/**
- * ROUTE: POST /projects
- * RESPONSIBILITY: Salvar as configurações e estados de customização do editor de certificados.
- * Efetua a serialização de arrays/objetos complexos para strings JSON e executa uma limpeza automática
- * na tabela mantendo estritamente os 3 projetos salvos mais recentes (Lógica de Histórico FIFO).
- */
 app.post("/projects", authMiddleware, async (req, res) => {
   try {
-    const { nomesLista, textoCorpo, estilos, certificadoId, posicoes } = req.body;
+    const validation = validate(createProjectSchema, req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: validation.errors.join(", ") });
+    }
+
+    const { nomesLista, textoCorpo, estilos, certificadoId, posicoes } =
+      validation.data;
     const email = req.user.email;
 
-    const userResult = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+    const userResult = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
     const user = userResult.rows[0];
 
-    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+    if (!user)
+      return res.status(404).json({ error: "Usuário não encontrado" });
 
-    // Inserção Relacional: Mapeia dados tipados e converte estruturas dinâmicas em JSON string
     const result = await pool.query(
       `INSERT INTO projects (
         user_id, certificate_id, nomes_lista, texto_corpo,
@@ -338,7 +366,7 @@ app.post("/projects", authMiddleware, async (req, res) => {
       [
         user.id,
         certificadoId,
-        JSON.stringify(nomesLista), 
+        JSON.stringify(nomesLista),
         textoCorpo,
         estilos.corNome,
         estilos.fonteNome,
@@ -347,11 +375,10 @@ app.post("/projects", authMiddleware, async (req, res) => {
         estilos.fonteCorpo,
         estilos.tamanhoCorpo,
         JSON.stringify(posicoes.nome),
-        JSON.stringify(posicoes.corpo)
+        JSON.stringify(posicoes.corpo),
       ]
     );
 
-    // Auditoria de Limpeza: Busca a lista completa de IDs do usuário ordenados por modificação recente
     const projectsResult = await pool.query(
       `
       SELECT id
@@ -364,13 +391,9 @@ app.post("/projects", authMiddleware, async (req, res) => {
 
     const projects = projectsResult.rows;
 
-    // Manutenção do Banco: Se ultrapassar a cota de 3 registros, remove os históricos excedentes (mais antigos)
     if (projects.length > 3) {
-      const idsParaRemover = projects
-        .slice(3)
-        .map(project => project.id);
+      const idsParaRemover = projects.slice(3).map((project) => project.id);
 
-      // Executa o descarte em lote utilizando o operador ANY para otimizar a transação SQL
       await pool.query(
         `
         DELETE FROM projects
@@ -382,17 +405,11 @@ app.post("/projects", authMiddleware, async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error(error);
+    console.error("[ERROR] POST /projects:", error.message);
     res.status(500).json({ error: "Erro ao salvar projeto" });
   }
 });
 
-/**
- * ROUTE: GET /projects
- * RESPONSIBILITY: Retornar a esteira com os 3 projetos mais recentes do usuário.
- * PATTERN: Executa uma query otimizada contendo um INNER JOIN para acoplar os dados visuais
- * e caminhos de arquivos de imagem (thumbnail) pertencentes ao certificado base associado.
- */
 app.get("/projects", authMiddleware, async (req, res) => {
   try {
     const email = req.user.email;
@@ -408,7 +425,6 @@ app.get("/projects", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    // Query de Agregação Relacional (Projetos + Certificados) com limite estrito de 3 linhas
     const projectsResult = await pool.query(
       `
       SELECT
@@ -426,26 +442,20 @@ app.get("/projects", authMiddleware, async (req, res) => {
     );
 
     res.json(projectsResult.rows);
-
   } catch (error) {
-    console.error(error);
+    console.error("[ERROR] GET /projects:", error.message);
     res.status(500).json({ error: "Erro ao buscar projetos" });
   }
 });
 
-/**
- * ROUTE: GET /projects/:id
- * RESPONSIBILITY: Hidratar o workspace do editor carregando todas as configurações de um projeto salvo específico.
- * PATTERN: Retorna a linha do projeto injetando os caminhos da imagem original e da miniatura via JOIN.
- */
 app.get("/projects/:id", authMiddleware, async (req, res) => {
   try {
-    const { id } = req.params;
-
-    if (isNaN(id)) {
+    const paramValidation = validate(idParamSchema, { id: req.params.id });
+    if (!paramValidation.success) {
       return res.status(400).json({ error: "ID inválido" });
     }
 
+    const { id } = paramValidation.data;
     const email = req.user.email;
 
     const userResult = await pool.query(
@@ -459,7 +469,6 @@ app.get("/projects/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    // Busca detalhada com validação estrita de posse (p.user_id) para evitar vazamento de dados
     const projectResult = await pool.query(
       `
       SELECT
@@ -481,9 +490,8 @@ app.get("/projects/:id", authMiddleware, async (req, res) => {
     }
 
     res.json(projectResult.rows[0]);
-
   } catch (error) {
-    console.error(error);
+    console.error("[ERROR] GET /projects/:id:", error.message);
     res.status(500).json({ error: "Erro ao buscar projeto" });
   }
 });
@@ -492,25 +500,32 @@ app.get("/projects/:id", authMiddleware, async (req, res) => {
 // ROTAS DE ATUALIZAÇÃO E PERSISTÊNCIA CONTINUA (PUT)
 // ==========================================================================
 
-/**
- * ROUTE: PUT /projects/:id
- * RESPONSIBILITY: Atualizar de forma integral o estado de edição do canvas de um projeto existente.
- * PERFORMANCE: Executa a validação de propriedade e o UPDATE em uma transação atômica de passo único.
- */
 app.put("/projects/:id", authMiddleware, async (req, res) => {
   try {
-    const { id } = req.params;
-    if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
+    const paramValidation = validate(idParamSchema, { id: req.params.id });
+    if (!paramValidation.success) {
+      return res.status(400).json({ error: "ID inválido" });
+    }
 
-    const { nomesLista, textoCorpo, estilos, posicoes } = req.body;
+    const { id } = paramValidation.data;
+
+    const bodyValidation = validate(updateProjectSchema, req.body);
+    if (!bodyValidation.success) {
+      return res.status(400).json({ error: bodyValidation.errors.join(", ") });
+    }
+
+    const { nomesLista, textoCorpo, estilos, posicoes } = bodyValidation.data;
     const email = req.user.email;
 
-    const userResult = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+    const userResult = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
     const user = userResult.rows[0];
 
-    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+    if (!user)
+      return res.status(404).json({ error: "Usuário não encontrado" });
 
-    // Modificação Atômica: Injeta o timestamp explícito via NOW() diretamente no banco de dados
     const updatedProject = await pool.query(
       `UPDATE projects
        SET
@@ -528,7 +543,7 @@ app.put("/projects/:id", authMiddleware, async (req, res) => {
        WHERE id = $11 AND user_id = $12
        RETURNING *`,
       [
-        JSON.stringify(nomesLista), 
+        JSON.stringify(nomesLista),
         textoCorpo,
         estilos.corNome,
         estilos.fonteNome,
@@ -539,18 +554,19 @@ app.put("/projects/:id", authMiddleware, async (req, res) => {
         JSON.stringify(posicoes.nome),
         JSON.stringify(posicoes.corpo),
         id,
-        user.id
+        user.id,
       ]
     );
 
-    // Validação de Impacto: Garante retorno caso o ID pertença a outro usuário ou não exista
     if (updatedProject.rows.length === 0) {
-      return res.status(404).json({ error: "Projeto não encontrado ou sem permissão" });
+      return res
+        .status(404)
+        .json({ error: "Projeto não encontrado ou sem permissão" });
     }
 
     res.json(updatedProject.rows[0]);
   } catch (error) {
-    console.error(error);
+    console.error("[ERROR] PUT /projects/:id:", error.message);
     res.status(500).json({ error: "Erro ao atualizar projeto" });
   }
 });
@@ -559,20 +575,14 @@ app.put("/projects/:id", authMiddleware, async (req, res) => {
 // ROTAS DE DELEÇÃO E LIMPEZA ASSÍNCRONA (DELETE)
 // ==========================================================================
 
-/**
- * ROUTE: DELETE /certificates/:id
- * RESPONSIBILITY: Remover de forma definitiva um modelo de certificado do ecossistema.
- * FLOW: Localiza as strings de URL, isola os nomes internos dos arquivos via RegExp implícita,
- * purga os blobs físicos no Supabase Storage e, em seguida, expurga a linha relacional no SQL.
- */
 app.delete("/certificates/:id", authMiddleware, async (req, res) => {
   try {
-    const { id } = req.params;
-
-    if (isNaN(id)) {
+    const paramValidation = validate(idParamSchema, { id: req.params.id });
+    if (!paramValidation.success) {
       return res.status(400).json({ error: "ID inválido" });
     }
 
+    const { id } = paramValidation.data;
     const email = req.user.email;
 
     const userResult = await pool.query(
@@ -586,7 +596,6 @@ app.delete("/certificates/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    // Busca preliminar para capturar as referências de imagem do storage antes do descarte relacional
     const certResult = await pool.query(
       "SELECT * FROM certificates WHERE id = $1 AND user_id = $2",
       [id, user.id]
@@ -598,11 +607,6 @@ app.delete("/certificates/:id", authMiddleware, async (req, res) => {
 
     const cert = certResult.rows[0];
 
-    /**
-     * HELPER FUNCTION: extractPath
-     * DESCRIPTION: Instancia uma interface nativa de URL e divide o caminho estático 
-     * para reter estritamente a chave do objeto (filename) dentro do bucket de certificados.
-     */
     const extractPath = (urlString) => {
       try {
         const url = new URL(urlString);
@@ -620,45 +624,51 @@ app.delete("/certificates/:id", authMiddleware, async (req, res) => {
     if (originalPath) filesToDelete.push(originalPath);
     if (thumbPath) filesToDelete.push(thumbPath);
 
-    // Expulsão Física: Deleta concorrentemente do bucket os arquivos originais e miniaturas
     if (filesToDelete.length > 0) {
       const { error: deleteError } = await supabase.storage
         .from("certificates")
         .remove(filesToDelete);
 
       if (deleteError) {
-        console.error("Erro ao deletar arquivos do storage:", deleteError);
+        console.error(
+          "[ERROR] DELETE storage:",
+          deleteError.message
+        );
       }
     }
 
-    // Expulsão Lógica: Remove a restrição relacional na tabela de certificados do banco PostgreSQL
     await pool.query(
       "DELETE FROM certificates WHERE id = $1 AND user_id = $2",
       [id, user.id]
     );
 
     res.json({ message: "Deletado com sucesso" });
-
   } catch (error) {
-    console.error(error);
+    console.error("[ERROR] DELETE /certificates/:id:", error.message);
     res.status(500).json({ error: "Erro ao deletar" });
   }
 });
 
 // ==========================================================================
+// HANDLER GLOBAL DE ERROS (deve ser o último middleware registrado)
+// ==========================================================================
+
+app.use(errorHandler);
+
+// ==========================================================================
 // SUBSISTEMA DE MONITORAMENTO E INICIALIZAÇÃO DA PORTA
 // ==========================================================================
 
-// Rota pública de Health Check utilizada pelo serviço da Render para monitoramento de Uptime (Ping)
 app.get("/ping", (req, res) => {
   res.json({ ok: true });
 });
 
-// Injeção dinâmica de porta do container cloud ou fallback local de desenvolvimento
 const PORT = process.env.PORT || 3000;
 
-// Escuta explícita ligando todas as interfaces IP (0.0.0.0), obrigatória para roteamento em nuvem
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+  });
+}
 
+export default app;
