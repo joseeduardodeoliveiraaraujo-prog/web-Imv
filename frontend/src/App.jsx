@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./services/firebase";
+import { syncUser } from "./services/usersApi";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./components/Login/Login";
 import Home from "./Pages/Home";
-import Editor from "./Pages/Editor"
+import Editor from "./Pages/Editor/EditorPage";
 import "./App.css";
 
 
@@ -13,28 +14,13 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = import.meta.env.VITE_API_URL;
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
 
       if (currentUser) {
         try {
-          const token = await currentUser.getIdToken();
-
-          await fetch(`${API_URL}/users`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              name: currentUser.displayName || "Sem nome",
-              email: currentUser.email,
-              uid: currentUser.uid,
-            }),
-          });
+          await syncUser(currentUser);
         } catch (error) {
           console.error("Erro ao salvar usuário:", error);
         }

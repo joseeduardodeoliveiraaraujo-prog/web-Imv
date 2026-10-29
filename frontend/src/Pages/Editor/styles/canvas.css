@@ -1,0 +1,19 @@
+/**
+ * DESCRIPTION: Componente de renderização do Canvas.
+ * RESPONSIBILITY: Definir o bloco de desenho, travar arrastos de imagens nativas do navegador e desativar seleção.
+ */
+.editor-canvas {
+  max-width: 900px; 
+  width: 100%; 
+  height: auto; 
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  display: block;
+  user-select: none;
+  background-color: white;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  cursor: inherit; 
+  -webkit-user-drag: none; 
+  touch-action: none;
+}
+

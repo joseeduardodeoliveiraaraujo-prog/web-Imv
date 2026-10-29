@@ -1,0 +1,99 @@
+/**
+ * DESCRIPTION: Cortina de bloqueio global de interface (Loading Overlay).
+ * RESPONSIBILITY: Fixar-se sobre a totalidade da janela gráfica, desfocar o fundo e impedir cliques externos.
+ */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.85); 
+  backdrop-filter: blur(5px); 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; 
+}
+
+/**
+ * DESCRIPTION: Card centralizador do status de carregamento.
+ * RESPONSIBILITY: Isolar o bloco do modal com borda fina e sombra projetada de alto contraste.
+ */
+.loading-modal {
+  background: #1e293b;
+  padding: 40px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+.loading-modal h3 {
+  color: #fff;
+  margin: 20px 0 10px 0;
+  font-size: 1.5rem;
+  min-height: 1.6em; /* Preserva altura mínima para conter flutuações de layout ao trocar textos */
+  margin-bottom: 5px;
+}
+.loading-modal p {
+  color: #38bdf8; 
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+}
+
+/**
+ * DESCRIPTION: Texto secundário de aviso interno.
+ * RESPONSIBILITY: Alterar a escala cromática para tons neutros indicando menor hierarquia visual.
+ */
+.warning-text {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  display: block;
+}
+
+/**
+ * DESCRIPTION: Calha externa do indicador de progresso (Trilho).
+ * RESPONSIBILITY: Servir de base escura estática e mascarar estouros de largura da barra interna (overflow).
+ */
+.progress-container {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  margin: 20px 0 10px 0;
+  overflow: hidden; 
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/**
+ * DESCRIPTION: Preenchimento dinâmico do progresso (Fill).
+ * RESPONSIBILITY: Aplicar gradiente linear animado via JavaScript e emitir reflexo luminoso sutil nas bordas.
+ */
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #818cf8); 
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+  transition: width 0.3s ease; 
+}
+
+/**
+ * DESCRIPTION: Display numérico da porcentagem.
+ * RESPONSIBILITY: Destacar a contagem matemática de progresso em negrito com a cor de acento do sistema.
+ */
+.progress-percentage {
+  color: #38bdf8;
+  font-weight: bold;
+  font-size: 1.2rem;
+  display: block;
+  margin-bottom: 10px;
+}
+
+/**
+ * DESCRIPTION: Declaração de animação de rotação cíclica (Keyframes).
+ * RESPONSIBILITY: Mapear a transição angular contínua de 0 a 360 graus para spinners e loadings.
+ */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+

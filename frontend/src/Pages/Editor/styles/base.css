@@ -1,0 +1,133 @@
+/**
+ * DESCRIPTION: Reset global do documento.
+ * RESPONSIBILITY: Eliminar margens e preenchimentos nativos e travar o scroll principal do ecossistema.
+ */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; 
+}
+
+/**
+ * DESCRIPTION: Declaração de variáveis globais (:root).
+ * RESPONSIBILITY: Centralizar a paleta de cores, tokens de design e efeitos reutilizáveis.
+ */
+:root {
+  --bg-main: #020617;
+  --bg-card: rgba(15, 23, 42, 0.6);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --accent-color: #38bdf8;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --glass-effect: blur(12px) saturate(180%);
+}
+
+/**
+ * DESCRIPTION: Root container da aplicação do Editor.
+ * RESPONSIBILITY: Fixar o layout em tela cheia isolando o ambiente sobre a Home (z-index agressivo).
+ */
+.editor {
+  width: 100vw; 
+  height: 100vh;
+  position: fixed; 
+  top: 0;
+  left: 0;
+  z-index: 9999; 
+  background-color: var(--bg-main);
+}
+
+/**
+ * DESCRIPTION: Barra superior do Editor (Header).
+ * RESPONSIBILITY: Alinhar marcações textuais e ações de topo, mantendo altura rígida não maleável.
+ */
+.editor-header {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+/**
+ * DESCRIPTION: Elemento de título do cabeçalho do editor.
+ * RESPONSIBILITY: Controlar dimensões e peso da tipografia primária.
+ */
+.editor-header h1 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/**
+ * DESCRIPTION: Grid mestre de distribuição interna.
+ * RESPONSIBILITY: Dividir o espaço restante da tela em duas colunas assíncronas (Workspace e Sidebar).
+ */
+.editor-container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 350px; 
+  width: 100%; 
+  margin: 0;
+  padding: 0;
+  height: calc(100vh - 70px); /* Subtração exata da altura do header */
+  overflow: hidden;
+  background: var(--bg-main);
+  border-top: 1px solid var(--border-color);
+}
+
+/**
+ * DESCRIPTION: Área ativa de renderização dos certificados (Lado Esquerdo).
+ * RESPONSIBILITY: Centralizar a esteira de canvas e gerenciar o fluxo de rolagem vertical independente.
+ */
+.editor-workspace {
+  background: #020617;
+  box-shadow: inset -10px 0 20px rgba(0, 0, 0, 0.4); 
+  border-right: 2px solid rgba(255, 255, 255, 0.05); 
+  z-index: 1; 
+  width: 100%;
+  height: calc(100vh - 70px);
+  padding: 120px 0 60px 0; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-color) transparent;
+}
+
+/**
+ * DESCRIPTION: Pseudo-elementos de estilização de scrollbars (Webkit).
+ * RESPONSIBILITY: Sobrescrever a barra nativa do sistema operacional por um modelo estilizado e minimalista.
+ */
+.editor-workspace::-webkit-scrollbar,
+.editor-sidebar::-webkit-scrollbar {
+  width: 8px; 
+}
+.editor-workspace::-webkit-scrollbar-track,
+.editor-sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2); 
+}
+.editor-workspace::-webkit-scrollbar-thumb,
+.editor-sidebar::-webkit-scrollbar-thumb {
+  background: var(--accent-color); 
+  border-radius: 10px;
+  border: 2px solid var(--bg-main); 
+}
+.editor-workspace::-webkit-scrollbar-thumb:hover {
+  background: #7dd3fc; 
+}
+
+/**
+ * DESCRIPTION: Fallback de scrollbar para motor Gecko.
+ * RESPONSIBILITY: Sincronizar o padrão visual fino da barra de rolagem no navegador Firefox.
+ */
+.editor-workspace, .editor-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-color) transparent;
+}
+

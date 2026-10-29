@@ -1,0 +1,230 @@
+/**
+ * DESCRIPTION: Painel lateral de ferramentas e configurações (Lado Direito).
+ * RESPONSIBILITY: Fixar controles, isolar contexto de empilhamento e garantir rolagem isolada de formulários.
+ */
+.editor-sidebar {
+  background: #0f172a; 
+  border-left: 1px solid rgba(255, 255, 255, 0.1); 
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+  overflow-y: auto;
+  z-index: 10; 
+  backdrop-filter: none;
+}
+
+/**
+ * DESCRIPTION: Alerta ou informativo de restrições operacionais.
+ * RESPONSIBILITY: Exibir aviso em formato dashed e desativar interações físicas (cliques) para segurança do fluxo.
+ */
+.limit-warning {
+  width: 100%;
+  box-sizing: border-box; 
+  text-align: center; 
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+  background: rgba(56, 189, 248, 0.05); 
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px dashed rgba(56, 189, 248, 0.3); 
+  backdrop-filter: blur(4px);
+  margin-bottom: 1rem; 
+  pointer-events: none;
+}
+
+/**
+ * DESCRIPTION: Agrupador semântico de blocos de formulário.
+ * RESPONSIBILITY: Estabelecer margens, lacunas e linhas divisórias discretas entre grupos de inputs.
+ */
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  min-width: 0;
+}
+.control-group:last-of-type {
+  border-bottom: none !important;
+  padding-bottom: 0.5rem !important;
+}
+
+/**
+ * DESCRIPTION: Rótulos identificadores (Labels) de controles.
+ * RESPONSIBILITY: Formatar títulos de inputs em caixa alta, aumentando o espaçamento de caracteres para legibilidade.
+ */
+.control-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/**
+ * DESCRIPTION: Campos de entrada de dados padrão do editor (Inputs).
+ * RESPONSIBILITY: Padronizar caixas de texto com fundo translúcido, bordas finas e transição suave.
+ */
+.editor-input {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  color: white;
+  font-size: 0.9rem;
+  transition: all 0.2s, border-color 0.2s;
+}
+.editor-input:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.editor-input:focus {
+  border-color: var(--accent-color);
+  outline: none;
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2);
+}
+
+/**
+ * DESCRIPTION: Campo de texto em lote de múltiplas linhas (Textarea).
+ * RESPONSIBILITY: Permitir redimensionamento vertical, preservar quebras de linha e forçar quebra de palavras longas.
+ */
+.bulk-area {
+  height: 180px;
+  min-height: 100px;
+  resize: vertical; 
+  line-height: 1.5; 
+  white-space: pre-wrap; 
+  font-family: 'Inter', sans-serif;
+  word-wrap: break-word;     
+  overflow-wrap: break-word; 
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/**
+ * DESCRIPTION: Seletor de cores nativo personalizado (Color Picker).
+ * RESPONSIBILITY: Resetar a aparência do navegador para transformar o input em um bloco clicável limpo.
+ */
+.input-color-picker {
+  height: 45px !important; 
+  width: 100%;
+  padding: 5px !important;
+  cursor: pointer;
+  appearance: none; 
+  -webkit-appearance: none;
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.2);
+}
+.input-color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.input-color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+/**
+ * DESCRIPTION: Container modular de ajuste de tamanho de fonte.
+ * RESPONSIBILITY: Alinhar horizontalmente ícones guias, o slider de arrasto e o display numérico em linha única.
+ */
+.font-size-control {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  padding: 8px 12px;
+  border-radius: 10px;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/**
+ * DESCRIPTION: Ícones de referência de escala tipográfica (A+ / A-).
+ * RESPONSIBILITY: Indicar visualmente os extremos de tamanho mínimo e máximo do controle slider.
+ */
+.size-icon {
+  color: rgba(255, 255, 255, 0.4);
+  user-select: none;
+  font-weight: bold;
+}
+.size-icon.small { font-size: 12px; }
+.size-icon.large { font-size: 18px; }
+
+/**
+ * DESCRIPTION: Campo de controle deslizante (Slider Range).
+ * RESPONSIBILITY: Customizar o trilho horizontal do slider limpando as propriedades de renderização nativa.
+ */
+.font-range-input {
+  -webkit-appearance: none;
+  flex: 1;
+  height: 6px;
+  min-width: 50px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  outline: none;
+}
+.font-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent-color, #007bff);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s ease-in-out;
+}
+.font-range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/**
+ * DESCRIPTION: Bloco de posicionamento para o campo numérico.
+ * RESPONSIBILITY: Servir de container de escopo relativo para acoplamento da unidade de medida estática (px).
+ */
+.number-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/**
+ * DESCRIPTION: Input numérico para ajuste manual preciso.
+ * RESPONSIBILITY: Centralizar o valor e ocultar as setas de incremento nativas do sistema (spin-buttons).
+ */
+.font-number-input {
+  width: 70px;
+  padding: 6px 28px 6px 10px; 
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #fff;
+  text-align: center;
+  font-weight: 500;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.font-number-input::-webkit-inner-spin-button,
+.font-number-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+/**
+ * DESCRIPTION: Sufixo identificador de unidade de medida (Texto "px").
+ * RESPONSIBILITY: Fixar o texto de forma absoluta à direita e anular interações físicas para não bloquear o input.
+ */
+.unit {
+  position: absolute;
+  right: 8px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  pointer-events: none; 
+}
+

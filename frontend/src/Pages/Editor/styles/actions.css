@@ -1,0 +1,195 @@
+/**
+ * DESCRIPTION: Âncora estrutural do módulo de exportação (Download).
+ * RESPONSIBILITY: Isolar o contexto posicional relativo para permitir a flutuação do menu suspenso de formatos.
+ */
+.download-group-container {
+  position: relative; 
+  width: 100%;
+  margin-top: 0px;
+  padding-top: 5px;
+}
+
+/**
+ * DESCRIPTION: Gatilho principal de abertura do menu de download.
+ * RESPONSIBILITY: Destacar a ação primária de exportação com cor contrastante vibrante e flexbox interno.
+ */
+.btn-download-trigger {
+  width: 100%;
+  padding: 14px 20px;
+  background-color: #38bdf8; 
+  color: #0f172a; 
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+}
+.btn-download-trigger:hover {
+  background-color: #0ea5e9;
+}
+
+/**
+ * DESCRIPTION: Painel flutuante de formatos de arquivo (Dropdown Menu).
+ * RESPONSIBILITY: Posicionar de forma absoluta o menu acima do botão gatilho, isolando o z-index.
+ */
+.download-options-menu {
+  position: absolute;
+  bottom: calc(100% + 10px); 
+  left: 0;
+  width: 100%;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  margin-bottom: 8px;
+}
+
+/**
+ * DESCRIPTION: Botão seletor de opção de formato individual.
+ * RESPONSIBILITY: Criar bloco de clique inteiro para o item e aplicar transição de cor de fundo no hover.
+ */
+.option-item {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  text-align: left;
+  transition: background 0.2s;
+}
+.option-item:hover {
+  background: rgba(56, 189, 248, 0.1);
+}
+
+/**
+ * DESCRIPTION: Bloco empilhado de informações da opção.
+ * RESPONSIBILITY: Organizar em coluna os metadados e os títulos explicativos do formato.
+ */
+.item-text-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+/**
+ * DESCRIPTION: Título de identificação do formato (Ex: PNG, PDF).
+ * RESPONSIBILITY: Definir o peso do texto principal e responder dinamicamente ao hover do elemento pai.
+ */
+.item-main-title {
+  color: #f8fafc; 
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.option-item:hover .item-main-title {
+  color: #38bdf8;
+}
+
+/**
+ * DESCRIPTION: Texto auxiliar descritivo da extensão de arquivo.
+ * RESPONSIBILITY: Suavizar o tom de cor para criar contraste hierárquico inferior ao título.
+ */
+.item-sub-desc {
+  color: #94a3b8; 
+  font-size: 0.8rem;
+}
+
+/**
+ * DESCRIPTION: Indicador geométrico de estado vetorial (Seta/Chevron).
+ * RESPONSIBILITY: Criar formas de setas puras via CSS manipulando bordas adjacentes e rotações em graus.
+ */
+.chevron {
+  border: solid #0f172a;
+  border-width: 0 2.5px 2.5px 0;
+  display: inline-block;
+  padding: 3.5px;
+  transition: transform 0.3s;
+}
+.down { transform: rotate(45deg); }
+.up { transform: rotate(-135deg); }
+
+/**
+ * DESCRIPTION: Container do bloco secundário de salvamento.
+ * RESPONSIBILITY: Controlar margens superiores e garantir largura total para o botão de persistência de dados.
+ */
+.save-group-container {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/**
+ * DESCRIPTION: Botão primário de persistência de dados (Salvar).
+ * RESPONSIBILITY: Configurar a identidade do botão de sucesso com sombras projetadas em verde e alinhamento centralizado.
+ */
+.btn-save {
+  width: 100%;
+  padding: 14px 20px;
+  background-color: #22c55e; 
+  color: #052e16; 
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+}
+.btn-save:hover {
+  background-color: #16a34a;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.3);
+}
+.btn-save:active {
+  transform: scale(0.98);
+}
+.btn-save:disabled {
+  background-color: #64748b;
+  color: #cbd5e1;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/**
+ * DESCRIPTION: Embrulho estrito do ícone interno do botão salvar.
+ * RESPONSIBILITY: Forçar o alinhamento flexível verticalizado do SVG interno.
+ */
+.btn-save .save-icon {
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+/**
+ * DESCRIPTION: Botão secundário de escape da aplicação (Sair).
+ * RESPONSIBILITY: Aplicar estilização baseada em paleta destrutiva tênue com transições de opacidade.
+ */
+.btn-exit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.btn-exit:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+

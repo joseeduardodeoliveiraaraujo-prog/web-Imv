@@ -3,43 +3,23 @@ import { useState } from 'react';
 import "./Login.css";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../services/firebase";
+import { syncUser } from "../../services/usersApi";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const API_URL = import.meta.env.VITE_API_URL;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      // Faz o login no Firebase
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
         password
       );
       const user = userCredential.user;
-
-      // GERA O TOKEN 
-      const token = await user.getIdToken();
-
-      const API_URL = import.meta.env.VITE_API_URL;
-
-      // ENVIA PARA O BACKEND COM O TOKEN
-      const response = await fetch(`${API_URL}/users`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          //Envia o token no formato Bearer
-          "Authorization": `Bearer ${token}` 
-        },
-        body: JSON.stringify({
-          name: user.displayName || "Sem nome",
-          email: user.email,
-          uid: user.uid
-        })
-      });
+      const response = await syncUser(user);
 
       if (!response.ok) {
         throw new Error(`Erro no servidor: ${response.status}`);

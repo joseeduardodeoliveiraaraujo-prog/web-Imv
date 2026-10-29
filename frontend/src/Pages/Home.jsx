@@ -1,8 +1,21 @@
 import Header from "../components/Header/Header";
 import "./Home.css";
 import { FaPlus } from "react-icons/fa";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  deleteCertificate,
+  listCertificates,
+  uploadCertificate,
+} from "../services/certificatesApi";
+import { listProjects } from "../services/projectsApi";
+
+const formatCertificate = (cert) => ({
+  id: cert.id,
+  name: cert.title,
+  previewUrl: cert.thumbnail_path,
+  originalUrl: cert.image_path,
+});
 
 /**
  * COMPONENT: Home
@@ -19,10 +32,35 @@ const Home = ({ user, onLogout }) => {
   const [recentes, setRecentes] = useState([]);
   
   // ==========================================
-  // REFS & ENVIRONMENT VARIABLES
+  // REFS
   // ==========================================
   const fileInputRef = useRef(null);
-  const API_URL = import.meta.env.VITE_API_URL;
+
+  // ==========================================
+  // DATA FETCHING FUNCTIONS (REQUISIÇÕES)
+  // ==========================================
+
+  /**
+   * FUNCTION: fetchCertificates
+   * DESCRIPTION: Consome o endpoint de certificados e normaliza o schema de dados vindo da API para o frontend.
+   */
+  const fetchCertificates = useCallback(async () => {
+    if (!user) return [];
+
+    const token = await user.getIdToken();
+    const data = await listCertificates(token);
+
+    return data.map(formatCertificate);
+  }, [user]);
+
+  const loadCertificates = async () => {
+    try {
+      const formatted = await fetchCertificates();
+      setCertificates(formatted);
+    } catch (error) {
+      console.error("Erro ao carregar certificados:", error);
+    }
+  };
 
   // ==========================================
   // SIDE EFFECTS (EFEITOS COLATERAIS)
@@ -34,8 +72,26 @@ const Home = ({ user, onLogout }) => {
    */
   useEffect(() => {
     if (!user) return;
-    loadCertificates();
-  }, [user]);
+
+    let isActive = true;
+
+    const carregarCertificados = async () => {
+      try {
+        const formatted = await fetchCertificates();
+        if (isActive) setCertificates(formatted);
+      } catch (error) {
+        if (isActive) {
+          console.error("Erro ao carregar certificados:", error);
+        }
+      }
+    };
+
+    carregarCertificados();
+
+    return () => {
+      isActive = false;
+    };
+  }, [user, fetchCertificates]);
 
   /**
    * EFFECT: Carregamento assíncrono do histórico de projetos modificados recentemente.
@@ -47,17 +103,7 @@ const Home = ({ user, onLogout }) => {
 
       try {
         const token = await user.getIdToken();
-        const response = await fetch(`${API_URL}/projects`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error("Erro ao buscar projetos");
-        }
-
-        const data = await response.json();
+        const data = await listProjects(token);
         setRecentes(data);
 
       } catch (err) {
@@ -67,46 +113,6 @@ const Home = ({ user, onLogout }) => {
 
     carregarRecentes();
   }, [user]);
-
-  // ==========================================
-  // DATA FETCHING FUNCTIONS (REQUISIÇÕES)
-  // ==========================================
-
-  /**
-   * FUNCTION: loadCertificates
-   * DESCRIPTION: Consome o endpoint de certificados e normaliza o schema de dados vindo da API para o frontend.
-   */
-  const loadCertificates = async () => {
-    if (!user) return;
-
-    try {
-      const token = await user.getIdToken();
-      const res = await fetch(`${API_URL}/certificates`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      if (!res.ok) {
-        throw new Error("Erro ao carregar certificados");
-      }
-
-      const data = await res.json();
-
-      // Normalização de chaves para compatibilidade com o formato do frontend
-      const formatted = data.map(cert => ({
-        id: cert.id,
-        name: cert.title,
-        previewUrl: cert.thumbnail_path,
-        originalUrl: cert.image_path
-      }));
-
-      setCertificates(formatted);
-
-    } catch (error) {
-      console.error("Erro ao carregar certificados:", error);
-    }
-  };
 
   // ==========================================
   // HANDLERS (EVENTOS E INTERAÇÕES)
@@ -131,23 +137,7 @@ const Home = ({ user, onLogout }) => {
 
     try {
       const token = await user.getIdToken();
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("name", file.name);
-
-      const response = await fetch(`${API_URL}/certificates`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro no upload");
-      }
-
-      const newCert = await response.json();
+      const newCert = await uploadCertificate(file, token);
 
       setCertificates(prev => [
         {
@@ -207,16 +197,7 @@ const Home = ({ user, onLogout }) => {
 
     try {
       const token = await user.getIdToken();
-      const response = await fetch(`${API_URL}/certificates/${selectedCertificate.id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao deletar");
-      }
+      await deleteCertificate(selectedCertificate.id, token);
 
       await loadCertificates();
       closeModal();
