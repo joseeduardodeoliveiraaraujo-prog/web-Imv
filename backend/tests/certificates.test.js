@@ -91,24 +91,28 @@ describe("GET /certificates - caracterização", () => {
       { id: 1, title: "Certificado A" },
     ];
 
-    mocks.poolQuery
-      .mockResolvedValueOnce({ rows: [DB_USER] })
-      .mockResolvedValueOnce({ rows: certificates });
+    mocks.poolQuery.mockResolvedValueOnce({ rows: certificates });
 
     const res = await request(app).get("/certificates").set(authHeader);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(certificates);
 
-    const [userSql, userParams] = mocks.poolQuery.mock.calls[0];
-    expect(userSql).toBe("SELECT * FROM users WHERE email = $1");
-    expect(userParams).toEqual([AUTH_USER.email]);
+    const [certSql, certParams] = mocks.poolQuery.mock.calls[0];
+    expect(certSql).toContain("FROM users u");
+    expect(certSql).toContain("LEFT JOIN certificates c");
+    expect(certSql).toContain("ORDER BY c.id DESC");
+    expect(certParams).toEqual([AUTH_USER.email]);
+    expect(mocks.poolQuery).toHaveBeenCalledTimes(1);
+  });
 
-    const [certSql, certParams] = mocks.poolQuery.mock.calls[1];
-    expect(certSql).toBe(
-      "SELECT * FROM certificates WHERE user_id = $1 ORDER BY id DESC"
-    );
-    expect(certParams).toEqual([DB_USER.id]);
+  it("retorna lista vazia quando o usuário existe mas não tem certificados", async () => {
+    mocks.poolQuery.mockResolvedValueOnce({ rows: [{ id: null }] });
+
+    const res = await request(app).get("/certificates").set(authHeader);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
   });
 
   it("retorna 404 quando o usuário autenticado não existe no banco", async () => {
@@ -149,26 +153,23 @@ describe("GET /certificates/:id - caracterização", () => {
       user_id: DB_USER.id,
     };
 
-    mocks.poolQuery
-      .mockResolvedValueOnce({ rows: [DB_USER] })
-      .mockResolvedValueOnce({ rows: [certificate] });
+    mocks.poolQuery.mockResolvedValueOnce({ rows: [certificate] });
 
     const res = await request(app).get("/certificates/12").set(authHeader);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(certificate);
 
-    const [certSql, certParams] = mocks.poolQuery.mock.calls[1];
-    expect(certSql).toBe(
-      "SELECT * FROM certificates WHERE id = $1 AND user_id = $2"
-    );
-    expect(certParams).toEqual([12, DB_USER.id]);
+    const [certSql, certParams] = mocks.poolQuery.mock.calls[0];
+    expect(certSql).toContain("FROM users u");
+    expect(certSql).toContain("LEFT JOIN certificates c");
+    expect(certSql).toContain("c.id = $2");
+    expect(certParams).toEqual([AUTH_USER.email, 12]);
+    expect(mocks.poolQuery).toHaveBeenCalledTimes(1);
   });
 
   it("retorna 404 quando o certificado não pertence ao usuário ou não existe", async () => {
-    mocks.poolQuery
-      .mockResolvedValueOnce({ rows: [DB_USER] })
-      .mockResolvedValueOnce({ rows: [] });
+    mocks.poolQuery.mockResolvedValueOnce({ rows: [{ id: null }] });
 
     const res = await request(app).get("/certificates/999").set(authHeader);
 
@@ -418,7 +419,6 @@ describe("DELETE /certificates/:id - caracterização", () => {
 
   it("remove original e thumbnail do Storage e depois o registro do banco", async () => {
     mocks.poolQuery
-      .mockResolvedValueOnce({ rows: [DB_USER] })
       .mockResolvedValueOnce({ rows: [certificate] })
       .mockResolvedValueOnce({ rows: [] });
 
@@ -434,17 +434,16 @@ describe("DELETE /certificates/:id - caracterização", () => {
       "thumb_123_modelo.png",
     ]);
 
-    const [deleteSql, deleteParams] = mocks.poolQuery.mock.calls[2];
+    const [deleteSql, deleteParams] = mocks.poolQuery.mock.calls[1];
     expect(deleteSql).toBe(
       "DELETE FROM certificates WHERE id = $1 AND user_id = $2"
     );
     expect(deleteParams).toEqual([12, DB_USER.id]);
+    expect(mocks.poolQuery).toHaveBeenCalledTimes(2);
   });
 
   it("retorna 404 quando o certificado não pertence ao usuário ou não existe", async () => {
-    mocks.poolQuery
-      .mockResolvedValueOnce({ rows: [DB_USER] })
-      .mockResolvedValueOnce({ rows: [] });
+    mocks.poolQuery.mockResolvedValueOnce({ rows: [{ id: null }] });
 
     const res = await request(app)
       .delete("/certificates/999")
@@ -458,7 +457,6 @@ describe("DELETE /certificates/:id - caracterização", () => {
   it("caracteriza exclusão do banco mesmo com erro no Storage", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     mocks.poolQuery
-      .mockResolvedValueOnce({ rows: [DB_USER] })
       .mockResolvedValueOnce({ rows: [certificate] })
       .mockResolvedValueOnce({ rows: [] });
     mocks.remove.mockResolvedValueOnce({
@@ -471,13 +469,12 @@ describe("DELETE /certificates/:id - caracterização", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ message: "Deletado com sucesso" });
-    expect(mocks.poolQuery).toHaveBeenCalledTimes(3);
+    expect(mocks.poolQuery).toHaveBeenCalledTimes(2);
   });
 
   it("caracteriza remoção do Storage antes de falhar no delete do banco", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     mocks.poolQuery
-      .mockResolvedValueOnce({ rows: [DB_USER] })
       .mockResolvedValueOnce({ rows: [certificate] })
       .mockRejectedValueOnce(new Error("db indisponível"));
 

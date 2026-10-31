@@ -2,6 +2,26 @@ import { useEffect, useRef } from "react";
 import { DEFAULT_BODY_TEXT, DEFAULT_NAME_TEXT } from "../constants/editor";
 import { getBoxRect } from "../utils/canvasGeometry";
 import { drawWrappedText, getTextBoxSize } from "../utils/canvasText";
+import { loadEditorFonts } from "../utils/loadEditorFonts";
+
+const imageCache = new Map();
+
+const loadImage = (src) => {
+  if (!imageCache.has(src)) {
+    const promise = new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+
+    imageCache.set(src, promise);
+    promise.catch(() => imageCache.delete(src));
+  }
+
+  return imageCache.get(src);
+};
 
 const CertificateCanvas = ({
   certificate,
@@ -30,11 +50,11 @@ const CertificateCanvas = ({
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = certificate.previewUrl;
+    let isActive = true;
 
-    img.onload = () => {
+    const draw = (img) => {
+      if (!isActive) return;
+
       canvas.width = img.width;
       canvas.height = img.height;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -203,6 +223,25 @@ const CertificateCanvas = ({
           true
         );
       }
+    };
+
+    const loadSelectedFonts = () =>
+      Promise.all([
+        document.fonts.load(`${tamanhoNome}px "${fonteNome}"`),
+        document.fonts.load(`${tamanhoCorpo}px "${fonteCorpo}"`),
+      ]).catch(() => []);
+
+    Promise.all([
+      loadImage(certificate.previewUrl),
+      loadEditorFonts().then(loadSelectedFonts),
+    ])
+      .then(([img]) => draw(img))
+      .catch((error) => {
+        console.error("Erro ao carregar imagem do certificado:", error);
+      });
+
+    return () => {
+      isActive = false;
     };
   }, [
     certificate,

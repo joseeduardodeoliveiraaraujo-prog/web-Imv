@@ -21,7 +21,9 @@ export const apiJson = async (path, options = {}) => {
   const response = await apiRequest(path, options);
 
   if (!response.ok) {
-    throw new Error(options.errorMessage || "Erro na requisição");
+    const error = new Error(options.errorMessage || "Erro na requisição");
+    error.status = response.status;
+    throw error;
   }
 
   return response.json();

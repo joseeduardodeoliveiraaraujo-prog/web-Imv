@@ -9,7 +9,7 @@
 body {
   background:
     linear-gradient(135deg, rgba(15, 32, 39, 0.7), rgba(32, 58, 67, 0.7), rgba(44, 83, 100, 0.7)),
-    url("/img1.jpg");
+    url("/img1.webp");
 
   background-size: cover;
   background-position: center;

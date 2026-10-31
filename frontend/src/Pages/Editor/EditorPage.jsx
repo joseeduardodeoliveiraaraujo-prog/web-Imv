@@ -1,4 +1,5 @@
 import "./Editor.css";
+import { useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CertificatePreviewList from "./components/CertificatePreviewList";
 import EditorSidebar from "./components/EditorSidebar";
@@ -7,12 +8,17 @@ import { useCertificateData } from "./hooks/useCertificateData";
 import { useCertificateExport } from "./hooks/useCertificateExport";
 import { useEditorModel } from "./hooks/useEditorModel";
 import { useSaveProject } from "./hooks/useSaveProject";
+import { loadEditorFonts } from "./utils/loadEditorFonts";
 
 const Editor = ({ user }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const isProjectRoute = location.pathname.startsWith("/project/");
+
+  useEffect(() => {
+    loadEditorFonts();
+  }, []);
 
   const model = useEditorModel();
   const { certificate, projectId, setProjectId } = useCertificateData({

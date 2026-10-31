@@ -12,17 +12,24 @@ export async function create({
   );
 }
 
-export async function listByUserId(userId) {
+export async function listByUserEmail(email) {
   return pool.query(
-    "SELECT * FROM certificates WHERE user_id = $1 ORDER BY id DESC",
-    [userId]
+    `SELECT c.*
+       FROM users u
+       LEFT JOIN certificates c ON c.user_id = u.id
+       WHERE u.email = $1
+       ORDER BY c.id DESC`,
+    [email]
   );
 }
 
-export async function findByIdAndUserId(id, userId) {
+export async function findByIdAndUserEmail(id, email) {
   return pool.query(
-    "SELECT * FROM certificates WHERE id = $1 AND user_id = $2",
-    [id, userId]
+    `SELECT c.*
+       FROM users u
+       LEFT JOIN certificates c ON c.user_id = u.id AND c.id = $2
+       WHERE u.email = $1`,
+    [email, id]
   );
 }
 

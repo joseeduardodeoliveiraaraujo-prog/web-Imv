@@ -56,25 +56,27 @@ export async function removeByIds(ids) {
   );
 }
 
-export async function listRecentByUserId(userId) {
+export async function listRecentByUserEmail(email) {
   return pool.query(
     `
       SELECT
         p.*,
         c.title,
         c.thumbnail_path
-      FROM projects p
-      JOIN certificates c
+      FROM users u
+      LEFT JOIN projects p
+        ON p.user_id = u.id
+      LEFT JOIN certificates c
         ON c.id = p.certificate_id
-      WHERE p.user_id = $1
-      ORDER BY p.updated_at DESC
+      WHERE u.email = $1
+      ORDER BY p.updated_at DESC NULLS LAST
       LIMIT 3
       `,
-    [userId]
+    [email]
   );
 }
 
-export async function findByIdAndUserId(id, userId) {
+export async function findByIdAndUserEmail(id, email) {
   return pool.query(
     `
       SELECT
@@ -82,13 +84,14 @@ export async function findByIdAndUserId(id, userId) {
         c.title,
         c.image_path,
         c.thumbnail_path
-      FROM projects p
-      JOIN certificates c
+      FROM users u
+      LEFT JOIN projects p
+        ON p.user_id = u.id AND p.id = $2
+      LEFT JOIN certificates c
         ON c.id = p.certificate_id
-      WHERE p.id = $1
-      AND p.user_id = $2
+      WHERE u.email = $1
       `,
-    [id, userId]
+    [email, id]
   );
 }
 

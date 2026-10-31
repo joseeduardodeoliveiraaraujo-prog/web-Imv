@@ -9,6 +9,7 @@ import {
   uploadCertificate,
 } from "../services/certificatesApi";
 import { listProjects } from "../services/projectsApi";
+import { ensureUserSynced } from "../services/usersApi";
 
 const formatCertificate = (cert) => ({
   id: cert.id,
@@ -44,17 +45,18 @@ const Home = ({ user, onLogout }) => {
    * FUNCTION: fetchCertificates
    * DESCRIPTION: Consome o endpoint de certificados e normaliza o schema de dados vindo da API para o frontend.
    */
-  const fetchCertificates = useCallback(async () => {
+  const fetchCertificates = useCallback(async (token) => {
     if (!user) return [];
 
-    const token = await user.getIdToken();
-    const data = await listCertificates(token);
+    const authToken = token || (await user.getIdToken());
+    const data = await listCertificates(authToken);
 
     return data.map(formatCertificate);
   }, [user]);
 
   const loadCertificates = async () => {
     try {
+      await ensureUserSynced(user);
       const formatted = await fetchCertificates();
       setCertificates(formatted);
     } catch (error) {
@@ -67,51 +69,70 @@ const Home = ({ user, onLogout }) => {
   // ==========================================
 
   /**
-   * EFFECT: Sincronização inicial de carregamento de modelos de certificados.
-   * TRIGGER: Disparado assim que a sessão do usuário é validada pelo provedor de autenticação.
+   * EFFECT: Carrega modelos e projetos recentes em paralelo, sem bloquear a renderização
+   * inicial da aplicação pela sincronização do usuário.
    */
   useEffect(() => {
     if (!user) return;
 
     let isActive = true;
 
-    const carregarCertificados = async () => {
+    const carregarDados = async () => {
       try {
-        const formatted = await fetchCertificates();
-        if (isActive) setCertificates(formatted);
+        const token = await user.getIdToken();
+        const syncPromise = ensureUserSynced(user, token).catch((error) => {
+          console.error("Erro ao salvar usuário:", error);
+          return null;
+        });
+
+        const fetchData = () =>
+          Promise.allSettled([
+            listCertificates(token),
+            listProjects(token),
+          ]);
+
+        let results = await fetchData();
+
+        const needsRetry = results.some(
+          (result) =>
+            result.status === "rejected" && result.reason?.status === 404
+        );
+
+        if (needsRetry) {
+          await syncPromise;
+          results = await fetchData();
+        }
+
+        if (!isActive) return;
+
+        const [certificatesResult, projectsResult] = results;
+
+        if (certificatesResult.status === "fulfilled") {
+          setCertificates(certificatesResult.value.map(formatCertificate));
+        } else {
+          console.error(
+            "Erro ao carregar certificados:",
+            certificatesResult.reason
+          );
+        }
+
+        if (projectsResult.status === "fulfilled") {
+          setRecentes(projectsResult.value);
+        } else {
+          console.error("Erro ao carregar projetos:", projectsResult.reason);
+        }
       } catch (error) {
         if (isActive) {
-          console.error("Erro ao carregar certificados:", error);
+          console.error("Erro ao carregar dados:", error);
         }
       }
     };
 
-    carregarCertificados();
+    carregarDados();
 
     return () => {
       isActive = false;
     };
-  }, [user, fetchCertificates]);
-
-  /**
-   * EFFECT: Carregamento assíncrono do histórico de projetos modificados recentemente.
-   * TRIGGER: Executado de forma paralela ao fluxo principal mediante validação do Bearer Token.
-   */
-  useEffect(() => {
-    const carregarRecentes = async () => {
-      if (!user) return;
-
-      try {
-        const token = await user.getIdToken();
-        const data = await listProjects(token);
-        setRecentes(data);
-
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    carregarRecentes();
   }, [user]);
 
   // ==========================================

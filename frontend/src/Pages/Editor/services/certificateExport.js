@@ -1,11 +1,20 @@
-import JSZip from "jszip";
-import { saveAs } from "file-saver";
-import { jsPDF } from "jspdf";
 import { renderCertificateForExport } from "../utils/canvasRenderer";
+import { loadEditorFonts } from "../utils/loadEditorFonts";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const loadExportDependencies = async () => {
+  const [{ default: JSZip }, { saveAs }, { jsPDF }] = await Promise.all([
+    import("jszip"),
+    import("file-saver"),
+    import("jspdf"),
+  ]);
+
+  return { JSZip, saveAs, jsPDF };
+};
+
 const loadFonts = async (styles) => {
+  await loadEditorFonts();
   await document.fonts.load(
     `${styles.tamanhoNome}px "${styles.fonteNome}"`
   );
@@ -47,6 +56,7 @@ export const exportSinglePdf = async ({
   onProgress(15);
   await sleep(600);
   await loadFonts(styles);
+  const { jsPDF } = await loadExportDependencies();
 
   const orientation = getOrientation(image);
   const pdf = new jsPDF({
@@ -108,6 +118,7 @@ export const exportJpegZip = async ({
   onProgress(15);
   await sleep(600);
   await loadFonts(styles);
+  const { JSZip, saveAs } = await loadExportDependencies();
 
   const { canvas, ctx } = createTempCanvas(image);
   const zip = new JSZip();
@@ -159,6 +170,7 @@ export const exportPdfZip = async ({
   onProgress(15);
   await sleep(600);
   await loadFonts(styles);
+  const { JSZip, saveAs, jsPDF } = await loadExportDependencies();
 
   const { canvas, ctx } = createTempCanvas(image);
   const orientation = getOrientation(image);

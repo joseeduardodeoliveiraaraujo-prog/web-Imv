@@ -263,21 +263,30 @@ describe("GET /projects - caracterização", () => {
       buildProjectRow({ id: 9, title: "Certificado B", thumbnail_path: "b" }),
     ];
 
-    mocks.poolQuery
-      .mockResolvedValueOnce({ rows: [DB_USER] })
-      .mockResolvedValueOnce({ rows: projects });
+    mocks.poolQuery.mockResolvedValueOnce({ rows: projects });
 
     const res = await request(app).get("/projects").set(authHeader);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(projects);
 
-    const [sql, params] = mocks.poolQuery.mock.calls[1];
-    expect(sql).toContain("FROM projects p");
-    expect(sql).toContain("JOIN certificates c");
+    const [sql, params] = mocks.poolQuery.mock.calls[0];
+    expect(sql).toContain("FROM users u");
+    expect(sql).toContain("LEFT JOIN projects p");
+    expect(sql).toContain("LEFT JOIN certificates c");
     expect(sql).toContain("ORDER BY p.updated_at DESC");
     expect(sql).toContain("LIMIT 3");
-    expect(params).toEqual([DB_USER.id]);
+    expect(params).toEqual([AUTH_USER.email]);
+    expect(mocks.poolQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it("retorna lista vazia quando o usuário existe mas não tem projetos", async () => {
+    mocks.poolQuery.mockResolvedValueOnce({ rows: [{ id: null }] });
+
+    const res = await request(app).get("/projects").set(authHeader);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
   });
 
   it("retorna 404 quando o usuário autenticado não existe no banco", async () => {
@@ -315,26 +324,24 @@ describe("GET /projects/:id - caracterização", () => {
       thumbnail_path: "https://cdn/thumb.webp",
     });
 
-    mocks.poolQuery
-      .mockResolvedValueOnce({ rows: [DB_USER] })
-      .mockResolvedValueOnce({ rows: [project] });
+    mocks.poolQuery.mockResolvedValueOnce({ rows: [project] });
 
     const res = await request(app).get("/projects/10").set(authHeader);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(project);
 
-    const [sql, params] = mocks.poolQuery.mock.calls[1];
-    expect(sql).toContain("FROM projects p");
-    expect(sql).toContain("JOIN certificates c");
-    expect(sql).toContain("AND p.user_id = $2");
-    expect(params).toEqual([10, DB_USER.id]);
+    const [sql, params] = mocks.poolQuery.mock.calls[0];
+    expect(sql).toContain("FROM users u");
+    expect(sql).toContain("LEFT JOIN projects p");
+    expect(sql).toContain("LEFT JOIN certificates c");
+    expect(sql).toContain("p.id = $2");
+    expect(params).toEqual([AUTH_USER.email, 10]);
+    expect(mocks.poolQuery).toHaveBeenCalledTimes(1);
   });
 
   it("retorna 404 quando o projeto não pertence ao usuário ou não existe", async () => {
-    mocks.poolQuery
-      .mockResolvedValueOnce({ rows: [DB_USER] })
-      .mockResolvedValueOnce({ rows: [] });
+    mocks.poolQuery.mockResolvedValueOnce({ rows: [{ id: null }] });
 
     const res = await request(app).get("/projects/999").set(authHeader);
 

@@ -10,7 +10,7 @@ import {
 } from "./certificate-storage.service.js";
 
 export async function createCertificate({ name, file, email }) {
-  const user = await usersService.findAuthenticatedUserByEmail(email);
+  const user = await usersService.findAuthenticatedUserIdByEmail(email);
 
   if (!user) {
     return { status: 404, body: { error: "Usuário não encontrado" } };
@@ -68,26 +68,24 @@ export async function createCertificate({ name, file, email }) {
 }
 
 export async function listCertificates(email) {
-  const user = await usersService.findAuthenticatedUserByEmail(email);
+  const result = await certificatesRepository.listByUserEmail(email);
 
-  if (!user) {
+  if (result.rows.length === 0) {
     return { status: 404, body: { error: "Usuário não encontrado" } };
   }
 
-  const result = await certificatesRepository.listByUserId(user.id);
-  return { status: 200, body: result.rows };
+  const certificates = result.rows.filter((row) => row.id !== null);
+  return { status: 200, body: certificates };
 }
 
 export async function getCertificate(id, email) {
-  const user = await usersService.findAuthenticatedUserByEmail(email);
+  const result = await certificatesRepository.findByIdAndUserEmail(id, email);
 
-  if (!user) {
+  if (result.rows.length === 0) {
     return { status: 404, body: { error: "Usuário não encontrado" } };
   }
 
-  const result = await certificatesRepository.findByIdAndUserId(id, user.id);
-
-  if (result.rows.length === 0) {
+  if (result.rows[0].id === null) {
     return { status: 404, body: { error: "Certificado não encontrado" } };
   }
 
@@ -95,15 +93,13 @@ export async function getCertificate(id, email) {
 }
 
 export async function deleteCertificate(id, email) {
-  const user = await usersService.findAuthenticatedUserByEmail(email);
+  const result = await certificatesRepository.findByIdAndUserEmail(id, email);
 
-  if (!user) {
+  if (result.rows.length === 0) {
     return { status: 404, body: { error: "Usuário não encontrado" } };
   }
 
-  const result = await certificatesRepository.findByIdAndUserId(id, user.id);
-
-  if (result.rows.length === 0) {
+  if (result.rows[0].id === null) {
     return { status: 404, body: { error: "Certificado não encontrado" } };
   }
 
@@ -124,7 +120,10 @@ export async function deleteCertificate(id, email) {
     }
   }
 
-  await certificatesRepository.removeByIdAndUserId(id, user.id);
+  await certificatesRepository.removeByIdAndUserId(
+    certificate.id,
+    certificate.user_id
+  );
 
   return { status: 200, body: { message: "Deletado com sucesso" } };
 }

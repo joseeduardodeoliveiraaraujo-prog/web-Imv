@@ -31,26 +31,24 @@ export async function createProject({ payload, email }) {
 }
 
 export async function listProjects(email) {
-  const user = await usersService.findAuthenticatedUserByEmail(email);
+  const result = await projectsRepository.listRecentByUserEmail(email);
 
-  if (!user) {
+  if (result.rows.length === 0) {
     return { status: 404, body: { error: "Usuário não encontrado" } };
   }
 
-  const result = await projectsRepository.listRecentByUserId(user.id);
-  return { status: 200, body: result.rows };
+  const projects = result.rows.filter((row) => row.id !== null);
+  return { status: 200, body: projects };
 }
 
 export async function getProject(id, email) {
-  const user = await usersService.findAuthenticatedUserByEmail(email);
+  const result = await projectsRepository.findByIdAndUserEmail(id, email);
 
-  if (!user) {
+  if (result.rows.length === 0) {
     return { status: 404, body: { error: "Usuário não encontrado" } };
   }
 
-  const result = await projectsRepository.findByIdAndUserId(id, user.id);
-
-  if (result.rows.length === 0) {
+  if (result.rows[0].id === null) {
     return { status: 404, body: { error: "Projeto não encontrado" } };
   }
 
