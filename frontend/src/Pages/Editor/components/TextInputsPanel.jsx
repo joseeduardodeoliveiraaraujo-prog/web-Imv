@@ -36,12 +36,14 @@ const TextInputsPanel = ({ model }) => (
         }
       />
       {model.indexEditando !== null && (
-        <button
-          onClick={() => model.setIndexEditando(null)}
-          className="btn-voltar-global"
-        >
-          ← Voltar para edição global
-        </button>
+        <div className="voltar-global-wrapper">
+          <button
+            onClick={() => model.setIndexEditando(null)}
+            className="btn-voltar-global"
+          >
+            ← Voltar para edição global
+          </button>
+        </div>
       )}
     </div>
   </>

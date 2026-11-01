@@ -1,93 +1,96 @@
-/**
- * DESCRIPTION: Container principal do cabeçalho.
- * RESPONSIBILITY: Fixar no topo, aplicar efeito de vidro fosco e alinhar elementos nas extremidades.
- */
 .header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 72px; 
+  height: 72px;
 
-  /* Efeito Glassmorphism e borda inferior */
-  background: rgba(18, 18, 18, 0.7); 
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px); /* Suporte Safari */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 
-  /* Alinhamento flexbox e empilhamento */
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 32px; 
+  padding: 0 32px;
   color: #ffffff;
   z-index: 1000;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px -30px rgba(56, 189, 248, 0.8);
+  box-sizing: border-box;
 }
 
-/**
- * DESCRIPTION: Agrupador do bloco de texto à esquerda.
- * RESPONSIBILITY: Alinhar verticalmente o título e o subtítulo com espaçamento controlado.
- */
 .header-left {
   display: flex;
   flex-direction: column;
-  gap: 2px; 
+  gap: 2px;
+  min-width: 0;
 }
 
-/**
- * DESCRIPTION: Título principal do cabeçalho.
- * RESPONSIBILITY: Definir peso visual e ajuste microtipográfico do elemento h2.
- */
 .header-left h2 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: -0.02em; 
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   margin: 0;
 }
 
-/**
- * DESCRIPTION: Subtítulo descritivo.
- * RESPONSIBILITY: Reduzir a escala tipográfica e aplicar opacidade para hierarquia visual.
- */
 .header-left span {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
 }
 
-/**
- * DESCRIPTION: Botão de encerramento de sessão (Logout).
- * RESPONSIBILITY: Estilizar a ação destrutiva com transição suave de estados.
- */
 .logout-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(239, 68, 68, 0.1);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.14);
+  color: rgba(252, 165, 165, 0.95);
+  border: 1px solid rgba(239, 68, 68, 0.4);
   padding: 8px 16px;
-  border-radius: 10px;
+  border-radius: 999px;
   font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.3s; /* Suavização dos estados hover/active */
+  transition: all 0.3s ease;
+  backdrop-filter: blur(12px);
 }
 
-/**
- * DESCRIPTION: Estado de interação do botão (Hover).
- * RESPONSIBILITY: Elevar o contraste e a intensidade das cores ao passar o cursor.
- */
+.logout-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 .logout-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.25);
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.7);
+  transform: translateY(-1px);
 }
 
-/**
- * DESCRIPTION: Estado de clique do botão (Active).
- * RESPONSIBILITY: Aplicar micro-interação de escala para feedback tátil instantâneo.
- */
 .logout-btn:active {
-  transform: scale(0.95); 
+  transform: scale(0.98);
+}
+
+@media (max-width: 640px) {
+  .header {
+    height: 68px;
+    padding: 0 18px;
+  }
+
+  .header-left span {
+    max-width: 200px;
+  }
+
+  .logout-btn span {
+    display: none;
+  }
+
+  .logout-btn {
+    padding: 8px 10px;
+  }
 }

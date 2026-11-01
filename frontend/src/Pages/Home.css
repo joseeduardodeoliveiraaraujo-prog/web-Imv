@@ -1,413 +1,374 @@
-/**
- * DESCRIPTION: Reset e travamento do viewport principal do documento.
- * RESPONSIBILITY: Anular rolagem nativa do body para delegar o fluxo de scroll ao wrapper controlado.
- */
+html,
 body {
-  overflow: hidden;
-  height: 100vh;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: url("/fundo-principal.png") center/cover no-repeat fixed;
+  color: #ffffff;
 }
 
-/**
- * DESCRIPTION: Container de captura e gerenciamento de scroll da Home.
- * RESPONSIBILITY: Ocupar a totalidade do espaço restante abaixo do cabeçalho e isolar a rolagem vertical.
- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(1200px 800px at 50% 0%, rgba(56, 189, 248, 0.12), transparent 65%),
+    rgba(2, 6, 23, 0.55);
+  pointer-events: none;
+  z-index: -1;
+}
+
 .home-wrapper {
   width: 100%;
-  height: calc(100vh - 10px); 
+  height: calc(100vh - 72px);
+  margin-top: 72px;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-/**
- * DESCRIPTION: Invólucro de centralização de conteúdo da página.
- * RESPONSIBILITY: Limitar a largura máxima da interface em monitores ultra-wide e injetar paddings de respiro.
- */
 .home-content {
   width: 100%;
   max-width: 1500px;
   margin: 0 auto;
-  padding: 80px 4% 100px;
-  color: #fff;
+  padding: 56px 6% 110px;
+  color: #ffffff;
   display: flex;
   flex-direction: column;
+  gap: 48px;
 }
 
-/**
- * DESCRIPTION: Estilização customizada da calha e indicador de rolagem (Webkit).
- * RESPONSIBILITY: Aplicar transparência e arredondamento fino à barra de scroll lateral.
- */
 .home-wrapper::-webkit-scrollbar {
   width: 8px;
 }
 .home-wrapper::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 10px;
 }
 .home-wrapper::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/**
- * DESCRIPTION: Componente de título da página Home.
- * RESPONSIBILITY: Aplicar máscara de gradiente linear diretamente no vetor do texto tipográfico.
- */
-.home-title {
-  font-size: 2.2rem;
-  font-weight: 700;
-  margin-bottom: 40px;
-  background: linear-gradient(90deg, #fff, #a5a5a5);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.home-header-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-/**
- * DESCRIPTION: Grade de distribuição dos cartões de certificados (Grid System).
- * RESPONSIBILITY: Calcular o preenchimento automático responsivo em colunas com tamanho mínimo delimitado.
- */
+.home-title {
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.home-subtitle {
+  margin: 0;
+  font-size: 0.98rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.section-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.certificates-section {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
 .certificates-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
 }
 
-/**
- * DESCRIPTION: Abstração e base estrutural para os cartões da listagem.
- * RESPONSIBILITY: Configurar o efeito Glassmorphism padrão, cantos suavizados e a curva de transição de estado.
- */
-.certificate-card, 
-.certificate-card-upload-card {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  height: 200px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px); 
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  cursor: pointer;
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-/**
- * DESCRIPTION: Enquadramento vetorial das imagens dos certificados.
- * RESPONSIBILITY: Ajustar a imagem de forma contida ao bloco sem distorcer proporções, controlando opacidade.
- */
-.certificate-card img {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  opacity: 0.9;
-  transition: opacity 0.1s ease;
-  padding: 10px;
-  image-rendering: auto;
-}
-
-/**
- * DESCRIPTION: Estados de hover e foco visual do cartão de certificado.
- * RESPONSIBILITY: Deslocar verticalmente o elemento (efeito elevação), colorir a borda e projetar sombra escura.
- */
-.certificate-card:hover {
-  transform: translateY(-8px);
-  border-color: rgba(56, 189, 248, 0.5);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-}
-.certificate-card:hover img {
-  opacity: 1;
-}
-
-/**
- * DESCRIPTION: Cartão gatilho para upload de novos modelos.
- * RESPONSIBILITY: Customizar a estrutura base com bordas tracejadas e sinalizações de área desprovida de conteúdo.
- */
-.certificate-card-upload-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  border: 2px dashed rgba(255, 255, 255, 0.2); 
-  background: rgba(255, 255, 255, 0.03);
-}
-.certificate-card-upload-card svg {
-  font-size: 2.5rem;
-  color: rgba(255, 255, 255, 0.4);
-  transition: all 0.3s ease;
-}
-.certificate-card-upload-card span {
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
-  transition: all 0.3s ease;
-}
-
-/**
- * DESCRIPTION: Comportamento de interação do bloco de upload (Hover).
- * RESPONSIBILITY: Rotacionar e escalar o vetor central (+) enquanto sincroniza o tom azul de acento.
- */
-.certificate-card-upload-card:hover {
-  background: rgba(56, 189, 248, 0.05);
-  border-color: #38bdf8;
-  transform: translateY(-8px);
-}
-.certificate-card-upload-card:hover svg {
-  color: #38bdf8;
-  transform: scale(1.1) rotate(90deg); 
-}
-.certificate-card-upload-card:hover span {
-  color: #38bdf8;
-}
-
-/**
- * DESCRIPTION: Agrupador semântico da célula do certificado.
- * RESPONSIBILITY: Configurar espaçamento de topo isolado para acomodar o rótulo posicionado de forma absoluta.
- */
 .certificate-item {
   display: flex;
   flex-direction: column;
-  position: relative; 
-  padding-top: 30px;
+  gap: 12px;
 }
 
-/**
- * DESCRIPTION: Rótulo identificador com metadado textual (Nome do Certificado).
- * RESPONSIBILITY: Fixar texto no topo da célula, truncar caracteres sobressalentes e omitir eventos de mouse.
- */
 .certificate-name {
-  pointer-events: none;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 25px; 
-  background: transparent;
-  backdrop-filter: none;
-  border: none;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.3s ease;
 }
 
-/**
- * DESCRIPTION: Seletor relacional avançado condicional (:has).
- * RESPONSIBILITY: Modificar e elevar a cor do nome do certificado quando o cartão interno receber foco ou hover.
- */
-.certificate-item:has(.certificate-card:hover) .certificate-name,
-.certificate-item:has(.certificate-card-upload-card:hover) .certificate-name {
+.certificate-card,
+.certificate-card-upload-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1.414 / 1;
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 40px 70px -50px rgba(56, 189, 248, 0.7);
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.certificate-card::before,
+.certificate-card-upload-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(420px 200px at 50% 0%, rgba(56, 189, 248, 0.12), transparent 70%);
+  pointer-events: none;
+}
+
+.certificate-card img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  filter: drop-shadow(0 30px 50px rgba(2, 6, 23, 0.6));
+}
+
+.certificate-card:hover,
+.certificate-card-upload-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 50px 80px -50px rgba(56, 189, 248, 0.9);
+}
+
+.certificate-card-upload-card {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.certificate-card-upload-card svg {
+  position: relative;
+  z-index: 1;
+  font-size: 2.6rem;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.3s ease;
+}
+
+.certificate-card-upload-card:hover svg {
   color: #38bdf8;
-  transform: translateY(-8px);
+  transform: scale(1.08);
 }
 
-/**
- * DESCRIPTION: Cortina de fundo opaca para o modal de visualização.
- * RESPONSIBILITY: Bloquear visualmente a tela inteira com desfoque e disparar animação de transição opaca.
- */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
+  background: radial-gradient(900px 700px at 50% 0%, rgba(56, 189, 248, 0.14), transparent 70%),
+    rgba(2, 6, 23, 0.8);
+  backdrop-filter: blur(12px);
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px; 
-  animation: fadeIn 0.3s ease-out;
+  padding: 24px;
+  animation: fadeIn 0.25s ease-out;
 }
 
-/**
- * DESCRIPTION: Estrutura container interna do modal.
- * RESPONSIBILITY: Delimitar áreas de visualização em coluna, aplicar sombras profundas e forçar corte de arestas (overflow).
- */
 .modal-content {
-  width: 100%; 
-  max-width: 900px; 
+  width: 100%;
+  max-width: 920px;
   max-height: 90vh;
-  background: #0f172a;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1); 
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 60px 120px -80px rgba(56, 189, 248, 0.9);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: slideUp 0.3s ease-out;
+  animation: slideUp 0.25s ease-out;
 }
 
-/**
- * DESCRIPTION: Faixa de topo do modal de visualização (Header).
- * RESPONSIBILITY: Organizar horizontalmente o título da janela e o botão de escape em plano sutil translúcido.
- */
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-.modal-title {
-  color: #f8fafc; 
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  padding: 14px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
 }
 
-/**
- * DESCRIPTION: Botão de escape/fechamento do modal.
- * RESPONSIBILITY: Centralizar o caractere x/ícone, rotacionar o elemento e alterar o fundo para vermelho no hover.
- */
+.modal-title {
+  color: #ffffff;
+  font-size: 0.98rem;
+  font-weight: 600;
+}
+
 .modal-close {
-  background: rgba(255, 255, 255, 0.05);
-  border: none;
-  color: #94a3b8;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.8);
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.modal-close:hover {
-  background: #ef4444; 
-  color: white;
-  transform: rotate(90deg);
+  transition: all 0.2s ease;
 }
 
-/**
- * DESCRIPTION: Área corporal interna de exibição do modal.
- * RESPONSIBILITY: Injetar um fundo em gradiente radial e centralizar a mídia de forma isolada com altura mínima rígida.
- */
+.modal-close:hover {
+  background: rgba(239, 68, 68, 0.28);
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.6);
+}
+
 .modal-body {
-  padding: 40px; 
+  padding: 40px;
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle, rgba(30, 41, 59, 0.5) 0%, #0f172a 100%);
-  min-height: 400px;
+  background: radial-gradient(700px 500px at 50% 0%, rgba(56, 189, 248, 0.14), transparent 70%);
 }
 
-/**
- * DESCRIPTION: Renderização da imagem interna do corpo do modal.
- * RESPONSIBILITY: Conter as dimensões físicas da imagem em até 80% da viewport vertical e aplicar borda com sombra profunda.
- */
 .modal-body img {
   max-width: 100%;
-  max-height: 80vh; 
+  max-height: 78vh;
   object-fit: contain;
   border-radius: 12px;
-  border: 4px solid rgba(255, 255, 255, 0.1); 
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 
-              0 10px 10px -5px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 40px 80px -60px rgba(56, 189, 248, 0.8);
 }
 
-/**
- * DESCRIPTION: Barra flutuante de ações verticais (Floating Actions Container).
- * RESPONSIBILITY: Fixar a pilha de botões de controle de forma absoluta na extremidade inferior direita da viewport.
- */
 .floating-actions {
   position: fixed;
-  bottom: 30px; 
-  right: 30px;  
+  bottom: 32px;
+  right: 32px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  z-index: 20;
+  gap: 12px;
+  z-index: 2100;
 }
 
-/**
- * DESCRIPTION: Botão de Ação Flutuante Base (FAB).
- * RESPONSIBILITY: Formatar a estrutura circular nativa com sombras de projeção pesadas e tratar escalonamentos vetoriais de SVGs.
- */
 .btn-fab {
   width: 50px;
   height: 50px;
-  border-radius: 50%;
-  border: none;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   cursor: pointer;
-  color: white;
-  font-size: 1.2rem;
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-              filter 0.3s ease, 
-              box-shadow 0.3s ease;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-}
-.btn-fab svg {
-  width: 22px;
-  height: 22px;
+  color: #ffffff;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 40px 70px -50px rgba(56, 189, 248, 0.9);
 }
 
-/**
- * DESCRIPTION: Especializações cromáticas e de identidade dos FABs.
- * RESPONSIBILITY: injetar gradientes lineares direcionais baseados em contexto (Edição/Exclusão).
- */
 .btn-fab.edit {
-  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  background: rgba(56, 189, 248, 0.22);
 }
+
 .btn-fab.delete {
-  background: linear-gradient(135deg, #f87171, #ef4444);
+  background: rgba(239, 68, 68, 0.22);
 }
 
-/**
- * DESCRIPTION: Micro-interações de estado dos botões FAB.
- * RESPONSIBILITY: Aplicar rotações angulares discretas combinadas com escala no hover e compressão mecânica no clique.
- */
 .btn-fab:hover {
-  transform: scale(1.15) rotate(5deg);
-  filter: brightness(1.2);
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.4);
 }
+
+.btn-fab.edit:hover {
+  background: rgba(56, 189, 248, 0.36);
+}
+
+.btn-fab.delete:hover {
+  background: rgba(239, 68, 68, 0.36);
+}
+
 .btn-fab:active {
-  transform: scale(0.95);
+  transform: scale(0.98);
 }
 
-/**
- * DESCRIPTION: Declarações globais de animações de transição de estado.
- * RESPONSIBILITY: Configurar interpolações de opacidades e deslocamentos estruturais em eixos verticais.
- */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
+
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/**
- * DESCRIPTION: Media Queries de responsividade adaptativa para telas amplas (Desktop).
- * RESPONSIBILITY: Redimensionar proporcionalmente a largura ocupada pela caixa modal.
- */
-@media (min-width: 768px) {
-  .modal-content {
-    width: 70%; 
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-/**
- * DESCRIPTION: Media Queries de responsividade adaptativa para visores compactos (Mobile).
- * RESPONSIBILITY: Adequar a tipografia do título e forçar a quebra do grid de certificados para coluna única.
- */
-@media (max-width: 600px) {
-  .home-title {
-    font-size: 1.8rem;
-    text-align: center;
+@media (max-width: 720px) {
+  .home-wrapper {
+    height: calc(100vh - 68px);
+    margin-top: 68px;
   }
+
+  .home-content {
+    padding: 40px 18px 90px;
+    gap: 40px;
+  }
+
   .certificates-grid {
-    grid-template-columns: 1fr; 
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  .modal-body {
+    padding: 26px;
+  }
+
+  .floating-actions {
+    bottom: 22px;
+    right: 22px;
+  }
+}
+
+@media (max-width: 560px) {
+  .certificates-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -415,103 +376,97 @@ body {
    SEÇÃO RECENTES
    ========================================================================== */
 
-/**
- * DESCRIPTION: Bloco container de agrupamento de registros acessados recentemente.
- * RESPONSIBILITY: Consolidar uma esteira com desfoque de fundo avançado, margens de respiro e cantos arredondados.
- */
-.recentes-container {
-  margin-top: 50px;
-  padding: 30px;
-  border-radius: 20px;
-  justify-content: flex-start;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+.recentes-section {
   display: flex;
   flex-direction: column;
-  gap: 25px; 
-}
-.recentes-container h2 {
-  font-size: 0.95rem;
-  margin: 0;
-  color: #e2e8f0;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  align-self: flex-start; 
+  gap: 24px;
 }
 
-/**
- * DESCRIPTION: Fileira horizontal estrutural dos itens recentes.
- * RESPONSIBILITY: Alinhar os blocos e impedir de forma estrita o encadeamento e quebra de linhas espontânea (wrap).
- */
 .recentes-lista {
-  display: flex;
-  justify-content: flex-start; 
-  align-items: flex-start; 
-  gap: 32px; 
-  width: 100%;
-  flex-wrap: nowrap; 
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
 }
 
-/**
- * DESCRIPTION: Cartão de exibição individualizada do item recente.
- * RESPONSIBILITY: Organizar horizontalmente imagem e textos, limitando a largura estática e configurando a transição mestre.
- */
 .recente-card {
   display: flex;
-  align-items: center; 
-  gap: 18px; 
-  width: 420px;
-  padding: 16px 20px; 
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08); 
-  background: rgba(255, 255, 255, 0.03); 
-  backdrop-filter: blur(5px);
+  align-items: center;
+  gap: 18px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   cursor: pointer;
-  transition: transform 0.15s ease-out, background-color 0.1s ease, box-shadow 0.2s ease, border-color 0.1s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  box-shadow: 0 40px 70px -50px rgba(56, 189, 248, 0.7);
+  min-width: 0;
 }
+
 .recente-card:hover {
-  transform: translateY(-4px); 
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-  background-color: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 50px 80px -50px rgba(56, 189, 248, 0.9);
 }
 
-/**
- * DESCRIPTION: Mini imagem de visualização prévia (Thumbnail Preview).
- * RESPONSIBILITY: Reduzir a imagem mantendo a escala contida e aplicar bordas e sombras para descolar do fundo cinza.
- */
 .recente-card img {
-  width: 100px; 
+  width: 110px;
+  height: 76px;
   object-fit: contain;
-  border-radius: 0px; 
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  flex-shrink: 0; 
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
 }
 
-/**
- * DESCRIPTION: Painel empilhado de metadados informativos textuais.
- * RESPONSIBILITY: Forçar o preenchimento flexível de largura interna e ocultar estouros de texto involuntários.
- */
 .recente-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  overflow: hidden;
-  flex: 1;
-  min-width: 0; 
+  gap: 6px;
+  min-width: 0;
 }
+
 .recente-info h3 {
   margin: 0;
-  font-size: 1.1rem;      
-  font-weight: 800;        
-  color: #ffffff;          
-  letter-spacing: 0.3px;   
-  white-space: nowrap; 
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; 
-  width: 100%;
+  text-overflow: ellipsis;
+}
+
+.recente-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recente-date {
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.recente-preview {
+  font-size: 0.86rem;
+  color: rgba(255, 255, 255, 0.72);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .recentes-lista {
+    grid-template-columns: 1fr;
+  }
+
+  .recente-card {
+    padding: 14px 16px;
+  }
+
+  .recente-card img {
+    width: 92px;
+    height: 64px;
+  }
 }

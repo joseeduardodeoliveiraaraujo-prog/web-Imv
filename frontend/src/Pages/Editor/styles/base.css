@@ -1,133 +1,262 @@
-/**
- * DESCRIPTION: Reset global do documento.
- * RESPONSIBILITY: Eliminar margens e preenchimentos nativos e travar o scroll principal do ecossistema.
- */
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; 
+  overflow: hidden;
 }
 
-/**
- * DESCRIPTION: Declaração de variáveis globais (:root).
- * RESPONSIBILITY: Centralizar a paleta de cores, tokens de design e efeitos reutilizáveis.
- */
 :root {
-  --bg-main: #020617;
-  --bg-card: rgba(15, 23, 42, 0.6);
-  --border-color: rgba(255, 255, 255, 0.08);
-  --accent-color: #38bdf8;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --glass-effect: blur(12px) saturate(180%);
+  --bg-main: #0a0a0b;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --accent-color: #a1a1aa;
+  --text-primary: #ffffff;
+  --text-secondary: #cbd5e1;
+  --glass-bg: rgba(255, 255, 255, 0.04);
 }
 
-/**
- * DESCRIPTION: Root container da aplicação do Editor.
- * RESPONSIBILITY: Fixar o layout em tela cheia isolando o ambiente sobre a Home (z-index agressivo).
- */
 .editor {
-  width: 100vw; 
+  width: 100vw;
   height: 100vh;
-  position: fixed; 
+  position: fixed;
   top: 0;
   left: 0;
-  z-index: 9999; 
-  background-color: var(--bg-main);
+  z-index: 9999;
+  background: radial-gradient(1400px 900px at 50% 0%, rgba(148, 163, 184, 0.08), transparent 70%),
+    linear-gradient(180deg, #0a0a0b 0%, #050506 100%);
 }
 
-/**
- * DESCRIPTION: Barra superior do Editor (Header).
- * RESPONSIBILITY: Alinhar marcações textuais e ações de topo, mantendo altura rígida não maleável.
- */
+.editor::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(1000px 700px at 50% 10%, rgba(255, 255, 255, 0.02), transparent 75%);
+  pointer-events: none;
+  z-index: 0;
+}
+
 .editor-header {
+  position: relative;
+  z-index: 4;
   height: 70px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2rem;
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
+  padding: 0 26px;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 40px 60px -50px rgba(148, 163, 184, 0.6);
 }
 
-/**
- * DESCRIPTION: Elemento de título do cabeçalho do editor.
- * RESPONSIBILITY: Controlar dimensões e peso da tipografia primária.
- */
-.editor-header h1 {
-  font-size: 1.1rem;
+.editor-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.btn-header-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-header-back:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.editor-header-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.editor-header-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(226, 232, 240, 0.6);
+}
+
+.editor-header-title {
+  font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary);
-}
-
-/**
- * DESCRIPTION: Grid mestre de distribuição interna.
- * RESPONSIBILITY: Dividir o espaço restante da tela em duas colunas assíncronas (Workspace e Sidebar).
- */
-.editor-container {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 350px; 
-  width: 100%; 
+  color: #ffffff;
+  letter-spacing: -0.01em;
   margin: 0;
-  padding: 0;
-  height: calc(100vh - 70px); /* Subtração exata da altura do header */
+  white-space: nowrap;
   overflow: hidden;
-  background: var(--bg-main);
-  border-top: 1px solid var(--border-color);
+  text-overflow: ellipsis;
+  max-width: 420px;
 }
 
-/**
- * DESCRIPTION: Área ativa de renderização dos certificados (Lado Esquerdo).
- * RESPONSIBILITY: Centralizar a esteira de canvas e gerenciar o fluxo de rolagem vertical independente.
- */
-.editor-workspace {
-  background: #020617;
-  box-shadow: inset -10px 0 20px rgba(0, 0, 0, 0.4); 
-  border-right: 2px solid rgba(255, 255, 255, 0.05); 
-  z-index: 1; 
+.editor-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-header-glass {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(12px);
+}
+
+.btn-header-glass:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.btn-header-primary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(12px);
+}
+
+.btn-header-primary:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
+.btn-header-exit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(226, 232, 240, 0.9);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-header-exit:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.header-download-wrapper {
+  position: relative;
+}
+
+.header-download-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(18, 18, 20, 0.8);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 40px 80px -60px rgba(0, 0, 0, 0.95);
+  z-index: 10000;
+}
+
+.header-download-item {
   width: 100%;
-  height: calc(100vh - 70px);
-  padding: 120px 0 60px 0; 
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-download-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.editor-container {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  width: 100%;
+  height: calc(100vh - 64px);
+  overflow: hidden;
+}
+
+.editor-workspace {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 64px);
+  padding: 72px 40px 96px;
   display: flex;
   flex-direction: column;
   align-items: center;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
-  scrollbar-color: var(--accent-color) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
-/**
- * DESCRIPTION: Pseudo-elementos de estilização de scrollbars (Webkit).
- * RESPONSIBILITY: Sobrescrever a barra nativa do sistema operacional por um modelo estilizado e minimalista.
- */
-.editor-workspace::-webkit-scrollbar,
-.editor-sidebar::-webkit-scrollbar {
-  width: 8px; 
+.editor-workspace::-webkit-scrollbar {
+  width: 8px;
 }
-.editor-workspace::-webkit-scrollbar-track,
-.editor-sidebar::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2); 
+.editor-workspace::-webkit-scrollbar-track {
+  background: transparent;
 }
-.editor-workspace::-webkit-scrollbar-thumb,
-.editor-sidebar::-webkit-scrollbar-thumb {
-  background: var(--accent-color); 
+.editor-workspace::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
   border-radius: 10px;
-  border: 2px solid var(--bg-main); 
-}
-.editor-workspace::-webkit-scrollbar-thumb:hover {
-  background: #7dd3fc; 
 }
 
-/**
- * DESCRIPTION: Fallback de scrollbar para motor Gecko.
- * RESPONSIBILITY: Sincronizar o padrão visual fino da barra de rolagem no navegador Firefox.
- */
-.editor-workspace, .editor-sidebar {
+.editor-workspace,
+.editor-sidebar {
   scrollbar-width: thin;
-  scrollbar-color: var(--accent-color) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+@media (max-width: 1180px) {
+  .editor-container {
+    grid-template-columns: 1fr 340px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .editor-container {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-sidebar {
+    display: none;
+  }
 }
 
