@@ -30,7 +30,7 @@ O objetivo do projeto é demonstrar competências em desenvolvimento full stack 
   - PDFs individuais compactados em ZIP
   - Imagens JPEG individuais compactadas em ZIP
 - **Barra de progresso** com mensagens de status durante a geração dos arquivos
-- **Salvamento de projetos** com persistência no banco de dados (máximo 3 projetos recentes por usuário)
+- **Salvamento de projetos** com persistência no banco de dados (máximo 5 projetos recentes por usuário)
 - **Listagem de modelos** e projetos editados recentemente na dashboard
 - **Alinhamento magnético** ao centro do canvas durante o arraste dos elementos
 - **Linhas guia visuais** indicando alinhamento central
@@ -135,7 +135,7 @@ O objetivo do projeto é demonstrar competências em desenvolvimento full stack 
 6. Pode customizar fontes, cores e tamanhos — tanto globalmente quanto individualmente por certificado
 7. Para gerar os arquivos, o usuário escolhe entre PDF único, PDFs individuais em ZIP ou imagens JPEG em ZIP
 8. O sistema renderiza cada certificado no canvas, aplica os estilos e gera o arquivo para download
-9. O projeto pode ser salvo e reaberto posteriormente (máximo 3 projetos recentes)
+9. O projeto pode ser salvo e reaberto posteriormente (máximo 5 projetos recentes)
 
 ### Arquitetura
 

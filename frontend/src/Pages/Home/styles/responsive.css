@@ -1,0 +1,71 @@
+@media (max-width: 1180px) {
+  .home-layout {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .home-aside {
+    position: static;
+  }
+
+  .recentes-lista {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .home-wrapper {
+    height: calc(100vh - 68px);
+    margin-top: 68px;
+  }
+
+  .home-content {
+    padding: 36px 18px 90px;
+    gap: 32px;
+  }
+
+  .certificates-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  .recentes-lista {
+    grid-template-columns: 1fr;
+  }
+
+  .home-modal-body {
+    padding: 18px;
+  }
+
+  .home-modal-body img {
+    max-height: 60vh;
+  }
+}
+
+@media (max-width: 640px) {
+  .recente-card {
+    padding: 12px 14px;
+  }
+
+  .recente-card img {
+    width: 88px;
+    height: 62px;
+  }
+}
+
+@media (max-width: 560px) {
+  .certificates-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-modal-title {
+    max-width: 220px;
+  }
+
+  .home-modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .home-modal-btn {
+    justify-content: center;
+  }
+}

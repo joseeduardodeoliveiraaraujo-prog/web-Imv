@@ -1,6 +1,8 @@
 import * as projectsRepository from "../repositories/projects.repository.js";
 import * as usersService from "./users.service.js";
 
+const { MAX_PROJECTS_PER_USER } = projectsRepository;
+
 export async function createProject({ payload, email }) {
   const user = await usersService.findAuthenticatedUserIdByEmail(email);
 
@@ -22,8 +24,10 @@ export async function createProject({ payload, email }) {
   const projectsResult = await projectsRepository.listIdsByUserId(user.id);
   const projects = projectsResult.rows;
 
-  if (projects.length > 3) {
-    const idsToRemove = projects.slice(3).map((project) => project.id);
+  if (projects.length > MAX_PROJECTS_PER_USER) {
+    const idsToRemove = projects
+      .slice(MAX_PROJECTS_PER_USER)
+      .map((project) => project.id);
     await projectsRepository.removeByIds(idsToRemove);
   }
 

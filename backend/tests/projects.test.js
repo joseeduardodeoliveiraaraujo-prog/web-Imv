@@ -120,14 +120,14 @@ describe("POST /projects - caracterização", () => {
     expectInsertParams(insertParams);
   });
 
-  it("mantém no máximo três projetos, removendo os mais antigos", async () => {
+  it("mantém no máximo cinco projetos, removendo os mais antigos", async () => {
     const project = buildProjectRow({ id: 10 });
 
     mocks.poolQuery
       .mockResolvedValueOnce({ rows: [{ id: DB_USER.id }] })
       .mockResolvedValueOnce({ rows: [project] })
       .mockResolvedValueOnce({
-        rows: [{ id: 10 }, { id: 9 }, { id: 8 }, { id: 7 }],
+        rows: [{ id: 10 }, { id: 9 }, { id: 8 }, { id: 7 }, { id: 6 }, { id: 5 }],
       })
       .mockResolvedValueOnce({ rows: [] });
 
@@ -143,17 +143,17 @@ describe("POST /projects - caracterização", () => {
     const [deleteSql, deleteParams] = mocks.poolQuery.mock.calls[3];
     expect(deleteSql).toContain("DELETE FROM projects");
     expect(deleteSql).toContain("WHERE id = ANY($1::int[])");
-    expect(deleteParams).toEqual([[7]]);
+    expect(deleteParams).toEqual([[5]]);
   });
 
-  it("não executa exclusão quando o usuário tem exatamente três projetos", async () => {
+  it("não executa exclusão quando o usuário tem exatamente cinco projetos", async () => {
     const project = buildProjectRow({ id: 10 });
 
     mocks.poolQuery
       .mockResolvedValueOnce({ rows: [{ id: DB_USER.id }] })
       .mockResolvedValueOnce({ rows: [project] })
       .mockResolvedValueOnce({
-        rows: [{ id: 10 }, { id: 9 }, { id: 8 }],
+        rows: [{ id: 10 }, { id: 9 }, { id: 8 }, { id: 7 }, { id: 6 }],
       });
 
     const res = await request(app)
@@ -213,7 +213,7 @@ describe("POST /projects - caracterização", () => {
       .mockResolvedValueOnce({ rows: [{ id: DB_USER.id }] })
       .mockResolvedValueOnce({ rows: [project] })
       .mockResolvedValueOnce({
-        rows: [{ id: 10 }, { id: 9 }, { id: 8 }, { id: 7 }],
+        rows: [{ id: 10 }, { id: 9 }, { id: 8 }, { id: 7 }, { id: 6 }, { id: 5 }],
       })
       .mockRejectedValueOnce(new Error("db indisponível"));
 
@@ -257,7 +257,7 @@ describe("GET /projects - caracterização", () => {
     mocks.verifyIdToken.mockResolvedValue(AUTH_USER);
   });
 
-  it("lista até três projetos recentes com dados do certificado", async () => {
+  it("lista até cinco projetos recentes com dados do certificado", async () => {
     const projects = [
       buildProjectRow({ id: 10, title: "Certificado A", thumbnail_path: "a" }),
       buildProjectRow({ id: 9, title: "Certificado B", thumbnail_path: "b" }),
@@ -275,8 +275,8 @@ describe("GET /projects - caracterização", () => {
     expect(sql).toContain("LEFT JOIN projects p");
     expect(sql).toContain("LEFT JOIN certificates c");
     expect(sql).toContain("ORDER BY p.updated_at DESC");
-    expect(sql).toContain("LIMIT 3");
-    expect(params).toEqual([AUTH_USER.email]);
+    expect(sql).toContain("LIMIT $2");
+    expect(params).toEqual([AUTH_USER.email, 5]);
     expect(mocks.poolQuery).toHaveBeenCalledTimes(1);
   });
 

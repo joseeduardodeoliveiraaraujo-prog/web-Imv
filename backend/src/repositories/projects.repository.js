@@ -1,5 +1,7 @@
 import pool from "../../db.js";
 
+export const MAX_PROJECTS_PER_USER = 5;
+
 export async function create({
   userId,
   certificateId,
@@ -56,7 +58,10 @@ export async function removeByIds(ids) {
   );
 }
 
-export async function listRecentByUserEmail(email) {
+export async function listRecentByUserEmail(
+  email,
+  limit = MAX_PROJECTS_PER_USER
+) {
   return pool.query(
     `
       SELECT
@@ -70,9 +75,9 @@ export async function listRecentByUserEmail(email) {
         ON c.id = p.certificate_id
       WHERE u.email = $1
       ORDER BY p.updated_at DESC NULLS LAST
-      LIMIT 3
+      LIMIT $2
       `,
-    [email]
+    [email, limit]
   );
 }
 

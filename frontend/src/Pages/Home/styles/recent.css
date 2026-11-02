@@ -1,0 +1,88 @@
+.recentes-section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.recentes-lista {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.recente-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  transition: transform 0.25s ease, background 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.recente-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.recente-card:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 3px;
+}
+
+.recente-card img {
+  width: 92px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.recente-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.recente-title {
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recente-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.recente-chevron {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.85rem;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.recente-card:hover .recente-chevron {
+  transform: translateX(2px);
+  color: rgba(255, 255, 255, 0.9);
+}

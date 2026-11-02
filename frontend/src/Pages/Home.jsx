@@ -1,6 +1,5 @@
 import Header from "../components/Header/Header";
 import "./Home.css";
-import { FaPlus } from "react-icons/fa";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -10,6 +9,12 @@ import {
 } from "../services/certificatesApi";
 import { listProjects } from "../services/projectsApi";
 import { ensureUserSynced } from "../services/usersApi";
+import CertificateCard from "./Home/components/CertificateCard";
+import CertificatePreviewModal from "./Home/components/CertificatePreviewModal";
+import HomeEmptyState from "./Home/components/HomeEmptyState";
+import HomeHero from "./Home/components/HomeHero";
+import RecentProjectCard from "./Home/components/RecentProjectCard";
+import UploadCard from "./Home/components/UploadCard";
 
 const formatCertificate = (cert) => ({
   id: cert.id,
@@ -237,10 +242,7 @@ const Home = ({ user, onLogout }) => {
 
       <div className="home-wrapper">
         <main className="home-content">
-          <header className="home-header-section">
-            <h1 className="home-title">Modelos de Certificados</h1>
-            <p className="home-subtitle">Crie, gerencie e edite seus modelos de certificados em um só lugar.</p>
-          </header>
+          <HomeHero />
 
           <input
             type="file"
@@ -250,164 +252,65 @@ const Home = ({ user, onLogout }) => {
             onChange={handleFileChange}
           />
 
-          <section className="certificates-section">
-            <div className="section-header">
-              <div className="section-title-group">
-                <span className="section-label">Modelos</span>
-                <p className="section-subtitle">Selecione um modelo ou adicione um novo</p>
-              </div>
-            </div>
-
-            <div className="certificates-grid">
-              <div className="certificate-item">
-                <span className="certificate-name">Novo modelo</span>
-                <div
-                  className="certificate-card-upload-card"
-                  role="button"
-                  tabIndex={0}
-                  onClick={handleUploadClick}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleUploadClick();
-                    }
-                  }}
-                >
-                  <FaPlus />
-                </div>
-              </div>
-
-              {selectedCertificate && (
-                <div className="modal-overlay">
-                  <div className="modal-content">
-                    <div className="modal-header">
-                      <span className="modal-title">{selectedCertificate.name}</span>
-                      <button className="modal-close" onClick={closeModal} aria-label="Fechar">
-                        ✕
-                      </button>
-                    </div>
-                    <div className="modal-body">
-                      <img
-                        src={selectedCertificate.originalUrl || selectedCertificate.previewUrl}
-                        alt="Pré-visualização do certificado"
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = "/fallback.png";
-                        }}
-                      />
-                    </div>
+          <div className="home-layout">
+            <div className="home-main">
+              <section className="certificates-section">
+                <div className="section-header">
+                  <div className="section-title-group">
+                    <span className="section-label">Modelos</span>
                   </div>
-
-                  <div className="floating-actions">
-                    <button className="btn-fab edit" title="Editar" onClick={handleEdit}>
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="20"
-                        height="20"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                      </svg>
-                    </button>
-                    <button className="btn-fab delete" title="Excluir" onClick={handleDelete}>
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="20"
-                        height="20"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        <line x1="10" y1="11" x2="10" y2="17"></line>
-                        <line x1="14" y1="11" x2="14" y2="17"></line>
-                      </svg>
-                    </button>
-                  </div>
+                  <span className="section-count">{certificates.length}</span>
                 </div>
-              )}
 
-              {certificates.map((cert) => (
-                <div className="certificate-item" key={cert.id}>
-                  <span className="certificate-name" title={cert.name}>
-                    {cert.name}
-                  </span>
-                  <div
-                    className="certificate-card"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setSelectedCertificate(cert)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setSelectedCertificate(cert);
-                      }
-                    }}
-                  >
-                    <img
-                      src={cert.previewUrl}
-                      alt={cert.name}
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = "/fallback.png";
-                      }}
+                <div className="certificates-grid">
+                  <UploadCard onUpload={handleUploadClick} />
+
+                  {certificates.map((cert) => (
+                    <CertificateCard
+                      key={cert.id}
+                      certificate={cert}
+                      onSelect={setSelectedCertificate}
                     />
-                  </div>
+                  ))}
                 </div>
-              ))}
+              </section>
             </div>
-          </section>
 
-          <section className="recentes-section">
-            <div className="section-header">
-              <div className="section-title-group">
-                <span className="section-label">Editados recentemente</span>
-                <p className="section-subtitle">Retome seus projetos salvos mais recentemente</p>
-              </div>
-            </div>
-            <div className="recentes-lista">
-              {recentes.map((item) => (
-                <div
-                  key={item.id}
-                  className="recente-card"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleAbrirProjeto(item.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleAbrirProjeto(item.id);
-                    }
-                  }}
-                >
-                  <img src={item.thumbnail_path} alt="Pré-visualização do projeto" />
-                  <div className="recente-info">
-                    <h3 title={item.title}>{item.title}</h3>
-                    <div className="recente-meta">
-                      <span className="recente-date">
-                        Última edição: {new Date(item.updated_at).toLocaleDateString("pt-BR")}
-                      </span>
-                      <span className="recente-preview">
-                        {typeof item.nomes_lista?.[0] === "object"
-                          ? item.nomes_lista?.[0]?.nome
-                          : item.nomes_lista?.[0] || "Projeto"}
-                      </span>
-                    </div>
+            <aside className="home-aside">
+              <section className="recentes-section">
+                <div className="section-header">
+                  <div className="section-title-group">
+                    <span className="section-label">Recentes</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
+
+                {recentes.length > 0 ? (
+                  <div className="recentes-lista">
+                    {recentes.map((item) => (
+                      <RecentProjectCard
+                        key={item.id}
+                        project={item}
+                        onOpen={handleAbrirProjeto}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <HomeEmptyState title="Sem projetos" description="Salve um projeto no editor." />
+                )}
+              </section>
+            </aside>
+          </div>
         </main>
       </div>
+
+      {selectedCertificate && (
+        <CertificatePreviewModal
+          certificate={selectedCertificate}
+          onClose={closeModal}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      )}
     </>
   );
 };

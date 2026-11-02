@@ -1,0 +1,145 @@
+.certificates-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.certificates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.certificate-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.certificate-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1.414 / 1;
+  width: 100%;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.25s ease, background 0.25s ease,
+    border-color 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 30px 60px -50px rgba(0, 0, 0, 0.9);
+  box-sizing: border-box;
+}
+
+.certificate-card:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 36px 70px -50px rgba(0, 0, 0, 0.95);
+}
+
+.certificate-card:focus-visible,
+.certificate-card--upload:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 3px;
+}
+
+.certificate-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  transition: transform 0.25s ease;
+}
+
+.certificate-card:hover img {
+  transform: scale(1.015);
+}
+
+.certificate-card-hint {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(8, 8, 10, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.8rem;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.certificate-card:hover .certificate-card-hint,
+.certificate-card:focus-visible .certificate-card-hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.certificate-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.certificate-card--upload {
+  flex-direction: column;
+  gap: 8px;
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.certificate-card--upload:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.certificate-upload-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.05rem;
+  transition: transform 0.2s ease;
+}
+
+.certificate-card--upload:hover .certificate-upload-icon {
+  transform: scale(1.06);
+}
+
+.certificate-upload-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.certificate-upload-hint {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.45);
+}

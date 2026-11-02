@@ -1,24 +1,36 @@
 import "./Header.css";
-import { FaSignOutAlt } from "react-icons/fa";
+import { FaPaw, FaSignOutAlt } from "react-icons/fa";
 
 const Header = ({ user, onLogout }) => {
   return (
     <header className="header">
-      <div className="header-left">
-        <h2>Bem-vindo</h2>
-        <span>{user.email}</span>
+      <div className="header-brand">
+        <span className="header-brand-mark">
+          <FaPaw aria-hidden="true" />
+        </span>
+        <div className="header-brand-text">
+          <span className="header-brand-title">
+            Instituto de Medicina Veterinária
+          </span>
+        </div>
       </div>
 
-      <button className="logout-btn" onClick={onLogout} title="Sair">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-          <polyline points="16 17 21 12 16 7" />
-          <line x1="21" y1="12" x2="9" y2="12" />
-        </svg>
-        <span>Sair</span>
-      </button>
+      <div className="header-user">
+        <div className="header-user-info">
+          <span className="header-user-email" title={user.email}>
+            {user.email}
+          </span>
+        </div>
 
-
+        <button
+          className="logout-btn"
+          onClick={onLogout}
+          title="Sair"
+          aria-label="Sair"
+        >
+          <FaSignOutAlt aria-hidden="true" />
+        </button>
+      </div>
     </header>
   );
 };
