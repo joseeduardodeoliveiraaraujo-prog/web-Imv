@@ -149,58 +149,8 @@ body {
   border-color: rgba(255, 255, 255, 0.36);
 }
 
-.btn-header-exit {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(226, 232, 240, 0.9);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-header-exit:hover {
-  background: rgba(255, 255, 255, 0.14);
-}
-
 .header-download-wrapper {
   position: relative;
-}
-
-.header-download-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 10px);
-  width: 280px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px;
-  border-radius: 14px;
-  background: rgba(18, 18, 20, 0.8);
-  backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 40px 80px -60px rgba(0, 0, 0, 0.95);
-  z-index: 10000;
-}
-
-.header-download-item {
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  padding: 10px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.header-download-item:hover {
-  background: rgba(255, 255, 255, 0.08);
 }
 
 .editor-container {

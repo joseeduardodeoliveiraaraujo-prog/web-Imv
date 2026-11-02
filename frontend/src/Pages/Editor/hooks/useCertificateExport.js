@@ -12,6 +12,7 @@ export const useCertificateExport = ({ certificate, model }) => {
   const [mensagemStatus, setMensagemStatus] = useState("");
   const [progresso, setProgresso] = useState(0);
   const [menuDownloadAberto, setMenuDownloadAberto] = useState(false);
+  const [tipoExportacao, setTipoExportacao] = useState("");
   const imageCacheRef = useRef(null);
 
   const previewUrl = certificate?.previewUrl;
@@ -40,6 +41,17 @@ export const useCertificateExport = ({ certificate, model }) => {
     preloadCertificateImage();
   }, [previewUrl, preloadCertificateImage]);
 
+  useEffect(() => {
+    if (!menuDownloadAberto) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setMenuDownloadAberto(false);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [menuDownloadAberto]);
+
   const validateExport = () => {
     if (model.nomesValidos.length === 0) {
       alert("Insira nomes na lista!");
@@ -54,9 +66,15 @@ export const useCertificateExport = ({ certificate, model }) => {
     return true;
   };
 
-  const runExport = async ({ preparingMessage, errorMessage, task }) => {
+  const runExport = async ({
+    preparingMessage,
+    errorMessage,
+    tipo,
+    task,
+  }) => {
     if (!validateExport()) return;
 
+    setTipoExportacao(tipo);
     setEstaGerando(true);
     setProgresso(5);
     setMensagemStatus(preparingMessage);
@@ -72,6 +90,7 @@ export const useCertificateExport = ({ certificate, model }) => {
     } finally {
       setEstaGerando(false);
       setMensagemStatus("");
+      setTipoExportacao("");
     }
   };
 
@@ -79,6 +98,7 @@ export const useCertificateExport = ({ certificate, model }) => {
     runExport({
       preparingMessage: "Preparando o arquivo PDF...",
       errorMessage: "Ocorreu um erro ao gerar o PDF.",
+      tipo: "PDF Único",
       task: (image) =>
         exportSinglePdf({
           image,
@@ -95,6 +115,7 @@ export const useCertificateExport = ({ certificate, model }) => {
     runExport({
       preparingMessage: "Preparando os arquivos...",
       errorMessage: "Ocorreu um erro ao gerar os certificados.",
+      tipo: "Imagens JPEG (.ZIP)",
       task: (image) =>
         exportJpegZip({
           image,
@@ -111,6 +132,7 @@ export const useCertificateExport = ({ certificate, model }) => {
     runExport({
       preparingMessage: "Preparando os arquivos...",
       errorMessage: "Ocorreu um erro ao gerar os certificados.",
+      tipo: "PDFs Separados (.ZIP)",
       task: (image) =>
         exportPdfZip({
           image,
@@ -123,8 +145,10 @@ export const useCertificateExport = ({ certificate, model }) => {
         }),
     });
 
-  const toggleDownloadMenu = () =>
+  const toggleDownloadMenu = () => {
+    if (estaGerando) return;
     setMenuDownloadAberto((current) => !current);
+  };
 
   const closeDownloadMenu = () => setMenuDownloadAberto(false);
 
@@ -132,6 +156,7 @@ export const useCertificateExport = ({ certificate, model }) => {
     estaGerando,
     mensagemStatus,
     progresso,
+    tipoExportacao,
     menuDownloadAberto,
     toggleDownloadMenu,
     closeDownloadMenu,

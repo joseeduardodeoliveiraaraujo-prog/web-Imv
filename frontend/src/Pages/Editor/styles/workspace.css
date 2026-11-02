@@ -61,7 +61,8 @@ s.floating-input {
 .btn-editar-individual {
   position: static;
   align-self: flex-start;
-  margin-top: 4px;
+  margin-top: 0;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
   gap: 10px;
