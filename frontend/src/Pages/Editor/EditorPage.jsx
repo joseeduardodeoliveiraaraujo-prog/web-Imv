@@ -1,6 +1,7 @@
 import "./Editor.css";
 import { useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import PageLoader from "../../components/PageLoader/PageLoader";
 import CertificatePreviewList from "./components/CertificatePreviewList";
 import EditorSidebar from "./components/EditorSidebar";
 import ExportLoadingModal from "./components/ExportLoadingModal";
@@ -54,7 +55,9 @@ const Editor = ({ user }) => {
     model,
   });
 
-  if (!certificate) return <p>Carregando certificado...</p>;
+  if (!certificate) {
+    return <PageLoader message="Carregando certificado..." />;
+  }
 
   return (
     <div className="editor">

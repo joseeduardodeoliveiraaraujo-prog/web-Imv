@@ -5,6 +5,7 @@ import { ensureUserSynced } from "./services/usersApi";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./components/Login/Login";
+import PageLoader from "./components/PageLoader/PageLoader";
 import Home from "./Pages/Home";
 import "./App.css";
 
@@ -36,7 +37,7 @@ function App() {
   };
 
   if (loading) {
-    return <p>Carregando...</p>;
+    return <PageLoader />;
   }
 
   return (
@@ -45,7 +46,7 @@ function App() {
       {!user ? (
         <Login />
       ) : (
-        <Suspense fallback={<p>Carregando...</p>}>
+        <Suspense fallback={<PageLoader message="Carregando editor..." />}>
           <Routes>
             <Route
               path="/"

@@ -1,219 +1,334 @@
-/**
- * DESCRIPTION: Configuração do container estrutural do formulário.
- * RESPONSIBILITY: Centralizar o bloco, definir limites de largura e aplicar sombras de profundidade.
- */
-.container {
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  max-width: 400px;
-  padding: 50px 40px;
-  background: rgba(30, 50, 45, 0.85);
-  border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  min-height: 100vh;
+  padding: 32px 24px;
   box-sizing: border-box;
+  color: #f8fafc;
+  font-family: "Plus Jakarta Sans", "Inter", "Segoe UI", Arial, sans-serif;
+  background: radial-gradient(
+      900px 600px at 15% 0%,
+      rgba(16, 185, 129, 0.12),
+      transparent 60%
+    ),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.92) 0%, rgba(2, 6, 23, 0.98) 100%),
+    url("/img1.webp") center / cover no-repeat fixed;
 }
 
-/**
- * DESCRIPTION: Regra condicional para suporte a recursos modernos (Feature Query).
- * RESPONSIBILITY: Injetar o efeito Glassmorphism caso o motor do navegador suporte desfoque nativo.
- */
-@supports (backdrop-filter: blur(20px)) {
-  .container {
-    background: rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-  }
+.login-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  width: 100%;
+  max-width: 1020px;
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  box-shadow: 0 40px 100px -30px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
 }
 
-/**
- * DESCRIPTION: Elemento de título principal da interface.
- * RESPONSIBILITY: Alinhar o texto centralizadamente e definir hierarquia com peso tipográfico nítido.
- */
-.container h1 {
-  text-align: center;
-  color: #fff;
-  font-size: 2.2rem;
-  margin-bottom: 35px;
-  font-weight: 700;
-}
-
-/**
- * DESCRIPTION: Wrapper de contexto de posicionamento para os campos de entrada.
- * RESPONSIBILITY: Estabelecer ponto de referência relativo para o alinhamento absoluto dos ícones internos.
- */
-.input-box {
+.login-brand {
   position: relative;
-  width: 100%;
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: 48px 44px;
+  background: linear-gradient(
+    160deg,
+    rgba(6, 78, 59, 0.5) 0%,
+    rgba(15, 23, 42, 0.35) 100%
+  );
+  overflow: hidden;
 }
 
-/**
- * DESCRIPTION: Estilização padrão dos campos de entrada de dados (Inputs).
- * RESPONSIBILITY: Aplicar padding amplo à direita para proteger o texto de sobreposições com os ícones.
- */
-form input[type="email"],
-form input[type="password"],
-form input[type="text"] {
+.login-brand::after {
+  content: "";
+  position: absolute;
+  right: -90px;
+  bottom: -120px;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(16, 185, 129, 0.18),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.login-brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #059669 0%, #34d399 100%);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #022c22;
+  font-size: 1.35rem;
+  box-shadow: 0 18px 36px -18px rgba(16, 185, 129, 0.8);
+}
+
+.login-brand-eyebrow,
+.login-panel-eyebrow {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #34d399;
+}
+
+.login-brand h1 {
+  margin: 0;
+  max-width: 360px;
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  color: #f8fafc;
+}
+
+.login-brand-description {
+  margin: 0;
+  max-width: 360px;
+  font-size: 0.86rem;
+  line-height: 1.7;
+  color: #cbd5e1;
+}
+
+.login-features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.login-features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+.login-features svg {
+  color: #34d399;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.login-brand-footer {
+  margin-top: auto;
+  padding-top: 26px;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.login-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 44px 40px;
+  background: rgba(2, 6, 23, 0.45);
+  border-left: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.login-panel-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+
+.login-panel-heading h2 {
+  margin: 2px 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #f8fafc;
+}
+
+.login-panel-heading p {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #94a3b8;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-field-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.login-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input > svg:first-child {
+  position: absolute;
+  left: 14px;
+  font-size: 0.8rem;
+  color: #64748b;
+  pointer-events: none;
+  transition: color 0.18s ease;
+}
+
+.login-input input {
   width: 100%;
-  padding: 15px 95px 15px 20px; 
-  background: rgba(255, 255, 255, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-  border-radius: 14px;
+  padding: 12px 46px 12px 40px;
+  border-radius: 11px;
+  border: 1px solid rgba(71, 85, 105, 0.75);
+  background: rgba(2, 6, 23, 0.55);
+  color: #f1f5f9;
+  font-family: inherit;
+  font-size: 0.86rem;
   outline: none;
-  font-size: 1rem;
-  color: #fff;
-  transition: all 0.3s ease;
   box-sizing: border-box;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease,
+    background 0.18s ease;
 }
 
-/**
- * DESCRIPTION: Pseudo-classe para sanitização do comportamento nativo de autofill (Chrome/Webkit).
- * RESPONSIBILITY: Sobrescrever a cor de fundo injetada e forçar a persistência da paleta escura definida.
- */
-form input:-webkit-autofill,
-form input:-webkit-autofill:hover, 
-form input:-webkit-autofill:focus {
-  -webkit-text-fill-color: #fff !important;
-  -webkit-box-shadow: 0 0 0px 1000px rgba(40, 50, 50, 0.9) inset !important;
+.login-input input::placeholder {
+  color: #64748b;
+}
+
+.login-input input:focus {
+  border-color: rgba(16, 185, 129, 0.7);
+  background: rgba(2, 6, 23, 0.8);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+}
+
+.login-input:focus-within > svg:first-child {
+  color: #34d399;
+}
+
+.login-input input:-webkit-autofill,
+.login-input input:-webkit-autofill:hover,
+.login-input input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f1f5f9;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(2, 6, 23, 0.95) inset;
+  caret-color: #f1f5f9;
   transition: background-color 5000s ease-in-out 0s;
 }
 
-/**
- * DESCRIPTION: Pseudo-elemento de texto de marcação (Placeholder).
- * RESPONSIBILITY: Suavizar o tom do texto de instrução interna sem quebrar regras de acessibilidade de contraste.
- */
-form input::placeholder {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-/**
- * DESCRIPTION: Estado ativo de foco de digitação (Focus).
- * RESPONSIBILITY: Destacar a borda do input e emitir brilho sutil para guiar a atenção do usuário.
- */
-form input:focus {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #00d2ff;
-  box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
-}
-
-/**
- * DESCRIPTION: Alinhamento do ícone posicionado à direita (Contexto E-mail).
- * RESPONSIBILITY: Fixar o elemento centralizado verticalmente e desativar interações físicas de mouse.
- */
-.right-icon {
+.login-toggle {
   position: absolute;
-  right: 18px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 1.1rem;
-  pointer-events: none;
-}
-
-/**
- * DESCRIPTION: Grupo flexível de ícones acoplados (Contexto Senha).
- * RESPONSIBILITY: Agrupar horizontalmente o botão de visualização e o cadeado de segurança com espaçamento fixo.
- */
-.password-icons {
-  position: absolute;
-  right: 18px; 
-  top: 50%;
-  transform: translateY(-50%);
+  right: 9px;
   display: flex;
   align-items: center;
-  gap: 15px; 
-  z-index: 10;
-}
-
-/**
- * DESCRIPTION: Botão interativo para revelar senha.
- * RESPONSIBILITY: Limpar estilos nativos de botão e configurar a transição e o cursor adequados.
- */
-.toggle-password {
-  background: none;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
   border: none;
-  padding: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.82rem;
   cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.login-toggle:hover {
+  background: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+.login-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  background: rgba(244, 63, 94, 0.1);
+  color: #fecdd3;
+  font-size: 0.76rem;
+}
+
+.login-submit {
   display: flex;
   align-items: center;
-  color: rgba(255, 255, 255, 0.4); 
-  font-size: 1rem; 
-  transition: all 0.2s ease;
-}
-
-/**
- * DESCRIPTION: Micro-interação de hover do gatilho de senha.
- * RESPONSIBILITY: Escalar levemente o tamanho do ícone e aumentar sua opacidade para feedback de interação.
- */
-.toggle-password:hover {
-  color: #ffffff;
-  transform: scale(1.15);
-}
-
-/**
- * DESCRIPTION: Ícone estático de cadeado.
- * RESPONSIBILITY: Aplicar consistência visual de cor e desativar eventos de ponteiro para não interceptar cliques.
- */
-.lock-icon {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 1.1rem;
-  pointer-events: none;
-}
-
-/**
- * DESCRIPTION: Botão de submissão do formulário (Submit).
- * RESPONSIBILITY: Aplicar gradiente linear, sombras projetadas pesadas e comportamento tátil ao passar o mouse.
- */
-form button[type="submit"] {
+  justify-content: center;
+  gap: 8px;
   width: 100%;
-  height: 55px;
-  background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
-  border: none;
-  border-radius: 14px;
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.25);
-  cursor: pointer;
-  font-size: 1.1rem;
+  height: 46px;
+  margin-top: 4px;
+  border-radius: 11px;
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  background: #059669;
+  color: #f0fdf4;
+  font-family: inherit;
+  font-size: 0.88rem;
   font-weight: 700;
-  color: #fff;
-  transition: all 0.3s ease;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease,
+    box-shadow 0.18s ease;
+  box-shadow: 0 18px 34px -22px rgba(5, 150, 105, 0.9);
 }
 
-/**
- * DESCRIPTION: Estado de hover do botão submit.
- * RESPONSIBILITY: Elevar sutilmente a posição do botão e ampliar o espalhamento do raio de sombra projetada.
- */
-form button[type="submit"]:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 20px rgba(58, 123, 213, 0.45);
+.login-submit:hover:not(:disabled) {
+  background: #10b981;
+  transform: translateY(-1px);
 }
 
-/**
- * DESCRIPTION: Media Query direcionada a dispositivos móveis (Viewports estreitas).
- * RESPONSIBILITY: Ajustar o recuo interno e reduzir o tamanho da fonte do título para manter a harmonia estrutural.
- */
-@media (max-width: 480px) {
-  .container {
-    padding: 40px 25px;
-    border-radius: 22px;
+.login-submit:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.login-submit:disabled {
+  opacity: 0.75;
+  cursor: progress;
+  transform: none;
+}
+
+.login-spinner {
+  animation: loginSpin 0.9s linear infinite;
+}
+
+.login-panel-footer {
+  margin: 22px 0 0;
+  text-align: center;
+  font-size: 0.66rem;
+  color: #64748b;
+}
+
+@keyframes loginSpin {
+  to {
+    transform: rotate(360deg);
   }
-  .container h1 {
-    font-size: 1.9rem;
-  }
 }
 
-/**
- * DESCRIPTION: Ocultação de elementos nativos do ecossistema Microsoft Edge/IE.
- * RESPONSIBILITY: Forçar a remoção dos ícones de limpeza automática e revelação de senha inseridos pelo browser.
- */
 input::-ms-reveal,
 input::-ms-clear {
   display: none;
 }
 
-/**
- * DESCRIPTION: Mitigação de sobreposição de elementos terceiros (Navegador/Extensões).
- * RESPONSIBILITY: Esconder de forma agressiva os ícones injetados por gerenciadores de senhas nativos no bloco direito.
- */
 input::-webkit-contacts-auto-fill-button,
 input::-webkit-credentials-auto-fill-button {
   visibility: hidden;
@@ -221,4 +336,70 @@ input::-webkit-credentials-auto-fill-button {
   pointer-events: none;
   position: absolute;
   right: 0;
+}
+
+@media (max-width: 900px) {
+  .login-shell {
+    grid-template-columns: 1fr;
+    max-width: 460px;
+  }
+
+  .login-brand {
+    padding: 30px 30px 22px;
+    gap: 10px;
+  }
+
+  .login-brand-mark {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    font-size: 1.1rem;
+  }
+
+  .login-brand h1 {
+    font-size: 1.4rem;
+    max-width: none;
+  }
+
+  .login-brand-description {
+    font-size: 0.8rem;
+    max-width: none;
+  }
+
+  .login-features,
+  .login-brand-footer {
+    display: none;
+  }
+
+  .login-panel {
+    padding: 30px;
+    border-left: none;
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+  }
+}
+
+@media (max-width: 520px) {
+  .login-page {
+    padding: 16px;
+  }
+
+  .login-brand {
+    padding: 24px 22px 18px;
+  }
+
+  .login-brand-description {
+    display: none;
+  }
+
+  .login-panel {
+    padding: 24px 22px;
+  }
+
+  .login-panel-heading {
+    margin-bottom: 20px;
+  }
+
+  .login-panel-heading h2 {
+    font-size: 1.3rem;
+  }
 }

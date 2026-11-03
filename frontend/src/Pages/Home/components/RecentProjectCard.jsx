@@ -1,6 +1,6 @@
 import { FaCalendarAlt, FaChevronRight, FaRegImage } from "react-icons/fa";
 
-const RecentProjectCard = ({ project, onOpen }) => {
+const RecentProjectCard = ({ project, onOpen, onPreload }) => {
   const updatedAt = project.updated_at
     ? new Date(project.updated_at).toLocaleDateString("pt-BR")
     : "—";
@@ -10,6 +10,8 @@ const RecentProjectCard = ({ project, onOpen }) => {
       type="button"
       className="recente-card"
       onClick={() => onOpen(project.id)}
+      onMouseEnter={onPreload}
+      onFocus={onPreload}
     >
       <span className="recente-thumb">
         <FaRegImage aria-hidden="true" />

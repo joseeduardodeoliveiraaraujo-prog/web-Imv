@@ -1,5 +1,13 @@
-import { FaUser, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { useState } from 'react';
+import {
+  FaAward,
+  FaCheckCircle,
+  FaEnvelope,
+  FaEye,
+  FaEyeSlash,
+  FaLock,
+  FaSpinner,
+} from "react-icons/fa";
+import { useState } from "react";
 import "./Login.css";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../services/firebase";
@@ -9,9 +17,17 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (isSubmitting) return;
+
+    setError("");
+    setIsSubmitting(true);
+
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
@@ -24,58 +40,133 @@ const Login = () => {
       if (!response.ok) {
         throw new Error(`Erro no servidor: ${response.status}`);
       }
-
-      console.log("Usuário logado e sincronizado com o banco");
-
-    } catch (error) {
-      console.error("Erro ao logar:", error.code || error.message);
-      alert("E-mail ou senha inválidos ou erro de conexão.");
+    } catch (loginError) {
+      console.error("Erro ao logar:", loginError.code || loginError.message);
+      setError("E-mail ou senha inválidos ou erro de conexão.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className='container'>
-      <form onSubmit={handleSubmit}>
-        <h1>Certificado Imv</h1>
-        
-        <div className="input-box">
-          <input 
-            type="email" 
-            placeholder='E-mail' 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
-            required 
-          /> 
-          <FaUser className='icon right-icon'/>
-        </div> 
+    <div className="login-page">
+      <div className="login-shell">
+        <aside className="login-brand">
+          <span className="login-brand-mark">
+            <FaAward aria-hidden="true" />
+          </span>
 
-        <div className="input-box password-box">
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Digite a senha"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-            required
-          />
-          
-          {/* O container dos ícones ajuda a manter o alinhamento */}
-          <div className="password-icons">
-            {password && (
-              <button
-                type="button"
-                className="toggle-password"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            )}
-            <FaLock className="icon lock-icon" />
+          <span className="login-brand-eyebrow">Web IMV</span>
+          <h1>Instituto de Medicina Veterinária</h1>
+          <p className="login-brand-description">
+            Crie, personalize e exporte certificados em lote com agilidade e
+            consistência.
+          </p>
+
+          <ul className="login-features">
+            <li>
+              <FaCheckCircle aria-hidden="true" />
+              Modelos personalizados
+            </li>
+            <li>
+              <FaCheckCircle aria-hidden="true" />
+              Edição de nomes em lote
+            </li>
+            <li>
+              <FaCheckCircle aria-hidden="true" />
+              Exportação em PDF e JPEG
+            </li>
+          </ul>
+
+          <span className="login-brand-footer">
+            Gerenciador de Certificados
+          </span>
+        </aside>
+
+        <main className="login-panel">
+          <div className="login-panel-heading">
+            <span className="login-panel-eyebrow">Acesso restrito</span>
+            <h2>Entrar na plataforma</h2>
+            <p>Use suas credenciais institucionais para continuar.</p>
           </div>
-        </div>
 
-        <button type="submit">Entrar</button>
-      </form>
+          <form className="login-form" onSubmit={handleSubmit}>
+            <div className="login-field">
+              <label className="login-field-label" htmlFor="login-email">
+                E-mail
+              </label>
+              <div className="login-input">
+                <FaEnvelope aria-hidden="true" />
+                <input
+                  id="login-email"
+                  type="email"
+                  placeholder="seu.email@dominio.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="login-field">
+              <label className="login-field-label" htmlFor="login-password">
+                Senha
+              </label>
+              <div className="login-input">
+                <FaLock aria-hidden="true" />
+                <input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Digite sua senha"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="login-toggle"
+                  onClick={() => setShowPassword((value) => !value)}
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showPassword ? (
+                    <FaEyeSlash aria-hidden="true" />
+                  ) : (
+                    <FaEye aria-hidden="true" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <p className="login-error" role="alert">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="login-submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <FaSpinner className="login-spinner" aria-hidden="true" />
+                  Entrando...
+                </>
+              ) : (
+                "Entrar"
+              )}
+            </button>
+          </form>
+
+          <p className="login-panel-footer">
+            Ambiente seguro • Firebase Authentication
+          </p>
+        </main>
+      </div>
     </div>
   );
 };

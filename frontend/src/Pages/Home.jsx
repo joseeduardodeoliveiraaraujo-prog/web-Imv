@@ -26,6 +26,10 @@ import UploadCard from "./Home/components/UploadCard";
 const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg"];
 
+const preloadEditorModule = () => {
+  import("./Editor/EditorPage").catch(() => {});
+};
+
 const formatDate = (value) => {
   if (!value) return "—";
 
@@ -162,6 +166,12 @@ const Home = ({ user, onLogout }) => {
       isActive = false;
     };
   }, [user, reloadKey]);
+
+  useEffect(() => {
+    if (!selectedCertificate) return;
+
+    preloadEditorModule();
+  }, [selectedCertificate]);
 
   // ==========================================
   // DERIVED DATA (DADOS CALCULADOS)
@@ -512,6 +522,7 @@ const Home = ({ user, onLogout }) => {
                         key={item.id}
                         project={item}
                         onOpen={handleAbrirProjeto}
+                        onPreload={preloadEditorModule}
                       />
                     ))}
                   </div>
