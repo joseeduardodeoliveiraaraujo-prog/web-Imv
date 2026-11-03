@@ -16,9 +16,10 @@ const app = express();
 // MIDDLEWARES GLOBAIS DE SEGURANÇA
 // ==========================================================================
 
-app.use(helmet());
+// O Render encaminha as requisições por um proxy reverso.
+app.set("trust proxy", 1);
 
-app.use(generalLimiter);
+app.use(helmet());
 
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",")
@@ -37,6 +38,8 @@ app.use(
     credentials: true,
   })
 );
+
+app.use(generalLimiter);
 
 app.use(express.json({ limit: "1mb" }));
 

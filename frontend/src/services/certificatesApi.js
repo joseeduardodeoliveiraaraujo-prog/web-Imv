@@ -34,6 +34,8 @@ export const deleteCertificate = async (id, token) => {
   });
 
   if (!response.ok) {
-    throw new Error("Erro ao deletar");
+    const error = new Error("Erro ao deletar");
+    error.status = response.status;
+    throw error;
   }
 };

@@ -1,57 +1,41 @@
-html,
-body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  background: url("/fundo-principal.png") center / cover no-repeat fixed;
-  color: #ffffff;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(
-      1200px 800px at 50% 0%,
-      rgba(255, 255, 255, 0.06),
-      transparent 65%
-    ),
-    rgba(2, 2, 4, 0.6);
-  pointer-events: none;
-  z-index: -1;
-}
-
 .home-wrapper {
   width: 100%;
   height: calc(100vh - 72px);
   margin-top: 72px;
   overflow-y: auto;
   overflow-x: hidden;
+  color: #f8fafc;
+  font-family: "Plus Jakarta Sans", "Inter", "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(
+      180deg,
+      rgba(2, 6, 23, 0.92) 0%,
+      rgba(2, 6, 23, 0.97) 100%
+    ),
+    url("/img1.webp") center / cover no-repeat fixed;
 }
 
 .home-content {
-  width: 100%;
-  max-width: 1500px;
-  margin: 0 auto;
-  padding: 56px 6% 110px;
-  color: #ffffff;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 26px;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 28px 96px;
+  box-sizing: border-box;
 }
 
 .home-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: 32px;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 26px;
   align-items: start;
 }
 
 .home-main {
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 24px;
   min-width: 0;
 }
 
@@ -60,52 +44,25 @@ body::before {
   top: 96px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .home-wrapper::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 .home-wrapper::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 10px;
+  background: rgba(51, 65, 85, 0.85);
+  border-radius: 4px;
+}
+
+.home-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(71, 85, 105, 1);
 }
 
 .home-wrapper::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.section-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.section-title-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.section-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.56);
-}
-
-.section-count {
-  flex-shrink: 0;
-  padding: 4px 11px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.75rem;
-  font-weight: 600;
+  background: rgba(15, 23, 42, 0.6);
 }
 
 .home-empty {
@@ -113,26 +70,57 @@ body::before {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 36px 20px;
+  padding: 38px 20px;
   border-radius: 16px;
-  border: 1px dashed rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(71, 85, 105, 0.6);
+  background: rgba(15, 23, 42, 0.5);
   text-align: center;
 }
 
 .home-empty-icon {
-  font-size: 1.4rem;
-  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.5rem;
+  color: #475569;
   margin-bottom: 4px;
 }
 
 .home-empty strong {
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 0.92rem;
+  color: #e2e8f0;
+  font-size: 0.9rem;
 }
 
 .home-empty p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 0.82rem;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.home-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 11px;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  background: rgba(244, 63, 94, 0.08);
+  color: #fecdd3;
+  font-size: 0.78rem;
+}
+
+.home-alert button {
+  flex-shrink: 0;
+  padding: 5px 11px;
+  border-radius: 7px;
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  background: rgba(244, 63, 94, 0.12);
+  color: #fecdd3;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.home-alert button:hover {
+  background: rgba(244, 63, 94, 0.22);
 }

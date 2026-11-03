@@ -1,7 +1,13 @@
 import Header from "../components/Header/Header";
 import "./Home.css";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  FaHistory,
+  FaList,
+  FaSearch,
+  FaThLarge,
+} from "react-icons/fa";
 import {
   deleteCertificate,
   listCertificates,
@@ -12,16 +18,47 @@ import { ensureUserSynced } from "../services/usersApi";
 import CertificateCard from "./Home/components/CertificateCard";
 import CertificatePreviewModal from "./Home/components/CertificatePreviewModal";
 import HomeEmptyState from "./Home/components/HomeEmptyState";
-import HomeHero from "./Home/components/HomeHero";
+import HomeMetrics from "./Home/components/HomeMetrics";
+import HomeTip from "./Home/components/HomeTip";
 import RecentProjectCard from "./Home/components/RecentProjectCard";
 import UploadCard from "./Home/components/UploadCard";
+
+const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg"];
+
+const formatDate = (value) => {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleDateString("pt-BR");
+};
+
+const getExtension = (name = "") => {
+  if (!name.includes(".")) return "IMG";
+
+  const extension = name.split(".").pop().toUpperCase();
+  return extension === "JPEG" ? "JPG" : extension.slice(0, 4);
+};
 
 const formatCertificate = (cert) => ({
   id: cert.id,
   name: cert.title,
   previewUrl: cert.thumbnail_path,
   originalUrl: cert.image_path,
+  createdAt: formatDate(cert.created_at),
+  createdAtRaw: cert.created_at,
+  extension: getExtension(cert.title),
 });
+
+const getLoadErrorMessage = (error) => {
+  if (error?.status === 429) {
+    return "Muitas requisições. Aguarde alguns instantes e tente novamente.";
+  }
+
+  return "Não foi possível carregar os modelos. Verifique a conexão e tente novamente.";
+};
 
 /**
  * COMPONENT: Home
@@ -36,38 +73,19 @@ const Home = ({ user, onLogout }) => {
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [certificates, setCertificates] = useState([]);
   const [recentes, setRecentes] = useState([]);
-  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState("grid");
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+
   // ==========================================
   // REFS
   // ==========================================
   const fileInputRef = useRef(null);
-
-  // ==========================================
-  // DATA FETCHING FUNCTIONS (REQUISIÇÕES)
-  // ==========================================
-
-  /**
-   * FUNCTION: fetchCertificates
-   * DESCRIPTION: Consome o endpoint de certificados e normaliza o schema de dados vindo da API para o frontend.
-   */
-  const fetchCertificates = useCallback(async (token) => {
-    if (!user) return [];
-
-    const authToken = token || (await user.getIdToken());
-    const data = await listCertificates(authToken);
-
-    return data.map(formatCertificate);
-  }, [user]);
-
-  const loadCertificates = async () => {
-    try {
-      await ensureUserSynced(user);
-      const formatted = await fetchCertificates();
-      setCertificates(formatted);
-    } catch (error) {
-      console.error("Erro ao carregar certificados:", error);
-    }
-  };
 
   // ==========================================
   // SIDE EFFECTS (EFEITOS COLATERAIS)
@@ -81,6 +99,8 @@ const Home = ({ user, onLogout }) => {
     if (!user) return;
 
     let isActive = true;
+
+    setLoadError("");
 
     const carregarDados = async () => {
       try {
@@ -114,11 +134,13 @@ const Home = ({ user, onLogout }) => {
 
         if (certificatesResult.status === "fulfilled") {
           setCertificates(certificatesResult.value.map(formatCertificate));
+          setLoadError("");
         } else {
           console.error(
             "Erro ao carregar certificados:",
             certificatesResult.reason
           );
+          setLoadError(getLoadErrorMessage(certificatesResult.reason));
         }
 
         if (projectsResult.status === "fulfilled") {
@@ -129,6 +151,7 @@ const Home = ({ user, onLogout }) => {
       } catch (error) {
         if (isActive) {
           console.error("Erro ao carregar dados:", error);
+          setLoadError(getLoadErrorMessage(error));
         }
       }
     };
@@ -138,7 +161,52 @@ const Home = ({ user, onLogout }) => {
     return () => {
       isActive = false;
     };
-  }, [user]);
+  }, [user, reloadKey]);
+
+  // ==========================================
+  // DERIVED DATA (DADOS CALCULADOS)
+  // ==========================================
+  const filteredCertificates = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return certificates;
+
+    return certificates.filter((certificate) =>
+      certificate.name.toLowerCase().includes(query)
+    );
+  }, [certificates, searchQuery]);
+
+  const lastModified = useMemo(() => {
+    const latest = recentes[0]?.updated_at;
+    if (!latest) return "—";
+
+    const date = new Date(latest);
+    if (Number.isNaN(date.getTime())) return "—";
+
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+
+    return isToday
+      ? `Hoje, ${date.toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`
+      : date.toLocaleDateString("pt-BR");
+  }, [recentes]);
+
+  const newThisMonth = useMemo(() => {
+    const now = new Date();
+
+    return certificates.filter((certificate) => {
+      if (!certificate.createdAtRaw) return false;
+
+      const date = new Date(certificate.createdAtRaw);
+      return (
+        !Number.isNaN(date.getTime()) &&
+        date.getMonth() === now.getMonth() &&
+        date.getFullYear() === now.getFullYear()
+      );
+    }).length;
+  }, [certificates]);
 
   // ==========================================
   // HANDLERS (EVENTOS E INTERAÇÕES)
@@ -149,38 +217,70 @@ const Home = ({ user, onLogout }) => {
    * DESCRIPTION: Simula um evento de clique no input de arquivo oculto via referência do DOM.
    */
   const handleUploadClick = () => {
-    fileInputRef.current.click();
+    fileInputRef.current?.click();
   };
 
   /**
-   * EVENT: handleFileChange
-   * DESCRIPTION: Captura a alteração do input binário, gera uma instância FormData e submete ao endpoint via POST.
+   * FUNCTION: processUpload
+   * DESCRIPTION: Valida tipo/tamanho do arquivo e o envia para a API.
    */
-  const handleFileChange = async (e) => {
-    if (!user) return;
-    const file = e.target.files[0];
-    if (!file) return;
+  const processUpload = async (file) => {
+    if (!user || !file) return;
+
+    setUploadError("");
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setUploadError("Formato inválido. Envie um arquivo PNG ou JPEG.");
+      return;
+    }
+
+    if (file.size > MAX_UPLOAD_SIZE) {
+      setUploadError("O arquivo excede o limite de 5 MB.");
+      return;
+    }
+
+    setIsUploading(true);
 
     try {
       const token = await user.getIdToken();
       const newCert = await uploadCertificate(file, token);
-
-      setCertificates(prev => [
-        {
-          id: newCert.id,
-          name: newCert.title,
-          previewUrl: newCert.thumbnail_path,
-          originalUrl: newCert.image_path
-        },
-        ...prev
-      ]);
-
-      // Reseta o valor do elemento nativo para permitir novos uploads redundantes do mesmo arquivo
-      e.target.value = "";
-
+      setCertificates((prev) => [formatCertificate(newCert), ...prev]);
     } catch (error) {
       console.error("Erro ao enviar arquivo:", error);
+      setUploadError("Não foi possível enviar o modelo. Tente novamente.");
+    } finally {
+      setIsUploading(false);
     }
+  };
+
+  /**
+   * EVENT: handleFileChange
+   * DESCRIPTION: Captura o arquivo escolhido no input e dispara o upload.
+   */
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    processUpload(file);
+    event.target.value = "";
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    if (!isUploading) setIsDragging(true);
+  };
+
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setIsDragging(false);
+
+    if (isUploading) return;
+
+    const file = event.dataTransfer.files?.[0];
+    processUpload(file);
   };
 
   /**
@@ -213,23 +313,33 @@ const Home = ({ user, onLogout }) => {
    * EVENT: handleDelete
    * DESCRIPTION: Solicita confirmação nativa do navegador e executa o disparo destrutivo via método HTTP DELETE.
    */
-  const handleDelete = async () => {
-    if (!user) return;
+  const handleDelete = async (certificate) => {
+    const target = certificate || selectedCertificate;
+    if (!user || !target) return;
+
     const confirmDelete = window.confirm(
-      "tem certeza que deseja apagar este modelo?"
+      "Tem certeza que deseja apagar este modelo?"
     );
 
     if (!confirmDelete) return;
 
+    setActionError("");
+
     try {
       const token = await user.getIdToken();
-      await deleteCertificate(selectedCertificate.id, token);
+      await deleteCertificate(target.id, token);
 
-      await loadCertificates();
-      closeModal();
-
+      setCertificates((prev) => prev.filter((item) => item.id !== target.id));
+      setSelectedCertificate((current) =>
+        current?.id === target.id ? null : current
+      );
     } catch (error) {
       console.error("Erro ao deletar:", error);
+      setActionError(
+        error?.status === 429
+          ? "Muitas requisições. Aguarde alguns instantes e tente novamente."
+          : "Não foi possível excluir o modelo. Tente novamente."
+      );
     }
   };
 
@@ -238,15 +348,26 @@ const Home = ({ user, onLogout }) => {
   // ==========================================
   return (
     <>
-      <Header user={user} onLogout={onLogout} />
+      <Header
+        user={user}
+        onLogout={onLogout}
+        onNewModel={handleUploadClick}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
 
       <div className="home-wrapper">
         <main className="home-content">
-          <HomeHero />
+          <HomeMetrics
+            models={certificates.length}
+            projects={recentes.length}
+            lastModified={lastModified}
+            newThisMonth={newThisMonth}
+          />
 
           <input
             type="file"
-            accept="image/*"
+            accept="image/png,image/jpeg"
             ref={fileInputRef}
             style={{ display: "none" }}
             onChange={handleFileChange}
@@ -255,33 +376,133 @@ const Home = ({ user, onLogout }) => {
           <div className="home-layout">
             <div className="home-main">
               <section className="certificates-section">
-                <div className="section-header">
-                  <div className="section-title-group">
-                    <span className="section-label">Modelos</span>
+                <div className="models-header">
+                  <div className="models-heading">
+                    <h2 className="models-title">Modelos de Certificados</h2>
+                    <p className="models-subtitle">
+                      Gerencie e organize os layouts de certificados do
+                      instituto
+                    </p>
                   </div>
-                  <span className="section-count">{certificates.length}</span>
+
+                  <div className="models-controls">
+                    <label className="models-search">
+                      <FaSearch aria-hidden="true" />
+                      <input
+                        type="search"
+                        value={searchQuery}
+                        onChange={(event) =>
+                          setSearchQuery(event.target.value)
+                        }
+                        placeholder="Buscar modelo..."
+                        aria-label="Buscar modelos de certificado"
+                      />
+                    </label>
+
+                    <div className="view-toggle" role="group" aria-label="Modo de visualização">
+                      <button
+                        type="button"
+                        className={
+                          viewMode === "grid" ? "is-active" : undefined
+                        }
+                        onClick={() => setViewMode("grid")}
+                        title="Visualização em grade"
+                        aria-pressed={viewMode === "grid"}
+                      >
+                        <FaThLarge aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        className={
+                          viewMode === "list" ? "is-active" : undefined
+                        }
+                        onClick={() => setViewMode("list")}
+                        title="Visualização em lista"
+                        aria-pressed={viewMode === "list"}
+                      >
+                        <FaList aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="certificates-grid">
-                  <UploadCard onUpload={handleUploadClick} />
+                <UploadCard
+                  onUpload={handleUploadClick}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  isDragging={isDragging}
+                  isUploading={isUploading}
+                  error={uploadError}
+                />
 
-                  {certificates.map((cert) => (
-                    <CertificateCard
-                      key={cert.id}
-                      certificate={cert}
-                      onSelect={setSelectedCertificate}
-                    />
-                  ))}
-                </div>
+                {actionError && (
+                  <div className="home-alert" role="alert">
+                    <span>{actionError}</span>
+                    <button
+                      type="button"
+                      onClick={() => setActionError("")}
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                )}
+
+                {loadError && (
+                  <div className="home-alert" role="alert">
+                    <span>{loadError}</span>
+                    <button
+                      type="button"
+                      onClick={() => setReloadKey((value) => value + 1)}
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                )}
+
+                {filteredCertificates.length > 0 ? (
+                  <div
+                    className={`certificates-grid${
+                      viewMode === "list" ? " certificates-grid--list" : ""
+                    }`}
+                  >
+                    {filteredCertificates.map((cert) => (
+                      <CertificateCard
+                        key={cert.id}
+                        certificate={cert}
+                        view={viewMode}
+                        onSelect={setSelectedCertificate}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </div>
+                ) : loadError ? null : (
+                  <HomeEmptyState
+                    title={
+                      certificates.length > 0
+                        ? "Nenhum modelo encontrado"
+                        : "Nenhum modelo ainda"
+                    }
+                    description={
+                      certificates.length > 0
+                        ? "Tente outro termo de busca."
+                        : "Envie seu primeiro modelo no campo acima."
+                    }
+                  />
+                )}
               </section>
             </div>
 
             <aside className="home-aside">
               <section className="recentes-section">
-                <div className="section-header">
-                  <div className="section-title-group">
-                    <span className="section-label">Recentes</span>
+                <div className="recentes-header">
+                  <div className="recentes-heading">
+                    <FaHistory aria-hidden="true" />
+                    <h3>Recentes / Editados</h3>
                   </div>
+                  <span className="recentes-count">
+                    {recentes.length} recentes
+                  </span>
                 </div>
 
                 {recentes.length > 0 ? (
@@ -295,9 +516,14 @@ const Home = ({ user, onLogout }) => {
                     ))}
                   </div>
                 ) : (
-                  <HomeEmptyState title="Sem projetos" description="Salve um projeto no editor." />
+                  <HomeEmptyState
+                    title="Sem projetos"
+                    description="Salve um projeto no editor."
+                  />
                 )}
               </section>
+
+              <HomeTip />
             </aside>
           </div>
         </main>
@@ -308,7 +534,7 @@ const Home = ({ user, onLogout }) => {
           certificate={selectedCertificate}
           onClose={closeModal}
           onEdit={handleEdit}
-          onDelete={handleDelete}
+          onDelete={() => handleDelete(selectedCertificate)}
         />
       )}
     </>

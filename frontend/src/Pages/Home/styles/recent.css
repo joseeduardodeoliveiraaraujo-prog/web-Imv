@@ -1,67 +1,118 @@
 .recentes-section {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.recentes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.recentes-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #34d399;
+}
+
+.recentes-heading h3 {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #e2e8f0;
+}
+
+.recentes-count {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(30, 41, 59, 0.9);
+  color: #94a3b8;
+  font-size: 0.64rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .recentes-lista {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .recente-card {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 11px;
   width: 100%;
   min-width: 0;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  padding: 9px 10px;
+  border-radius: 11px;
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  background: rgba(2, 6, 23, 0.5);
+  color: inherit;
   cursor: pointer;
   text-align: left;
-  color: inherit;
-  transition: transform 0.25s ease, background 0.25s ease,
-    border-color 0.25s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .recente-card:hover {
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(2, 6, 23, 0.75);
+  border-color: rgba(100, 116, 139, 0.6);
 }
 
 .recente-card:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.6);
-  outline-offset: 3px;
+  outline: 2px solid rgba(52, 211, 153, 0.6);
+  outline-offset: 2px;
 }
 
-.recente-card img {
-  width: 92px;
-  height: 64px;
-  object-fit: contain;
-  border-radius: 9px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(0, 0, 0, 0.2);
+.recente-thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 40px;
   flex-shrink: 0;
+  border-radius: 6px;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  background: rgba(15, 23, 42, 0.9);
+  color: #334155;
+  font-size: 0.95rem;
+  overflow: hidden;
+}
+
+.recente-thumb img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .recente-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   flex: 1;
   min-width: 0;
 }
 
 .recente-title {
-  font-size: 0.94rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: #ffffff;
+  color: #e2e8f0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -69,20 +120,59 @@
 
 .recente-meta {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 0.76rem;
-  color: rgba(255, 255, 255, 0.55);
+  align-items: center;
+  gap: 4px;
+  font-size: 0.66rem;
+  color: #94a3b8;
 }
 
 .recente-chevron {
   flex-shrink: 0;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 0.85rem;
+  color: #64748b;
+  font-size: 0.7rem;
   transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .recente-card:hover .recente-chevron {
   transform: translateX(2px);
-  color: rgba(255, 255, 255, 0.9);
+  color: #34d399;
+}
+
+.home-tip {
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(6, 95, 70, 0.55);
+  background: linear-gradient(
+    180deg,
+    rgba(6, 78, 59, 0.4) 0%,
+    rgba(15, 23, 42, 0.9) 100%
+  );
+}
+
+.home-tip-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  color: #34d399;
+}
+
+.home-tip-heading h4 {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.home-tip p {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+.home-tip strong {
+  color: #6ee7b7;
+  font-weight: 600;
 }

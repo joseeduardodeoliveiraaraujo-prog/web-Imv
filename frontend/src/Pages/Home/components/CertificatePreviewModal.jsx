@@ -1,5 +1,10 @@
 import { useEffect, useRef } from "react";
-import { FaEdit, FaTrashAlt } from "react-icons/fa";
+import {
+  FaEdit,
+  FaRegImage,
+  FaTimes,
+  FaTrashAlt,
+} from "react-icons/fa";
 
 const CertificatePreviewModal = ({
   certificate,
@@ -33,60 +38,65 @@ const CertificatePreviewModal = ({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="home-modal-header">
-          <h2 className="home-modal-title" id={titleId}>
-            {certificate.name}
-          </h2>
+          <div className="home-modal-heading">
+            <h2 className="home-modal-title" id={titleId}>
+              {certificate.name}
+            </h2>
+            <p className="home-modal-subtitle">
+              {certificate.extension} • Criado em {certificate.createdAt}
+            </p>
+          </div>
           <button
             type="button"
             className="home-modal-close"
             onClick={onClose}
             aria-label="Fechar"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            <FaTimes aria-hidden="true" />
           </button>
         </div>
 
         <div className="home-modal-body">
+          <FaRegImage className="home-modal-fallback" aria-hidden="true" />
           <img
             src={certificate.originalUrl || certificate.previewUrl}
             alt={`Pré-visualização de ${certificate.name}`}
             onError={(event) => {
-              event.currentTarget.onerror = null;
-              event.currentTarget.src = "/fallback.png";
+              event.currentTarget.style.display = "none";
             }}
           />
         </div>
 
         <div className="home-modal-footer">
-          <button
-            type="button"
-            className="home-modal-btn danger"
-            onClick={onDelete}
-          >
-            <FaTrashAlt aria-hidden="true" />
-            <span>Excluir</span>
-          </button>
-          <button
-            type="button"
-            className="home-modal-btn primary"
-            onClick={onEdit}
-          >
-            <FaEdit aria-hidden="true" />
-            <span>Editar</span>
-          </button>
+          <span className="home-modal-format">
+            Formato {certificate.extension} • Pré-visualização do modelo
+          </span>
+
+          <div className="home-modal-actions">
+            <button
+              type="button"
+              className="home-modal-btn danger"
+              onClick={onDelete}
+            >
+              <FaTrashAlt aria-hidden="true" />
+              <span>Excluir</span>
+            </button>
+            <button
+              type="button"
+              className="home-modal-btn ghost"
+              onClick={onClose}
+            >
+              Fechar
+            </button>
+            <button
+              type="button"
+              className="home-modal-btn primary"
+              onClick={onEdit}
+            >
+              <FaEdit aria-hidden="true" />
+              <span>Editar Campos</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

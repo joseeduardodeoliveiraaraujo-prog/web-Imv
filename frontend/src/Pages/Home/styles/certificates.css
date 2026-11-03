@@ -1,145 +1,480 @@
 .certificates-section {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-}
-
-.certificates-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 18px;
 }
 
-.certificate-item {
+.models-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  flex-wrap: wrap;
+}
+
+.models-heading {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 3px;
   min-width: 0;
 }
 
-.certificate-card {
+.models-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #f1f5f9;
+}
+
+.models-subtitle {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+.models-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.models-search {
   position: relative;
+  display: none;
+  align-items: center;
+}
+
+.models-search svg {
+  position: absolute;
+  left: 11px;
+  font-size: 0.74rem;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.models-search input {
+  width: 200px;
+  padding: 8px 12px 8px 32px;
+  border-radius: 9px;
+  border: 1px solid rgba(71, 85, 105, 0.7);
+  background: rgba(15, 23, 42, 0.9);
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 0.78rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.models-search input::placeholder {
+  color: #94a3b8;
+}
+
+.models-search input:focus {
+  border-color: rgba(16, 185, 129, 0.7);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+}
+
+.view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(2, 6, 23, 0.6);
+}
+
+.view-toggle button {
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1.414 / 1;
-  width: 100%;
-  padding: 10px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  overflow: hidden;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.78rem;
   cursor: pointer;
-  transition: transform 0.25s ease, background 0.25s ease,
-    border-color 0.25s ease, box-shadow 0.25s ease;
-  box-shadow: 0 30px 60px -50px rgba(0, 0, 0, 0.9);
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.view-toggle button:hover {
+  background: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+.view-toggle button.is-active {
+  color: #34d399;
+  background: rgba(30, 41, 59, 0.95);
+  box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.22);
+}
+
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upload-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 24px 20px;
+  border-radius: 16px;
+  border: 2px dashed rgba(71, 85, 105, 0.7);
+  background: rgba(15, 23, 42, 0.35);
+  color: #e2e8f0;
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
   box-sizing: border-box;
 }
 
-.certificate-card:hover {
-  transform: translateY(-3px);
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.24);
-  box-shadow: 0 36px 70px -50px rgba(0, 0, 0, 0.95);
+.upload-dropzone:hover,
+.upload-dropzone.is-dragging {
+  border-color: rgba(16, 185, 129, 0.6);
+  background: rgba(15, 23, 42, 0.72);
 }
 
-.certificate-card:focus-visible,
-.certificate-card--upload:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.6);
-  outline-offset: 3px;
+.upload-dropzone:disabled {
+  cursor: progress;
+  opacity: 0.85;
 }
 
-.certificate-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.18);
-  transition: transform 0.25s ease;
-}
-
-.certificate-card:hover img {
-  transform: scale(1.015);
-}
-
-.certificate-card-hint {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: rgba(8, 8, 10, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.8rem;
-  opacity: 0;
-  transform: translateY(6px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.certificate-card:hover .certificate-card-hint,
-.certificate-card:focus-visible .certificate-card-hint {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.certificate-name {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.certificate-card--upload {
-  flex-direction: column;
-  gap: 8px;
-  border-style: dashed;
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(255, 255, 255, 0.78);
-}
-
-.certificate-card--upload:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.certificate-upload-icon {
+.upload-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.85);
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
   font-size: 1.05rem;
   transition: transform 0.2s ease;
 }
 
-.certificate-card--upload:hover .certificate-upload-icon {
-  transform: scale(1.06);
+.upload-dropzone:hover .upload-icon,
+.upload-dropzone.is-dragging .upload-icon {
+  transform: scale(1.08);
 }
 
-.certificate-upload-text {
-  font-size: 0.9rem;
+.upload-title {
+  font-size: 0.86rem;
   font-weight: 600;
+  color: #e2e8f0;
 }
 
-.certificate-upload-hint {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: rgba(255, 255, 255, 0.45);
+.upload-link {
+  color: #34d399;
+  text-decoration: underline;
+  text-decoration-color: rgba(16, 185, 129, 0.4);
+  text-underline-offset: 2px;
+}
+
+.upload-hint {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.upload-error {
+  margin: 0;
+  padding-left: 4px;
+  font-size: 0.75rem;
+  color: #fca5a5;
+}
+
+.spin {
+  animation: homeSpin 0.9s linear infinite;
+}
+
+@keyframes homeSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.certificates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.certificates-grid--list {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.certificate-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.8);
+  min-width: 0;
+  transition: transform 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.certificate-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(148, 163, 184, 0.3);
+  box-shadow: 0 24px 50px -38px rgba(0, 0, 0, 0.9);
+}
+
+.certificate-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.certificate-badge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  background: rgba(16, 185, 129, 0.1);
+  color: #6ee7b7;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.certificate-card-delete,
+.certificate-row-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.certificate-card-delete:hover,
+.certificate-row-delete:hover {
+  background: rgba(244, 63, 94, 0.1);
+  color: #fb7185;
+}
+
+.certificate-thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1.414 / 1;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  background: rgba(2, 6, 23, 0.9);
+  color: #334155;
+  font-size: 1.6rem;
+  overflow: hidden;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.certificate-thumb:hover,
+.certificate-thumb:focus-visible {
+  border-color: rgba(52, 211, 153, 0.45);
+}
+
+.certificate-thumb-fallback {
+  position: absolute;
+}
+
+.certificate-thumb img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.certificate-thumb-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: rgba(2, 6, 23, 0.68);
+  color: #f8fafc;
+  font-size: 0.76rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.certificate-thumb:hover .certificate-thumb-overlay,
+.certificate-thumb:focus-visible .certificate-thumb-overlay {
+  opacity: 1;
+}
+
+.certificate-card-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.certificate-name {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.certificate-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.certificate-use {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #34d399;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.certificate-use:hover {
+  text-decoration: underline;
+}
+
+.certificate-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.8);
+  min-width: 0;
+  transition: border-color 0.2s ease;
+}
+
+.certificate-row:hover {
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.certificate-row-thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 56px;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  background: rgba(2, 6, 23, 0.9);
+  color: #334155;
+  font-size: 1.1rem;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.certificate-row-thumb svg {
+  position: absolute;
+}
+
+.certificate-row-thumb img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.certificate-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.certificate-row-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.certificate-row-meta {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.certificate-row-tag {
+  color: #34d399;
+}
+
+.certificate-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.certificate-row-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(30, 41, 59, 0.9);
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.certificate-row-view:hover {
+  background: rgba(51, 65, 85, 0.95);
 }

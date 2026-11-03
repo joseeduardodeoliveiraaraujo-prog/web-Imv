@@ -1,20 +1,47 @@
-import { FaPlus } from "react-icons/fa";
+import { FaSpinner, FaUpload } from "react-icons/fa";
 
-const UploadCard = ({ onUpload }) => (
-  <article className="certificate-item">
-    <span className="certificate-name">Novo modelo</span>
+const UploadCard = ({
+  onUpload,
+  onDrop,
+  onDragOver,
+  onDragLeave,
+  isDragging,
+  isUploading,
+  error,
+}) => (
+  <div className="upload-area">
     <button
       type="button"
-      className="certificate-card certificate-card--upload"
+      className={`upload-dropzone${isDragging ? " is-dragging" : ""}`}
       onClick={onUpload}
+      onDrop={onDrop}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      disabled={isUploading}
     >
-      <span className="certificate-upload-icon">
-        <FaPlus aria-hidden="true" />
+      <span className="upload-icon">
+        {isUploading ? (
+          <FaSpinner className="spin" aria-hidden="true" />
+        ) : (
+          <FaUpload aria-hidden="true" />
+        )}
       </span>
-      <span className="certificate-upload-text">Adicionar modelo</span>
-      <span className="certificate-upload-hint">PNG ou JPEG</span>
+      <span className="upload-title">
+        {isUploading ? (
+          "Enviando modelo..."
+        ) : (
+          <>
+            Arraste um novo modelo PNG/JPEG ou{" "}
+            <span className="upload-link">clique para selecionar</span>
+          </>
+        )}
+      </span>
+      <span className="upload-hint">
+        Tamanho máximo: 5 MB • Resolução recomendada: 2000 x 1414
+      </span>
     </button>
-  </article>
+    {error && <p className="upload-error">{error}</p>}
+  </div>
 );
 
 export default UploadCard;

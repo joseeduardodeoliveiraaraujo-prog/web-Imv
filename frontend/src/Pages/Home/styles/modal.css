@@ -6,46 +6,61 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(4, 4, 6, 0.7);
+  background: rgba(2, 6, 23, 0.78);
   backdrop-filter: blur(10px) saturate(120%);
   -webkit-backdrop-filter: blur(10px) saturate(120%);
   animation: homeFadeIn 0.18s ease;
+  box-sizing: border-box;
 }
 
 .home-modal {
-  width: min(960px, 100%);
+  width: min(880px, 100%);
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  border-radius: 20px;
-  background: linear-gradient(180deg, #17171a 0%, #101012 100%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+  border: 1px solid rgba(148, 163, 184, 0.18);
   box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.9);
   overflow: hidden;
   isolation: isolate;
   animation: homeModalIn 0.2s ease;
   outline: none;
+  font-family: "Plus Jakarta Sans", "Inter", "Segoe UI", Arial, sans-serif;
 }
 
 .home-modal-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   padding: 18px 22px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.home-modal-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
 }
 
 .home-modal-title {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #ffffff;
+  max-width: 640px;
+  font-size: 1rem;
+  font-weight: 700;
   letter-spacing: -0.01em;
+  color: #f8fafc;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 680px;
+}
+
+.home-modal-subtitle {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #94a3b8;
 }
 
 .home-modal-close {
@@ -55,80 +70,117 @@
   width: 34px;
   height: 34px;
   flex-shrink: 0;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(226, 232, 240, 0.9);
+  border-radius: 9px;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  color: #94a3b8;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.18s ease, color 0.18s ease;
 }
 
 .home-modal-close:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(51, 65, 85, 0.95);
+  color: #e2e8f0;
 }
 
 .home-modal-body {
-  padding: 24px;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 220px;
+  padding: 24px;
   overflow: auto;
   background: radial-gradient(
-    700px 400px at 50% 0%,
-    rgba(255, 255, 255, 0.04),
-    transparent 70%
-  );
+      700px 400px at 50% 0%,
+      rgba(16, 185, 129, 0.07),
+      transparent 70%
+    ),
+    rgba(2, 6, 23, 0.6);
+}
+
+.home-modal-fallback {
+  position: absolute;
+  font-size: 3rem;
+  color: #1e293b;
 }
 
 .home-modal-body img {
+  position: relative;
   max-width: 100%;
-  max-height: 70vh;
+  max-height: 68vh;
   object-fit: contain;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
   box-shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.95);
 }
 
 .home-modal-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 16px 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 22px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  flex-wrap: wrap;
+}
+
+.home-modal-format {
+  font-size: 0.68rem;
+  color: #64748b;
+}
+
+.home-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .home-modal-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 16px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 0.86rem;
-  cursor: pointer;
+  gap: 7px;
+  padding: 9px 15px;
+  border-radius: 9px;
   border: 1px solid transparent;
-  transition: all 0.2s ease;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .home-modal-btn.danger {
-  background: rgba(239, 68, 68, 0.14);
-  border-color: rgba(239, 68, 68, 0.35);
-  color: #fca5a5;
+  background: rgba(244, 63, 94, 0.1);
+  border-color: rgba(244, 63, 94, 0.3);
+  color: #fda4af;
 }
 
 .home-modal-btn.danger:hover {
-  background: rgba(239, 68, 68, 0.24);
+  background: rgba(244, 63, 94, 0.2);
+}
+
+.home-modal-btn.ghost {
+  background: transparent;
+  border-color: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+
+.home-modal-btn.ghost:hover {
+  background: rgba(51, 65, 85, 0.6);
 }
 
 .home-modal-btn.primary {
-  background: #f8fafc;
-  border-color: #ffffff;
-  color: #0a0a0b;
+  background: #059669;
+  border-color: rgba(52, 211, 153, 0.35);
+  color: #f0fdf4;
 }
 
 .home-modal-btn.primary:hover {
-  background: #ffffff;
+  background: #10b981;
 }
 
 .home-modal-btn:active {
