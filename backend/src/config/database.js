@@ -1,5 +1,19 @@
 import pkg from "pg";
-const { Pool } = pkg;
+const { Pool, types } = pkg;
+
+const TIMESTAMP_WITHOUT_TIME_ZONE_OID = 1114;
+
+/**
+ * As colunas created_at/updated_at são TIMESTAMP (sem fuso) e o Supabase grava
+ * NOW() em UTC. Por padrão o pg interpreta esses valores no fuso do servidor Node,
+ * o que deslocava os horários (ex.: +3h com o backend rodando no Brasil).
+ */
+export const parseTimestampAsUtc = (value) => {
+  const date = new Date(`${value.replace(" ", "T")}Z`);
+  return Number.isNaN(date.getTime()) ? value : date;
+};
+
+types.setTypeParser(TIMESTAMP_WITHOUT_TIME_ZONE_OID, parseTimestampAsUtc);
 
 /**
  * INFRASTRUCTURE: Database Connection Pool
