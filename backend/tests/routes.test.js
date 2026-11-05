@@ -73,22 +73,14 @@ describe("POST /users", () => {
     vi.clearAllMocks();
   });
 
-  it("deve retornar 400 quando nome tem menos de 3 caracteres", async () => {
+  it("deve retornar 400 quando o nome não é texto", async () => {
     const res = await request(app)
       .post("/users")
       .set("Authorization", "Bearer fake-token")
-      .send({ name: "Ed" });
+      .send({ name: 123 });
 
     expect(res.status).toBe(400);
-  });
-
-  it("deve retornar 400 quando nome não é fornecido", async () => {
-    const res = await request(app)
-      .post("/users")
-      .set("Authorization", "Bearer fake-token")
-      .send({});
-
-    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: "Nome deve ser um texto" });
   });
 
   it("deve retornar 401 sem token de autorização", async () => {

@@ -1,5 +1,9 @@
 import pool from "../../db.js";
 
+const COLUMNS = ["id", "title", "image_path", "thumbnail_path", "created_at"];
+const columns = (alias) =>
+  COLUMNS.map((column) => (alias ? `${alias}.${column}` : column)).join(", ");
+
 export async function create({
   title,
   imagePath,
@@ -7,14 +11,14 @@ export async function create({
   userId,
 }) {
   return pool.query(
-    "INSERT INTO certificates (title, image_path, thumbnail_path, user_id) VALUES ($1, $2, $3, $4) RETURNING *",
+    `INSERT INTO certificates (title, image_path, thumbnail_path, user_id) VALUES ($1, $2, $3, $4) RETURNING ${columns()}`,
     [title, imagePath, thumbnailPath, userId]
   );
 }
 
 export async function listByFirebaseUid(uid) {
   return pool.query(
-    `SELECT c.*
+    `SELECT ${columns("c")}
        FROM users u
        LEFT JOIN certificates c ON c.user_id = u.id
        WHERE u.firebase_uid = $1
@@ -25,7 +29,7 @@ export async function listByFirebaseUid(uid) {
 
 export async function findByIdAndFirebaseUid(id, uid) {
   return pool.query(
-    `SELECT c.*
+    `SELECT ${columns("c")}, c.user_id
        FROM users u
        LEFT JOIN certificates c ON c.user_id = u.id AND c.id = $2
        WHERE u.firebase_uid = $1`,

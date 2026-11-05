@@ -21,21 +21,47 @@ describe("validate middleware", () => {
       expect(result.data.name).toBe("Eduardo");
     });
 
-    it("deve rejeitar nome com menos de 3 caracteres", () => {
-      const result = validate(createUserSchema, { name: "Ed" });
-      expect(result.success).toBe(false);
-      expect(result.errors).toContain("Nome deve ter pelo menos 3 caracteres");
+    it("deve aceitar nomes curtos vindos do displayName", () => {
+      const result = validate(createUserSchema, { name: "Al" });
+      expect(result.success).toBe(true);
+      expect(result.data.name).toBe("Al");
     });
 
-    it("deve rejeitar nome vazio", () => {
-      const result = validate(createUserSchema, { name: "" });
-      expect(result.success).toBe(false);
+    it.each([
+      ["vazio", { name: "" }],
+      ["só com espaços", { name: "   " }],
+      ["ausente", {}],
+    ])("deve usar o nome padrão quando o nome está %s", (_label, body) => {
+      const result = validate(createUserSchema, body);
+      expect(result.success).toBe(true);
+      expect(result.data.name).toBe("Sem nome");
     });
 
     it("deve fazer trim no nome", () => {
       const result = validate(createUserSchema, { name: "  Eduardo  " });
       expect(result.success).toBe(true);
       expect(result.data.name).toBe("Eduardo");
+    });
+
+    it("deve cortar nomes acima de 100 caracteres em vez de rejeitar", () => {
+      const result = validate(createUserSchema, { name: "x".repeat(150) });
+      expect(result.success).toBe(true);
+      expect(result.data.name).toHaveLength(100);
+    });
+
+    it("deve rejeitar nome que não é texto", () => {
+      const result = validate(createUserSchema, { name: 123 });
+      expect(result.success).toBe(false);
+      expect(result.errors).toContain("Nome deve ser um texto");
+    });
+
+    it("deve descartar email e uid enviados no body", () => {
+      const result = validate(createUserSchema, {
+        name: "Eduardo",
+        email: "outro@email.com",
+        uid: "outro-uid",
+      });
+      expect(result.data).toEqual({ name: "Eduardo" });
     });
   });
 

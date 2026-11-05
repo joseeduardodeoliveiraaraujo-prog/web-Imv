@@ -1,4 +1,3 @@
-import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -8,6 +7,7 @@ import certificatesRoutes from "./routes/certificates.routes.js";
 import projectsRoutes from "./routes/projects.routes.js";
 import { generalLimiter } from "../middleware/rateLimiter.js";
 import errorHandler from "../middleware/errorHandler.js";
+import requestId from "../middleware/requestId.js";
 import { ForbiddenError } from "./errors/app-errors.js";
 
 // Inicialização da instância principal da API Express
@@ -20,11 +20,17 @@ const app = express();
 // O Render encaminha as requisições por um proxy reverso.
 app.set("trust proxy", 1);
 
+app.use(requestId);
+
 app.use(helmet());
 
-const allowedOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(",")
-  : ["http://localhost:5173"];
+// Aceita "https://a.com, https://b.com/" (espaços e barra final são ignorados).
+const normalizeOrigin = (origin) => origin.trim().replace(/\/+$/, "");
+
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173")
+  .split(",")
+  .map(normalizeOrigin)
+  .filter(Boolean);
 
 app.use(
   cors({
@@ -37,7 +43,7 @@ app.use(
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
+    exposedHeaders: ["X-Request-Id"],
   })
 );
 

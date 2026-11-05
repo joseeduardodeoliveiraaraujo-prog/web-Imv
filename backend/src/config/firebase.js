@@ -1,5 +1,4 @@
 import admin from "firebase-admin";
-import "dotenv/config";
 
 /**
  * INFRASTRUCTURE: Firebase Admin SDK Initializer

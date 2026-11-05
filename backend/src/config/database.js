@@ -1,6 +1,5 @@
 import pkg from "pg";
 const { Pool } = pkg;
-import "dotenv/config";
 
 /**
  * INFRASTRUCTURE: Database Connection Pool

@@ -2,6 +2,25 @@ import pool from "../../db.js";
 
 export const MAX_PROJECTS_PER_USER = 5;
 
+const COLUMNS = [
+  "id",
+  "certificate_id",
+  "nomes_lista",
+  "texto_corpo",
+  "cor_nome",
+  "fonte_nome",
+  "tamanho_nome",
+  "cor_corpo",
+  "fonte_corpo",
+  "tamanho_corpo",
+  "posicao_nome",
+  "posicao_corpo",
+  "created_at",
+  "updated_at",
+];
+const columns = (alias) =>
+  COLUMNS.map((column) => (alias ? `${alias}.${column}` : column)).join(", ");
+
 export async function create({
   userId,
   certificateId,
@@ -20,7 +39,7 @@ export async function create({
        SELECT $1, c.id, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
          FROM certificates c
         WHERE c.id = $2 AND c.user_id = $1
-       RETURNING *`,
+       RETURNING ${columns()}`,
     [
       userId,
       certificateId,
@@ -90,7 +109,7 @@ export async function findByIdAndFirebaseUid(id, uid) {
   return pool.query(
     `
       SELECT
-        p.*,
+        ${columns("p")},
         c.title,
         c.image_path,
         c.thumbnail_path
@@ -128,7 +147,7 @@ export async function updateByIdAndUserId({
         posicao_corpo = $10,
         updated_at = NOW()
        WHERE id = $11 AND user_id = $12
-       RETURNING *`,
+       RETURNING ${columns()}`,
     [
       JSON.stringify(nomesLista),
       textoCorpo,

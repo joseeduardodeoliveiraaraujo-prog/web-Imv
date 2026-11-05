@@ -3,11 +3,12 @@ import request from "supertest";
 
 vi.hoisted(() => {
   process.env.FRONTEND_URL =
-    "https://allowed.example,https://second.example";
+    "https://allowed.example, https://second.example/";
 });
 
 import pool from "../db.js";
 import app from "../server.js";
+import errorHandler from "../middleware/errorHandler.js";
 
 const ALLOWED_ORIGIN = "https://allowed.example";
 const SECOND_ALLOWED_ORIGIN = "https://second.example";
@@ -20,10 +21,11 @@ describe("CORS - caracterização", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers["access-control-allow-origin"]).toBe(ALLOWED_ORIGIN);
-    expect(res.headers["access-control-allow-credentials"]).toBe("true");
+    expect(res.headers["access-control-allow-credentials"]).toBeUndefined();
+    expect(res.headers["access-control-expose-headers"]).toBe("X-Request-Id");
   });
 
-  it("permite a segunda origem da lista separada por vírgula", async () => {
+  it("permite a segunda origem mesmo com espaço e barra final na configuração", async () => {
     const res = await request(app)
       .get("/")
       .set("Origin", SECOND_ALLOWED_ORIGIN);
@@ -49,6 +51,47 @@ describe("CORS - caracterização", () => {
 
     expect(res.status).toBe(403);
     expect(res.body).toEqual({ error: "Acesso negado" });
+  });
+});
+
+describe("X-Request-Id", () => {
+  it("gera um identificador por requisição", async () => {
+    const first = await request(app).get("/ping");
+    const second = await request(app).get("/ping");
+
+    expect(first.headers["x-request-id"]).toMatch(/^[0-9a-f-]{36}$/);
+    expect(second.headers["x-request-id"]).not.toBe(first.headers["x-request-id"]);
+  });
+
+  it("reaproveita um X-Request-Id válido recebido", async () => {
+    const res = await request(app).get("/ping").set("X-Request-Id", "abc-123");
+
+    expect(res.headers["x-request-id"]).toBe("abc-123");
+  });
+
+  it("ignora um X-Request-Id inválido", async () => {
+    const res = await request(app)
+      .get("/ping")
+      .set("X-Request-Id", "x".repeat(65));
+
+    expect(res.headers["x-request-id"]).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it("inclui o identificador no log de erros 500", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+
+    errorHandler(
+      new Error("falha inesperada"),
+      { method: "GET", path: "/certificates", id: "req-42" },
+      res,
+      () => {}
+    );
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: "Erro interno do servidor" });
+    expect(errorSpy.mock.calls[0][0]).toBe("[ERROR] GET /certificates [req-42]:");
+    errorSpy.mockRestore();
   });
 });
 

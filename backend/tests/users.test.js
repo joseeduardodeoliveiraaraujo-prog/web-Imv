@@ -55,7 +55,7 @@ describe("POST /users", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(DB_USER);
     expect(mocks.poolQuery).toHaveBeenCalledTimes(1);
-    expect(sqlAt(0)).toBe("SELECT * FROM users WHERE firebase_uid = $1");
+    expect(sqlAt(0)).toBe("SELECT id, name, email, created_at FROM users WHERE firebase_uid = $1");
     expect(paramsAt(0)).toEqual([AUTH_USER.uid]);
   });
 
@@ -72,6 +72,20 @@ describe("POST /users", () => {
     expect(sqlAt(1)).toContain("INSERT INTO users");
     expect(sqlAt(1)).toContain("ON CONFLICT DO NOTHING");
     expect(paramsAt(1)).toEqual(["Eduardo", AUTH_USER.email, AUTH_USER.uid]);
+  });
+
+  it.each([
+    ["nome curto", { name: "Al" }, "Al"],
+    ["sem nome", {}, "Sem nome"],
+  ])("sincroniza usuário com %s", async (_label, body, expectedName) => {
+    mocks.poolQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ ...DB_USER, name: expectedName }] });
+
+    const res = await syncUser(body);
+
+    expect(res.status).toBe(200);
+    expect(paramsAt(1)).toEqual([expectedName, AUTH_USER.email, AUTH_USER.uid]);
   });
 
   it("ignora email e uid enviados no body, usando os dados do token", async () => {
@@ -101,7 +115,7 @@ describe("POST /users", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(updated);
-    expect(sqlAt(1)).toBe("UPDATE users SET email = $2 WHERE id = $1 RETURNING *");
+    expect(sqlAt(1)).toBe("UPDATE users SET email = $2 WHERE id = $1 RETURNING id, name, email, created_at");
     expect(paramsAt(1)).toEqual([DB_USER.id, AUTH_USER.email]);
   });
 
@@ -159,7 +173,7 @@ describe("POST /users", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(relinked);
     expect(sqlAt(3)).toBe(
-      "UPDATE users SET firebase_uid = $2 WHERE email = $1 RETURNING *"
+      "UPDATE users SET firebase_uid = $2 WHERE email = $1 RETURNING id, name, email, created_at"
     );
     expect(paramsAt(3)).toEqual([AUTH_USER.email, AUTH_USER.uid]);
   });

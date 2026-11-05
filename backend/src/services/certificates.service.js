@@ -46,7 +46,8 @@ async function findOwnedCertificate(id, uid) {
     throw new NotFoundError("Certificado não encontrado");
   }
 
-  return result.rows[0];
+  const { user_id: userId, ...certificate } = result.rows[0];
+  return { certificate, userId };
 }
 
 export async function createCertificate({ name, file, uid }) {
@@ -115,7 +116,8 @@ export async function listCertificates(uid) {
 }
 
 export async function getCertificate(id, uid) {
-  return findOwnedCertificate(id, uid);
+  const { certificate } = await findOwnedCertificate(id, uid);
+  return certificate;
 }
 
 /**
@@ -124,12 +126,9 @@ export async function getCertificate(id, uid) {
  * nunca um registro apontando para imagens inexistentes.
  */
 export async function deleteCertificate(id, uid) {
-  const certificate = await findOwnedCertificate(id, uid);
+  const { certificate, userId } = await findOwnedCertificate(id, uid);
 
-  await certificatesRepository.removeByIdAndUserId(
-    certificate.id,
-    certificate.user_id
-  );
+  await certificatesRepository.removeByIdAndUserId(certificate.id, userId);
 
   const filesToDelete = [
     extractFilePath(certificate.image_path),

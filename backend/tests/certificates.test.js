@@ -158,8 +158,10 @@ describe("GET /certificates/:id - caracterização", () => {
 
     const res = await request(app).get("/certificates/12").set(authHeader);
 
+    const { user_id: _userId, ...publicCertificate } = certificate;
     expect(res.status).toBe(200);
-    expect(res.body).toEqual(certificate);
+    expect(res.body).toEqual(publicCertificate);
+    expect(res.body).not.toHaveProperty("user_id");
 
     const [certSql, certParams] = mocks.poolQuery.mock.calls[0];
     expect(certSql).toContain("FROM users u");
@@ -258,7 +260,7 @@ describe("POST /certificates - caracterização", () => {
 
     const [insertSql, insertParams] = mocks.poolQuery.mock.calls[1];
     expect(insertSql).toBe(
-      "INSERT INTO certificates (title, image_path, thumbnail_path, user_id) VALUES ($1, $2, $3, $4) RETURNING *"
+      "INSERT INTO certificates (title, image_path, thumbnail_path, user_id) VALUES ($1, $2, $3, $4) RETURNING id, title, image_path, thumbnail_path, created_at"
     );
     expect(insertParams).toEqual([
       "Certificado Teste",
