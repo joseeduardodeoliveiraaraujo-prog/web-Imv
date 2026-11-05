@@ -17,7 +17,9 @@ export async function create({
         cor_corpo, fonte_corpo, tamanho_corpo,
         posicao_nome, posicao_corpo
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       SELECT $1, c.id, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+         FROM certificates c
+        WHERE c.id = $2 AND c.user_id = $1
        RETURNING *`,
     [
       userId,
@@ -58,14 +60,17 @@ export async function removeByIds(ids) {
   );
 }
 
-export async function listRecentByUserEmail(
-  email,
+export async function listRecentByFirebaseUid(
+  uid,
   limit = MAX_PROJECTS_PER_USER
 ) {
   return pool.query(
     `
       SELECT
-        p.*,
+        p.id,
+        p.certificate_id,
+        p.created_at,
+        p.updated_at,
         c.title,
         c.thumbnail_path
       FROM users u
@@ -73,15 +78,15 @@ export async function listRecentByUserEmail(
         ON p.user_id = u.id
       LEFT JOIN certificates c
         ON c.id = p.certificate_id
-      WHERE u.email = $1
+      WHERE u.firebase_uid = $1
       ORDER BY p.updated_at DESC NULLS LAST
       LIMIT $2
       `,
-    [email, limit]
+    [uid, limit]
   );
 }
 
-export async function findByIdAndUserEmail(id, email) {
+export async function findByIdAndFirebaseUid(id, uid) {
   return pool.query(
     `
       SELECT
@@ -94,9 +99,9 @@ export async function findByIdAndUserEmail(id, email) {
         ON p.user_id = u.id AND p.id = $2
       LEFT JOIN certificates c
         ON c.id = p.certificate_id
-      WHERE u.email = $1
+      WHERE u.firebase_uid = $1
       `,
-    [email, id]
+    [uid, id]
   );
 }
 

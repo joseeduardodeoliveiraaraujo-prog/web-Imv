@@ -111,8 +111,8 @@ describe("POST /projects - caracterização", () => {
     expect(res.body).toEqual(project);
 
     const [userSql, userParams] = mocks.poolQuery.mock.calls[0];
-    expect(userSql).toBe("SELECT id FROM users WHERE email = $1");
-    expect(userParams).toEqual([AUTH_USER.email]);
+    expect(userSql).toBe("SELECT id FROM users WHERE firebase_uid = $1");
+    expect(userParams).toEqual([AUTH_USER.uid]);
 
     const [insertSql, insertParams] = mocks.poolQuery.mock.calls[1];
     expect(insertSql).toContain("INSERT INTO projects");
@@ -202,7 +202,7 @@ describe("POST /projects - caracterização", () => {
       .send(PROJECT_PAYLOAD);
 
     expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: "Erro ao salvar projeto" });
+    expect(res.body).toEqual({ error: "Erro interno do servidor" });
   });
 
   it("caracteriza projeto criado mesmo quando a limpeza dos antigos falha", async () => {
@@ -223,28 +223,39 @@ describe("POST /projects - caracterização", () => {
       .send(PROJECT_PAYLOAD);
 
     expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: "Erro ao salvar projeto" });
+    expect(res.body).toEqual({ error: "Erro interno do servidor" });
     expect(mocks.poolQuery).toHaveBeenCalledTimes(4);
     expect(mocks.poolQuery.mock.calls[1][0]).toContain("INSERT INTO projects");
   });
 
-  it("caracteriza falta de validação da propriedade do certificado", async () => {
-    const project = buildProjectRow({ certificate_id: 999 });
+  it("restringe o insert a certificados do próprio usuário", async () => {
+    const project = buildProjectRow();
 
     mocks.poolQuery
       .mockResolvedValueOnce({ rows: [{ id: DB_USER.id }] })
       .mockResolvedValueOnce({ rows: [project] })
       .mockResolvedValueOnce({ rows: [{ id: project.id }] });
 
+    await request(app).post("/projects").set(authHeader).send(PROJECT_PAYLOAD);
+
+    const [insertSql] = mocks.poolQuery.mock.calls[1];
+    expect(insertSql).toMatch(/FROM certificates c/i);
+    expect(insertSql).toMatch(/c\.id = \$2 AND c\.user_id = \$1/);
+  });
+
+  it("retorna 404 quando o certificado não pertence ao usuário ou não existe", async () => {
+    mocks.poolQuery
+      .mockResolvedValueOnce({ rows: [{ id: DB_USER.id }] })
+      .mockResolvedValueOnce({ rows: [] });
+
     const res = await request(app)
       .post("/projects")
       .set(authHeader)
       .send({ ...PROJECT_PAYLOAD, certificadoId: 999 });
 
-    expect(res.status).toBe(200);
-
-    const sqls = mocks.poolQuery.mock.calls.map(([sql]) => sql);
-    expect(sqls.some((sql) => /FROM certificates/i.test(sql))).toBe(false);
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ error: "Certificado não encontrado" });
+    expect(mocks.poolQuery).toHaveBeenCalledTimes(2);
     expectInsertParams(mocks.poolQuery.mock.calls[1][1], 999);
   });
 });
@@ -276,7 +287,7 @@ describe("GET /projects - caracterização", () => {
     expect(sql).toContain("LEFT JOIN certificates c");
     expect(sql).toContain("ORDER BY p.updated_at DESC");
     expect(sql).toContain("LIMIT $2");
-    expect(params).toEqual([AUTH_USER.email, 5]);
+    expect(params).toEqual([AUTH_USER.uid, 5]);
     expect(mocks.poolQuery).toHaveBeenCalledTimes(1);
   });
 
@@ -305,7 +316,7 @@ describe("GET /projects - caracterização", () => {
     const res = await request(app).get("/projects").set(authHeader);
 
     expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: "Erro ao buscar projetos" });
+    expect(res.body).toEqual({ error: "Erro interno do servidor" });
   });
 });
 
@@ -336,7 +347,7 @@ describe("GET /projects/:id - caracterização", () => {
     expect(sql).toContain("LEFT JOIN projects p");
     expect(sql).toContain("LEFT JOIN certificates c");
     expect(sql).toContain("p.id = $2");
-    expect(params).toEqual([AUTH_USER.email, 10]);
+    expect(params).toEqual([AUTH_USER.uid, 10]);
     expect(mocks.poolQuery).toHaveBeenCalledTimes(1);
   });
 
@@ -447,6 +458,6 @@ describe("PUT /projects/:id - caracterização", () => {
       .send(PROJECT_PAYLOAD);
 
     expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: "Erro ao atualizar projeto" });
+    expect(res.body).toEqual({ error: "Erro interno do servidor" });
   });
 });

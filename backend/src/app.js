@@ -8,6 +8,7 @@ import certificatesRoutes from "./routes/certificates.routes.js";
 import projectsRoutes from "./routes/projects.routes.js";
 import { generalLimiter } from "../middleware/rateLimiter.js";
 import errorHandler from "../middleware/errorHandler.js";
+import { ForbiddenError } from "./errors/app-errors.js";
 
 // Inicialização da instância principal da API Express
 const app = express();
@@ -31,7 +32,8 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error("Origem não permitida pelo CORS"));
+        console.warn("[WARN] Origem bloqueada pelo CORS:", origin);
+        callback(new ForbiddenError("Acesso negado"));
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE"],

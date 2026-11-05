@@ -12,24 +12,24 @@ export async function create({
   );
 }
 
-export async function listByUserEmail(email) {
+export async function listByFirebaseUid(uid) {
   return pool.query(
     `SELECT c.*
        FROM users u
        LEFT JOIN certificates c ON c.user_id = u.id
-       WHERE u.email = $1
+       WHERE u.firebase_uid = $1
        ORDER BY c.id DESC`,
-    [email]
+    [uid]
   );
 }
 
-export async function findByIdAndUserEmail(id, email) {
+export async function findByIdAndFirebaseUid(id, uid) {
   return pool.query(
     `SELECT c.*
        FROM users u
        LEFT JOIN certificates c ON c.user_id = u.id AND c.id = $2
-       WHERE u.email = $1`,
-    [email, id]
+       WHERE u.firebase_uid = $1`,
+    [uid, id]
   );
 }
 

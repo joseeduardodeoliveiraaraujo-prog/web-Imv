@@ -1,42 +1,68 @@
+import { randomUUID } from "node:crypto";
 import supabase from "../config/supabase.js";
 
 const BUCKET = "certificates";
+const CACHE_CONTROL = "31536000";
 
-export function buildFileName(originalName) {
-  const safeName = originalName
-    .replace(/\s+/g, "_")
-    .replace(/[^\w.-]/g, "");
+const EXTENSIONS = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+};
 
-  return `${Date.now()}_${safeName}`;
+export function buildFilePaths(userId, contentType) {
+  const id = randomUUID();
+
+  return {
+    fileName: `${userId}/${id}.${EXTENSIONS[contentType]}`,
+    thumbName: `${userId}/${id}_thumb.webp`,
+  };
 }
 
+/**
+ * Envia original e thumbnail em paralelo.
+ * Retorna os caminhos efetivamente enviados para que o rollback
+ * remova apenas o que esta requisição criou.
+ */
 export async function uploadCertificateFiles({
   fileName,
   thumbName,
   file,
+  contentType,
   thumbnailBuffer,
 }) {
-  const [originalUpload, thumbUpload] = await Promise.all([
-    supabase.storage.from(BUCKET).upload(fileName, file.buffer, {
-      cacheControl: "31536000",
-      contentType: file.mimetype,
-    }),
-    supabase.storage.from(BUCKET).upload(thumbName, thumbnailBuffer, {
-      cacheControl: "31536000",
-      contentType: "image/webp",
-    }),
-  ]);
+  const uploads = [
+    { path: fileName, body: file.buffer, contentType },
+    { path: thumbName, body: thumbnailBuffer, contentType: "image/webp" },
+  ];
 
-  if (originalUpload.error || thumbUpload.error) {
-    console.error(
-      "Erro no upload:",
-      originalUpload.error || thumbUpload.error
-    );
+  const results = await Promise.allSettled(
+    uploads.map(({ path, body, contentType: type }) =>
+      supabase.storage.from(BUCKET).upload(path, body, {
+        cacheControl: CACHE_CONTROL,
+        contentType: type,
+      })
+    )
+  );
 
-    return false;
+  const uploadedPaths = [];
+  let failure = null;
+
+  results.forEach((result, index) => {
+    const error =
+      result.status === "rejected" ? result.reason : result.value.error;
+
+    if (error) {
+      failure ??= error;
+    } else {
+      uploadedPaths.push(uploads[index].path);
+    }
+  });
+
+  if (failure) {
+    console.error("[ERROR] Upload Storage:", failure.message);
   }
 
-  return true;
+  return { ok: !failure, uploadedPaths };
 }
 
 export function getCertificatePublicUrls(fileName, thumbName) {
@@ -58,15 +84,28 @@ export function getCertificatePublicUrls(fileName, thumbName) {
   };
 }
 
-export async function removeCertificateFiles(fileNames) {
-  return supabase.storage.from(BUCKET).remove(fileNames);
+/**
+ * Remoção "best-effort": registra falhas sem lançar, para não mascarar
+ * o erro original de quem chamou nem desfazer uma exclusão já feita no banco.
+ */
+export async function removeCertificateFilesSafely(fileNames) {
+  if (fileNames.length === 0) return;
+
+  try {
+    const { error } = await supabase.storage.from(BUCKET).remove(fileNames);
+    if (error) {
+      console.error("[ERROR] Remoção Storage:", error.message, fileNames);
+    }
+  } catch (error) {
+    console.error("[ERROR] Remoção Storage:", error.message, fileNames);
+  }
 }
 
 export function extractFilePath(urlString) {
   try {
     const url = new URL(urlString);
     const parts = url.pathname.split("/certificates/");
-    return parts.length > 1 ? parts[1] : null;
+    return parts.length > 1 ? decodeURIComponent(parts[1]) : null;
   } catch {
     return null;
   }

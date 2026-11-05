@@ -1,19 +1,16 @@
 import * as projectsRepository from "../repositories/projects.repository.js";
 import * as usersService from "./users.service.js";
+import { NotFoundError } from "../errors/app-errors.js";
 
 const { MAX_PROJECTS_PER_USER } = projectsRepository;
 
-export async function createProject({ payload, email }) {
-  const user = await usersService.findAuthenticatedUserIdByEmail(email);
-
-  if (!user) {
-    return { status: 404, body: { error: "Usuário não encontrado" } };
-  }
+export async function createProject({ payload, uid }) {
+  const userId = await usersService.requireUserId(uid);
 
   const { nomesLista, textoCorpo, estilos, certificadoId, posicoes } = payload;
 
   const result = await projectsRepository.create({
-    userId: user.id,
+    userId,
     certificateId: certificadoId,
     nomesLista,
     textoCorpo,
@@ -21,7 +18,11 @@ export async function createProject({ payload, email }) {
     posicoes,
   });
 
-  const projectsResult = await projectsRepository.listIdsByUserId(user.id);
+  if (result.rows.length === 0) {
+    throw new NotFoundError("Certificado não encontrado");
+  }
+
+  const projectsResult = await projectsRepository.listIdsByUserId(userId);
   const projects = projectsResult.rows;
 
   if (projects.length > MAX_PROJECTS_PER_USER) {
@@ -31,46 +32,41 @@ export async function createProject({ payload, email }) {
     await projectsRepository.removeByIds(idsToRemove);
   }
 
-  return { status: 200, body: result.rows[0] };
+  return result.rows[0];
 }
 
-export async function listProjects(email) {
-  const result = await projectsRepository.listRecentByUserEmail(email);
+export async function listProjects(uid) {
+  const result = await projectsRepository.listRecentByFirebaseUid(uid);
 
   if (result.rows.length === 0) {
-    return { status: 404, body: { error: "Usuário não encontrado" } };
+    throw new NotFoundError("Usuário não encontrado");
   }
 
-  const projects = result.rows.filter((row) => row.id !== null);
-  return { status: 200, body: projects };
+  return result.rows.filter((row) => row.id !== null);
 }
 
-export async function getProject(id, email) {
-  const result = await projectsRepository.findByIdAndUserEmail(id, email);
+export async function getProject(id, uid) {
+  const result = await projectsRepository.findByIdAndFirebaseUid(id, uid);
 
   if (result.rows.length === 0) {
-    return { status: 404, body: { error: "Usuário não encontrado" } };
+    throw new NotFoundError("Usuário não encontrado");
   }
 
   if (result.rows[0].id === null) {
-    return { status: 404, body: { error: "Projeto não encontrado" } };
+    throw new NotFoundError("Projeto não encontrado");
   }
 
-  return { status: 200, body: result.rows[0] };
+  return result.rows[0];
 }
 
-export async function updateProject({ id, payload, email }) {
-  const user = await usersService.findAuthenticatedUserIdByEmail(email);
-
-  if (!user) {
-    return { status: 404, body: { error: "Usuário não encontrado" } };
-  }
+export async function updateProject({ id, payload, uid }) {
+  const userId = await usersService.requireUserId(uid);
 
   const { nomesLista, textoCorpo, estilos, posicoes } = payload;
 
   const result = await projectsRepository.updateByIdAndUserId({
     id,
-    userId: user.id,
+    userId,
     nomesLista,
     textoCorpo,
     estilos,
@@ -78,11 +74,8 @@ export async function updateProject({ id, payload, email }) {
   });
 
   if (result.rows.length === 0) {
-    return {
-      status: 404,
-      body: { error: "Projeto não encontrado ou sem permissão" },
-    };
+    throw new NotFoundError("Projeto não encontrado ou sem permissão");
   }
 
-  return { status: 200, body: result.rows[0] };
+  return result.rows[0];
 }

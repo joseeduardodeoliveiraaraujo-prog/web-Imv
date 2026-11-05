@@ -71,14 +71,14 @@ describe("Payloads - caracterização", () => {
     expect(res.body).toEqual({ error: "Payload excede o tamanho máximo" });
   });
 
-  it("caracteriza JSON malformado como erro 500", async () => {
+  it("retorna 400 para JSON malformado", async () => {
     const res = await request(app)
       .post("/users")
       .set("Content-Type", "application/json")
       .send('{"name":');
 
-    expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: "Erro interno do servidor" });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: "JSON inválido" });
   });
 });
 
@@ -87,14 +87,13 @@ describe("Health checks - caracterização", () => {
     vi.clearAllMocks();
   });
 
-  it("GET /test-db é público e retorna o resultado da query", async () => {
-    const databaseRow = { now: "2026-01-01T00:00:00.000Z" };
-    pool.query.mockResolvedValueOnce({ rows: [databaseRow] });
+  it("GET /test-db é público e não expõe dados do banco", async () => {
+    pool.query.mockResolvedValueOnce({ rows: [{ "?column?": 1 }] });
 
     const res = await request(app).get("/test-db");
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([databaseRow]);
-    expect(pool.query).toHaveBeenCalledWith("SELECT NOW()");
+    expect(res.body).toEqual({ ok: true });
+    expect(pool.query).toHaveBeenCalledWith("SELECT 1");
   });
 });

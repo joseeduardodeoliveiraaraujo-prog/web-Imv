@@ -36,5 +36,6 @@ vi.mock("sharp", () => ({
     resize: vi.fn().mockReturnThis(),
     webp: vi.fn().mockReturnThis(),
     toBuffer: vi.fn().mockResolvedValue(Buffer.from("test")),
+    metadata: vi.fn().mockResolvedValue({ format: "png" }),
   })),
 }));

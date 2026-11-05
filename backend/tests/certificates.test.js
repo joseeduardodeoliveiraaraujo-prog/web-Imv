@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => {
     resize: vi.fn(),
     webp: vi.fn(),
     toBuffer: vi.fn(),
+    metadata: vi.fn(),
   };
 
   sharpInstance.resize.mockReturnValue(sharpInstance);
@@ -102,7 +103,7 @@ describe("GET /certificates - caracterização", () => {
     expect(certSql).toContain("FROM users u");
     expect(certSql).toContain("LEFT JOIN certificates c");
     expect(certSql).toContain("ORDER BY c.id DESC");
-    expect(certParams).toEqual([AUTH_USER.email]);
+    expect(certParams).toEqual([AUTH_USER.uid]);
     expect(mocks.poolQuery).toHaveBeenCalledTimes(1);
   });
 
@@ -132,7 +133,7 @@ describe("GET /certificates - caracterização", () => {
     const res = await request(app).get("/certificates").set(authHeader);
 
     expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: "Erro ao buscar certificados" });
+    expect(res.body).toEqual({ error: "Erro interno do servidor" });
   });
 });
 
@@ -164,7 +165,7 @@ describe("GET /certificates/:id - caracterização", () => {
     expect(certSql).toContain("FROM users u");
     expect(certSql).toContain("LEFT JOIN certificates c");
     expect(certSql).toContain("c.id = $2");
-    expect(certParams).toEqual([AUTH_USER.email, 12]);
+    expect(certParams).toEqual([AUTH_USER.uid, 12]);
     expect(mocks.poolQuery).toHaveBeenCalledTimes(1);
   });
 
@@ -187,6 +188,7 @@ describe("POST /certificates - caracterização", () => {
     mocks.getPublicUrl.mockReset();
     mocks.remove.mockReset();
     mocks.sharpInstance.toBuffer.mockReset();
+    mocks.sharpInstance.metadata.mockReset();
 
     mocks.verifyIdToken.mockResolvedValue(AUTH_USER);
     mocks.upload.mockResolvedValue({ data: { path: "ok" }, error: null });
@@ -195,6 +197,7 @@ describe("POST /certificates - caracterização", () => {
     });
     mocks.remove.mockResolvedValue({ error: null });
     mocks.sharpInstance.toBuffer.mockResolvedValue(Buffer.from("thumb"));
+    mocks.sharpInstance.metadata.mockResolvedValue({ format: "png" });
   });
 
   it("faz upload do original, gera thumbnail e salva o certificado", async () => {
@@ -225,7 +228,9 @@ describe("POST /certificates - caracterização", () => {
     expect(res.body).toEqual(createdCertificate);
 
     expect(mocks.from).toHaveBeenCalledWith(bucket);
-    expect(mocks.sharp).toHaveBeenCalledWith(Buffer.from("imagem-fake"));
+    expect(mocks.sharp).toHaveBeenCalledWith(Buffer.from("imagem-fake"), {
+      limitInputPixels: 50_000_000,
+    });
     expect(mocks.sharpInstance.resize).toHaveBeenCalledWith({ width: 300 });
     expect(mocks.sharpInstance.webp).toHaveBeenCalledWith({ quality: 70 });
     expect(mocks.sharpInstance.toBuffer).toHaveBeenCalled();
@@ -234,7 +239,9 @@ describe("POST /certificates - caracterização", () => {
 
     const [originalName, originalBuffer, originalOptions] =
       mocks.upload.mock.calls[0];
-    expect(originalName).toMatch(/^\d+_modelo_teste\.png$/);
+    expect(originalName).toMatch(
+      new RegExp(`^${DB_USER.id}/[0-9a-f-]{36}\\.png$`)
+    );
     expect(originalBuffer).toEqual(Buffer.from("imagem-fake"));
     expect(originalOptions).toEqual({
       cacheControl: "31536000",
@@ -242,7 +249,7 @@ describe("POST /certificates - caracterização", () => {
     });
 
     const [thumbName, thumbBuffer, thumbOptions] = mocks.upload.mock.calls[1];
-    expect(thumbName).toBe(`thumb_${originalName}`);
+    expect(thumbName).toBe(originalName.replace(/\.png$/, "_thumb.webp"));
     expect(thumbBuffer).toEqual(Buffer.from("thumb"));
     expect(thumbOptions).toEqual({
       cacheControl: "31536000",
@@ -295,11 +302,8 @@ describe("POST /certificates - caracterização", () => {
     expect(res.body).toEqual({ error: "Erro ao fazer upload do arquivo" });
     expect(mocks.poolQuery).toHaveBeenCalledTimes(1);
 
-    const fileName = mocks.upload.mock.calls[0][0];
-    expect(mocks.remove).toHaveBeenCalledWith([
-      fileName,
-      `thumb_${fileName}`,
-    ]);
+    const thumbName = mocks.upload.mock.calls[1][0];
+    expect(mocks.remove).toHaveBeenCalledWith([thumbName]);
   });
 
   it("remove os arquivos enviados quando o insert no banco falha", async () => {
@@ -316,16 +320,16 @@ describe("POST /certificates - caracterização", () => {
     );
 
     expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: "Erro ao salvar certificado" });
+    expect(res.body).toEqual({ error: "Erro interno do servidor" });
 
-    const fileName = mocks.upload.mock.calls[0][0];
     expect(mocks.remove).toHaveBeenCalledWith([
-      fileName,
-      `thumb_${fileName}`,
+      mocks.upload.mock.calls[0][0],
+      mocks.upload.mock.calls[1][0],
     ]);
   });
 
-  it("caracteriza ausência de rollback quando as URLs públicas não são retornadas", async () => {
+  it("remove os arquivos enviados quando as URLs públicas não são retornadas", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     mocks.poolQuery.mockResolvedValueOnce({ rows: [DB_USER] });
     mocks.getPublicUrl.mockReturnValue({ data: {} });
 
@@ -339,7 +343,10 @@ describe("POST /certificates - caracterização", () => {
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ error: "Erro ao obter URLs do arquivo" });
     expect(mocks.upload).toHaveBeenCalledTimes(2);
-    expect(mocks.remove).not.toHaveBeenCalled();
+    expect(mocks.remove).toHaveBeenCalledWith([
+      mocks.upload.mock.calls[0][0],
+      mocks.upload.mock.calls[1][0],
+    ]);
   });
 
   it("retorna 500 quando a geração da thumbnail falha", async () => {
@@ -357,9 +364,59 @@ describe("POST /certificates - caracterização", () => {
     );
 
     expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: "Erro ao salvar certificado" });
+    expect(res.body).toEqual({ error: "Erro interno do servidor" });
     expect(mocks.upload).not.toHaveBeenCalled();
     expect(mocks.remove).not.toHaveBeenCalled();
+  });
+
+  it("usa o formato real da imagem como contentType do original", async () => {
+    mocks.sharpInstance.metadata.mockResolvedValueOnce({ format: "jpeg" });
+    mocks.poolQuery
+      .mockResolvedValueOnce({ rows: [DB_USER] })
+      .mockResolvedValueOnce({ rows: [{ id: 10 }] });
+
+    const res = await attachImage(
+      request(app)
+        .post("/certificates")
+        .set(authHeader)
+        .field("name", "Certificado Teste")
+    );
+
+    expect(res.status).toBe(200);
+    expect(mocks.upload.mock.calls[0][2]).toEqual({
+      cacheControl: "31536000",
+      contentType: "image/jpeg",
+    });
+  });
+
+  it.each([
+    ["formato real não permitido (SVG disfarçado de PNG)", () =>
+      mocks.sharpInstance.metadata.mockResolvedValueOnce({ format: "svg" })],
+    ["arquivo corrompido", () =>
+      mocks.sharpInstance.metadata.mockRejectedValueOnce(
+        new Error("Input buffer contains unsupported image format")
+      )],
+    ["imagem acima do limite de pixels", () =>
+      mocks.sharpInstance.metadata.mockRejectedValueOnce(
+        new Error("Input image exceeds pixel limit")
+      )],
+  ])("retorna 400 para %s sem enviar ao Storage", async (_label, arrange) => {
+    arrange();
+    mocks.poolQuery.mockResolvedValueOnce({ rows: [DB_USER] });
+
+    const res = await attachImage(
+      request(app)
+        .post("/certificates")
+        .set(authHeader)
+        .field("name", "Certificado Teste")
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: "Envie uma imagem PNG ou JPEG válida de até 50 megapixels",
+    });
+    expect(mocks.sharpInstance.toBuffer).not.toHaveBeenCalled();
+    expect(mocks.upload).not.toHaveBeenCalled();
   });
 
   it("retorna 400 para arquivo com MIME não permitido", async () => {
@@ -417,7 +474,7 @@ describe("DELETE /certificates/:id - caracterização", () => {
     user_id: DB_USER.id,
   };
 
-  it("remove original e thumbnail do Storage e depois o registro do banco", async () => {
+  it("remove o registro do banco e depois original e thumbnail do Storage", async () => {
     mocks.poolQuery
       .mockResolvedValueOnce({ rows: [certificate] })
       .mockResolvedValueOnce({ rows: [] });
@@ -440,6 +497,9 @@ describe("DELETE /certificates/:id - caracterização", () => {
     );
     expect(deleteParams).toEqual([12, DB_USER.id]);
     expect(mocks.poolQuery).toHaveBeenCalledTimes(2);
+    expect(mocks.poolQuery.mock.invocationCallOrder[1]).toBeLessThan(
+      mocks.remove.mock.invocationCallOrder[0]
+    );
   });
 
   it("retorna 404 quando o certificado não pertence ao usuário ou não existe", async () => {
@@ -454,7 +514,7 @@ describe("DELETE /certificates/:id - caracterização", () => {
     expect(mocks.remove).not.toHaveBeenCalled();
   });
 
-  it("caracteriza exclusão do banco mesmo com erro no Storage", async () => {
+  it("conclui a exclusão mesmo com erro no Storage (arquivos órfãos vão para o log)", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     mocks.poolQuery
       .mockResolvedValueOnce({ rows: [certificate] })
@@ -472,7 +532,7 @@ describe("DELETE /certificates/:id - caracterização", () => {
     expect(mocks.poolQuery).toHaveBeenCalledTimes(2);
   });
 
-  it("caracteriza remoção do Storage antes de falhar no delete do banco", async () => {
+  it("mantém os arquivos no Storage quando o delete do banco falha", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     mocks.poolQuery
       .mockResolvedValueOnce({ rows: [certificate] })
@@ -483,10 +543,7 @@ describe("DELETE /certificates/:id - caracterização", () => {
       .set(authHeader);
 
     expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: "Erro ao deletar" });
-    expect(mocks.remove).toHaveBeenCalledWith([
-      "123_modelo.png",
-      "thumb_123_modelo.png",
-    ]);
+    expect(res.body).toEqual({ error: "Erro interno do servidor" });
+    expect(mocks.remove).not.toHaveBeenCalled();
   });
 });

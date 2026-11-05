@@ -5,7 +5,13 @@ import {
   createCertificateSchema,
   idParamSchema,
   createProjectSchema,
+  updateProjectSchema,
 } from "../middleware/validate.js";
+import {
+  MAX_NOMES_POR_PROJETO,
+  MAX_TAMANHO_NOME,
+  MAX_TAMANHO_TEXTO,
+} from "../src/schemas/projects.schema.js";
 
 describe("validate middleware", () => {
   describe("createUserSchema", () => {
@@ -130,6 +136,56 @@ describe("validate middleware", () => {
         certificadoId: -1,
       });
       expect(result.success).toBe(false);
+    });
+
+    it("deve arredondar tamanhos de fonte decimais (colunas INTEGER)", () => {
+      const result = validate(createProjectSchema, {
+        ...validProject,
+        estilos: { ...validProject.estilos, tamanhoNome: 45.6, tamanhoCorpo: 40.2 },
+      });
+      expect(result.success).toBe(true);
+      expect(result.data.estilos.tamanhoNome).toBe(46);
+      expect(result.data.estilos.tamanhoCorpo).toBe(40);
+    });
+
+    it("deve manter apenas textoCorpo nos overrides", () => {
+      const result = validate(createProjectSchema, {
+        ...validProject,
+        nomesLista: [
+          { nome: "João", overrides: { textoCorpo: "Texto", extra: { a: 1 } } },
+          { nome: "Maria" },
+        ],
+      });
+      expect(result.success).toBe(true);
+      expect(result.data.nomesLista).toEqual([
+        { nome: "João", overrides: { textoCorpo: "Texto" } },
+        { nome: "Maria", overrides: {} },
+      ]);
+    });
+
+    it.each([
+      ["lista de nomes acima do limite", {
+        nomesLista: Array.from({ length: MAX_NOMES_POR_PROJETO + 1 }, () => ({ nome: "A" })),
+      }],
+      ["nome acima do limite", {
+        nomesLista: [{ nome: "x".repeat(MAX_TAMANHO_NOME + 1) }],
+      }],
+      ["texto do corpo acima do limite", {
+        textoCorpo: "x".repeat(MAX_TAMANHO_TEXTO + 1),
+      }],
+      ["override de texto acima do limite", {
+        nomesLista: [{ nome: "A", overrides: { textoCorpo: "x".repeat(MAX_TAMANHO_TEXTO + 1) } }],
+      }],
+    ])("deve rejeitar %s", (_label, override) => {
+      const result = validate(createProjectSchema, { ...validProject, ...override });
+      expect(result.success).toBe(false);
+    });
+
+    it("updateProjectSchema aceita o mesmo payload sem certificadoId", () => {
+      const { certificadoId: _ignored, ...payload } = validProject;
+      const result = validate(updateProjectSchema, payload);
+      expect(result.success).toBe(true);
+      expect(result.data).not.toHaveProperty("certificadoId");
     });
   });
 });

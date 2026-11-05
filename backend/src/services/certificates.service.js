@@ -2,51 +2,91 @@ import sharp from "sharp";
 import * as certificatesRepository from "../repositories/certificates.repository.js";
 import * as usersService from "./users.service.js";
 import {
-  buildFileName,
+  AppError,
+  BadRequestError,
+  NotFoundError,
+} from "../errors/app-errors.js";
+import {
+  buildFilePaths,
   extractFilePath,
   getCertificatePublicUrls,
-  removeCertificateFiles,
+  removeCertificateFilesSafely,
   uploadCertificateFiles,
 } from "./certificate-storage.service.js";
 
-export async function createCertificate({ name, file, email }) {
-  const user = await usersService.findAuthenticatedUserIdByEmail(email);
+const ALLOWED_IMAGE_FORMATS = {
+  png: "image/png",
+  jpeg: "image/jpeg",
+};
 
-  if (!user) {
-    return { status: 404, body: { error: "Usuário não encontrado" } };
+// Cerca de 50 MP: cobre um A4 em 600 DPI (~35 MP) e bloqueia imagens
+// pequenas em bytes que descomprimem para centenas de MB de memória.
+export const MAX_INPUT_PIXELS = 50_000_000;
+
+async function detectImageContentType(buffer) {
+  try {
+    const { format } = await sharp(buffer, {
+      limitInputPixels: MAX_INPUT_PIXELS,
+    }).metadata();
+
+    return ALLOWED_IMAGE_FORMATS[format] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function findOwnedCertificate(id, uid) {
+  const result = await certificatesRepository.findByIdAndFirebaseUid(id, uid);
+
+  if (result.rows.length === 0) {
+    throw new NotFoundError("Usuário não encontrado");
   }
 
-  const fileName = buildFileName(file.originalname);
-  const thumbName = `thumb_${fileName}`;
+  if (result.rows[0].id === null) {
+    throw new NotFoundError("Certificado não encontrado");
+  }
 
-  const thumbnailBuffer = await sharp(file.buffer)
+  return result.rows[0];
+}
+
+export async function createCertificate({ name, file, uid }) {
+  const userId = await usersService.requireUserId(uid);
+
+  const contentType = await detectImageContentType(file.buffer);
+
+  if (!contentType) {
+    throw new BadRequestError(
+      "Envie uma imagem PNG ou JPEG válida de até 50 megapixels"
+    );
+  }
+
+  const { fileName, thumbName } = buildFilePaths(userId, contentType);
+
+  const thumbnailBuffer = await sharp(file.buffer, {
+    limitInputPixels: MAX_INPUT_PIXELS,
+  })
     .resize({ width: 300 })
     .webp({ quality: 70 })
     .toBuffer();
 
-  const uploaded = await uploadCertificateFiles({
+  const { ok, uploadedPaths } = await uploadCertificateFiles({
     fileName,
     thumbName,
     file,
+    contentType,
     thumbnailBuffer,
   });
 
-  if (!uploaded) {
-    await removeCertificateFiles([fileName, thumbName]);
-
-    return {
-      status: 500,
-      body: { error: "Erro ao fazer upload do arquivo" },
-    };
+  if (!ok) {
+    await removeCertificateFilesSafely(uploadedPaths);
+    throw new AppError(500, "Erro ao fazer upload do arquivo");
   }
 
   const urls = getCertificatePublicUrls(fileName, thumbName);
 
   if (!urls) {
-    return {
-      status: 500,
-      body: { error: "Erro ao obter URLs do arquivo" },
-    };
+    await removeCertificateFilesSafely(uploadedPaths);
+    throw new AppError(500, "Erro ao obter URLs do arquivo");
   }
 
   try {
@@ -54,76 +94,49 @@ export async function createCertificate({ name, file, email }) {
       title: name,
       imagePath: urls.imageUrl,
       thumbnailPath: urls.thumbnailUrl,
-      userId: user.id,
+      userId,
     });
 
-    return { status: 200, body: result.rows[0] };
+    return result.rows[0];
   } catch (dbError) {
-    console.error("[ERROR] POST /certificates DB:", dbError.message);
-
-    await removeCertificateFiles([fileName, thumbName]);
-
-    return { status: 500, body: { error: "Erro ao salvar certificado" } };
+    await removeCertificateFilesSafely(uploadedPaths);
+    throw dbError;
   }
 }
 
-export async function listCertificates(email) {
-  const result = await certificatesRepository.listByUserEmail(email);
+export async function listCertificates(uid) {
+  const result = await certificatesRepository.listByFirebaseUid(uid);
 
   if (result.rows.length === 0) {
-    return { status: 404, body: { error: "Usuário não encontrado" } };
+    throw new NotFoundError("Usuário não encontrado");
   }
 
-  const certificates = result.rows.filter((row) => row.id !== null);
-  return { status: 200, body: certificates };
+  return result.rows.filter((row) => row.id !== null);
 }
 
-export async function getCertificate(id, email) {
-  const result = await certificatesRepository.findByIdAndUserEmail(id, email);
-
-  if (result.rows.length === 0) {
-    return { status: 404, body: { error: "Usuário não encontrado" } };
-  }
-
-  if (result.rows[0].id === null) {
-    return { status: 404, body: { error: "Certificado não encontrado" } };
-  }
-
-  return { status: 200, body: result.rows[0] };
+export async function getCertificate(id, uid) {
+  return findOwnedCertificate(id, uid);
 }
 
-export async function deleteCertificate(id, email) {
-  const result = await certificatesRepository.findByIdAndUserEmail(id, email);
-
-  if (result.rows.length === 0) {
-    return { status: 404, body: { error: "Usuário não encontrado" } };
-  }
-
-  if (result.rows[0].id === null) {
-    return { status: 404, body: { error: "Certificado não encontrado" } };
-  }
-
-  const certificate = result.rows[0];
-  const filesToDelete = [];
-
-  const originalPath = extractFilePath(certificate.image_path);
-  const thumbPath = extractFilePath(certificate.thumbnail_path);
-
-  if (originalPath) filesToDelete.push(originalPath);
-  if (thumbPath) filesToDelete.push(thumbPath);
-
-  if (filesToDelete.length > 0) {
-    const { error: deleteError } = await removeCertificateFiles(filesToDelete);
-
-    if (deleteError) {
-      console.error("[ERROR] DELETE storage:", deleteError.message);
-    }
-  }
+/**
+ * Remove primeiro o registro (fonte da verdade) e depois os arquivos.
+ * Se o Storage falhar, sobram apenas arquivos órfãos registrados em log,
+ * nunca um registro apontando para imagens inexistentes.
+ */
+export async function deleteCertificate(id, uid) {
+  const certificate = await findOwnedCertificate(id, uid);
 
   await certificatesRepository.removeByIdAndUserId(
     certificate.id,
     certificate.user_id
   );
 
-  return { status: 200, body: { message: "Deletado com sucesso" } };
+  const filesToDelete = [
+    extractFilePath(certificate.image_path),
+    extractFilePath(certificate.thumbnail_path),
+  ].filter(Boolean);
+
+  await removeCertificateFilesSafely(filesToDelete);
+
+  return { message: "Deletado com sucesso" };
 }

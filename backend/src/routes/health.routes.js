@@ -9,8 +9,8 @@ router.get("/", (req, res) => {
 
 router.get("/test-db", async (req, res) => {
   try {
-    const result = await pool.query("SELECT NOW()");
-    res.json(result.rows);
+    await pool.query("SELECT 1");
+    res.json({ ok: true });
   } catch (error) {
     console.error("[ERROR] /test-db:", error.message);
     res.status(500).json({ error: "Erro no banco" });
