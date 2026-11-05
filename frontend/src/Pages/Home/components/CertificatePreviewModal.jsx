@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import {
   FaEdit,
   FaRegImage,
   FaTimes,
   FaTrashAlt,
 } from "react-icons/fa";
+import { useDialogFocus } from "../../../hooks/useDialogFocus";
 
 const CertificatePreviewModal = ({
   certificate,
@@ -15,16 +16,8 @@ const CertificatePreviewModal = ({
   const panelRef = useRef(null);
   const titleId = "home-modal-title";
 
-  useEffect(() => {
-    panelRef.current?.focus();
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") onClose();
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  // Foco inicial, Tab preso no modal, Esc e retorno do foco ao card de origem.
+  useDialogFocus(panelRef, { onEscape: onClose });
 
   return (
     <div className="home-modal-overlay" onClick={onClose} role="presentation">
@@ -61,6 +54,7 @@ const CertificatePreviewModal = ({
           <img
             src={certificate.originalUrl || certificate.previewUrl}
             alt={`Pré-visualização de ${certificate.name}`}
+            decoding="async"
             onError={(event) => {
               event.currentTarget.style.display = "none";
             }}
@@ -83,15 +77,9 @@ const CertificatePreviewModal = ({
             </button>
             <button
               type="button"
-              className="home-modal-btn ghost"
-              onClick={onClose}
-            >
-              Fechar
-            </button>
-            <button
-              type="button"
               className="home-modal-btn primary"
               onClick={onEdit}
+              data-autofocus
             >
               <FaEdit aria-hidden="true" />
               <span>Editar Campos</span>

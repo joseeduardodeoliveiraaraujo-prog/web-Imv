@@ -15,7 +15,8 @@ const metrics = [
   },
   {
     key: "projects",
-    label: "Projetos Salvos",
+    // O backend guarda só os 5 projetos mais recentes por usuário.
+    label: "Projetos Recentes",
     icon: FaLayerGroup,
     tone: "blue",
   },

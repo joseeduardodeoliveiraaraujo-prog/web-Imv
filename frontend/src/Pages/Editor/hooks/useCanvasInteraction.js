@@ -1,199 +1,114 @@
-import { useRef, useState } from "react";
-import { DEFAULT_BODY_TEXT, DEFAULT_NAME_TEXT } from "../constants/editor";
-import { getBoxRect, isInsideRect } from "../utils/canvasGeometry";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { snapToCenter } from "../utils/certificatePreview";
 
-export const useCanvasInteraction = ({
-  indexEditando,
-  nomesLista,
-  textoCorpoBase,
-  tamanhoNome,
-  fonteNome,
-  tamanhoCorpo,
-  fonteCorpo,
-  posicaoNome,
-  posicaoCorpo,
-  setPosicaoNome,
-  setPosicaoCorpo,
-  getCachedTextBox,
-}) => {
-  const isDraggingRef = useRef(false);
-  const itemArrastadoRef = useRef(null);
-  const hoverRef = useRef(null);
+/**
+ * Estado de seleção/hover/arraste compartilhado pelos canvases de pré-visualização.
+ * Cada canvas faz o próprio hit test (com o seu texto) e chama estas ações
+ * com coordenadas em pixels da imagem.
+ */
+export const useCanvasInteraction = ({ setPosicaoNome, setPosicaoCorpo }) => {
   const [itemHover, setItemHover] = useState(null);
   const [itemSelecionado, setItemSelecionado] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleMouseDown = (event) => {
-    const canvas = event.currentTarget;
-    const rect = canvas.getBoundingClientRect();
+  const dragRef = useRef(null);
+  const pendingRef = useRef(null);
+  const frameRef = useRef(null);
 
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+  const setterFor = useCallback(
+    (item) => (item === "nome" ? setPosicaoNome : setPosicaoCorpo),
+    [setPosicaoNome, setPosicaoCorpo]
+  );
 
-    const mouseX = (event.clientX - rect.left) * scaleX;
-    const mouseY = (event.clientY - rect.top) * scaleY;
+  const flush = useCallback(() => {
+    frameRef.current = null;
+    const pending = pendingRef.current;
+    if (!pending) return;
 
-    const idx = indexEditando !== null ? indexEditando : 0;
-    const itemAlvo = nomesLista[idx] || { nome: "", overrides: {} };
+    pendingRef.current = null;
+    setterFor(pending.item)({ x: pending.x, y: pending.y });
+  }, [setterFor]);
 
-    const nomeTexto = itemAlvo.nome || DEFAULT_NAME_TEXT;
-    const corpoTexto =
-      itemAlvo.overrides?.textoCorpo ||
-      textoCorpoBase ||
-      DEFAULT_BODY_TEXT;
+  useEffect(
+    () => () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    },
+    []
+  );
 
-    const ctx = canvas.getContext("2d");
+  const hover = useCallback((item) => {
+    if (dragRef.current) return;
+    setItemHover((current) => (current === item ? current : item));
+  }, []);
 
-    const nomeBox = getCachedTextBox(
-      ctx,
-      nomeTexto,
-      tamanhoNome,
-      fonteNome,
-      canvas.width * 0.85
-    );
+  const select = useCallback((item) => {
+    setItemSelecionado(item);
+  }, []);
 
-    const nomeRect = getBoxRect(
-      posicaoNome.x,
-      posicaoNome.y,
-      nomeBox.width,
-      nomeBox.height
-    );
+  const startDrag = useCallback((item, point, position) => {
+    dragRef.current = {
+      item,
+      offsetX: position.x - point.x,
+      offsetY: position.y - point.y,
+    };
+    setItemSelecionado(item);
+    setItemHover(item);
+    setIsDragging(true);
+  }, []);
 
-    const corpoBox = getCachedTextBox(
-      ctx,
-      corpoTexto,
-      tamanhoCorpo,
-      fonteCorpo,
-      canvas.width * 0.8
-    );
+  const isDragActive = useCallback(() => dragRef.current !== null, []);
 
-    const corpoRect = getBoxRect(
-      posicaoCorpo.x,
-      posicaoCorpo.y,
-      corpoBox.width,
-      corpoBox.height
-    );
+  const dragTo = useCallback(
+    (point, imageWidth) => {
+      const drag = dragRef.current;
+      if (!drag) return;
 
-    if (isInsideRect(mouseX, mouseY, nomeRect)) {
-      itemArrastadoRef.current = "nome";
-      hoverRef.current = "nome";
-      isDraggingRef.current = true;
+      pendingRef.current = {
+        item: drag.item,
+        x: snapToCenter(point.x + drag.offsetX, imageWidth),
+        y: point.y + drag.offsetY,
+      };
 
-      setItemSelecionado("nome");
-      return;
-    }
-
-    if (isInsideRect(mouseX, mouseY, corpoRect)) {
-      itemArrastadoRef.current = "corpo";
-      hoverRef.current = "corpo";
-      isDraggingRef.current = true;
-
-      setItemSelecionado("corpo");
-      return;
-    }
-
-    itemArrastadoRef.current = null;
-    isDraggingRef.current = false;
-
-    setItemSelecionado(null);
-  };
-
-  const handleMouseMove = (event) => {
-    const canvas = event.currentTarget;
-    const rect = canvas.getBoundingClientRect();
-
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    let mouseX = (event.clientX - rect.left) * scaleX;
-    let mouseY = (event.clientY - rect.top) * scaleY;
-
-    const ctx = canvas.getContext("2d");
-
-    const idx = indexEditando !== null ? indexEditando : 0;
-    const itemAlvo = nomesLista[idx] || { nome: "", overrides: {} };
-
-    const nomeTexto = itemAlvo.nome || DEFAULT_NAME_TEXT;
-    const corpoTexto =
-      itemAlvo.overrides?.textoCorpo ||
-      textoCorpoBase ||
-      DEFAULT_BODY_TEXT;
-
-    const nomeBox = getCachedTextBox(
-      ctx,
-      nomeTexto,
-      tamanhoNome,
-      fonteNome,
-      canvas.width * 0.85
-    );
-
-    const corpoBox = getCachedTextBox(
-      ctx,
-      corpoTexto,
-      tamanhoCorpo,
-      fonteCorpo,
-      canvas.width * 0.8
-    );
-
-    const nomeRect = getBoxRect(
-      posicaoNome.x,
-      posicaoNome.y,
-      nomeBox.width,
-      nomeBox.height
-    );
-
-    const corpoRect = getBoxRect(
-      posicaoCorpo.x,
-      posicaoCorpo.y,
-      corpoBox.width,
-      corpoBox.height
-    );
-
-    if (!isDraggingRef.current) {
-      const sobreCorpo = isInsideRect(mouseX, mouseY, corpoRect);
-      const sobreNome = isInsideRect(mouseX, mouseY, nomeRect);
-
-      if (sobreCorpo) {
-        hoverRef.current = "corpo";
-        if (itemHover !== "corpo") setItemHover("corpo");
-      } else if (sobreNome) {
-        hoverRef.current = "nome";
-        if (itemHover !== "nome") setItemHover("nome");
-      } else {
-        hoverRef.current = null;
-        if (itemHover !== null) setItemHover(null);
+      if (!frameRef.current) {
+        frameRef.current = requestAnimationFrame(flush);
       }
+    },
+    [flush]
+  );
+
+  const endDrag = useCallback(() => {
+    if (!dragRef.current) return;
+
+    if (frameRef.current) {
+      cancelAnimationFrame(frameRef.current);
     }
+    flush();
 
-    if (!isDraggingRef.current) return;
+    dragRef.current = null;
+    setIsDragging(false);
+  }, [flush]);
 
-    const centroX = canvas.width / 2;
-    const margemMagnetismo = 40;
-
-    if (Math.abs(mouseX - centroX) < margemMagnetismo) {
-      mouseX = centroX;
-    }
-
-    const item = itemArrastadoRef.current;
-
-    if (item === "nome") {
-      setPosicaoNome({ x: mouseX, y: mouseY });
-    } else if (item === "corpo") {
-      setPosicaoCorpo({ x: mouseX, y: mouseY });
-    }
-  };
-
-  const handleMouseUp = () => {
-    isDraggingRef.current = false;
-    itemArrastadoRef.current = null;
-  };
+  const nudge = useCallback(
+    (dx, dy) => {
+      if (!itemSelecionado) return;
+      setterFor(itemSelecionado)((current) => ({
+        x: current.x + dx,
+        y: current.y + dy,
+      }));
+    },
+    [itemSelecionado, setterFor]
+  );
 
   return {
-    isDraggingRef,
-    itemArrastadoRef,
     itemHover,
     itemSelecionado,
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
+    isDragging,
+    hover,
+    select,
+    startDrag,
+    isDragActive,
+    dragTo,
+    endDrag,
+    nudge,
   };
 };

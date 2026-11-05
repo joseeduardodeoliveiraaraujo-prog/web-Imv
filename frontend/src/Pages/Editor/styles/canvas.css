@@ -10,7 +10,25 @@
   margin-bottom: 12px;
   cursor: inherit;
   -webkit-user-drag: none;
-  touch-action: none;
+  /* Toque livre para rolar a página; com um texto selecionado, o toque arrasta. */
+  touch-action: pan-y pinch-zoom;
   border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.editor-canvas.is-locked {
+  touch-action: none;
+}
+
+.editor-canvas.is-dragging {
+  cursor: grabbing;
+}
+
+.editor-canvas:focus {
+  outline: none;
+}
+
+.editor-canvas:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 4px;
 }
 

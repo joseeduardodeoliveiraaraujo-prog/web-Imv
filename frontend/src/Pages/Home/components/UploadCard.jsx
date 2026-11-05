@@ -40,7 +40,11 @@ const UploadCard = ({
         Tamanho máximo: 5 MB • Resolução recomendada: 2000 x 1414
       </span>
     </button>
-    {error && <p className="upload-error">{error}</p>}
+    {error && (
+      <p className="upload-error" role="alert">
+        {error}
+      </p>
+    )}
   </div>
 );
 

@@ -6,12 +6,55 @@
   overflow-x: hidden;
   color: #f8fafc;
   font-family: "Plus Jakarta Sans", "Inter", "Segoe UI", Arial, sans-serif;
-  background: linear-gradient(
+  position: relative;
+  isolation: isolate;
+}
+
+/* Fundo em camada fixa própria (ver Login.css): sem repintura durante a rolagem. */
+.home-wrapper::before {
+  content: "";
+  position: fixed;
+  inset: 72px 0 0 0;
+  z-index: -1;
+  pointer-events: none;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-image: linear-gradient(
       180deg,
       rgba(2, 6, 23, 0.92) 0%,
       rgba(2, 6, 23, 0.97) 100%
     ),
-    url("/img1.webp") center / cover no-repeat fixed;
+    url("/img1.webp");
+  background-image: linear-gradient(
+      180deg,
+      rgba(2, 6, 23, 0.92) 0%,
+      rgba(2, 6, 23, 0.97) 100%
+    ),
+    image-set(url("/img1.avif") type("image/avif"), url("/img1.webp") type("image/webp"));
+}
+
+@media (max-width: 1280px) {
+  .home-wrapper::before {
+    background-image: linear-gradient(
+        180deg,
+        rgba(2, 6, 23, 0.92) 0%,
+        rgba(2, 6, 23, 0.97) 100%
+      ),
+      url("/img1-1280.webp");
+    background-image: linear-gradient(
+        180deg,
+        rgba(2, 6, 23, 0.92) 0%,
+        rgba(2, 6, 23, 0.97) 100%
+      ),
+      image-set(url("/img1-1280.avif") type("image/avif"), url("/img1-1280.webp") type("image/webp"));
+  }
+}
+
+@media (max-width: 640px) {
+  .home-wrapper::before {
+    inset: 64px 0 0 0;
+  }
 }
 
 .home-content {

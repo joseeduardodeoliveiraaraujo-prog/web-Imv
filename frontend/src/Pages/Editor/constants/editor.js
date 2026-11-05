@@ -5,6 +5,22 @@ export const DEFAULT_BODY_TEXT =
 
 export const MAX_PREVIEW_ITEMS = 20;
 
+export const DEFAULT_STYLES = {
+  corNome: "#000000",
+  fonteNome: "Inter",
+  tamanhoNome: 90,
+  corCorpo: "#000000",
+  fonteCorpo: "Inter",
+  tamanhoCorpo: 40,
+};
+
+export const DEFAULT_POSITIONS = {
+  nome: { x: 500, y: 300 },
+  corpo: { x: 500, y: 500 },
+};
+
+export const FONT_SIZE_RANGE = { min: 20, max: 150 };
+
 export const FONT_OPTIONS = [
   {
     label: "Sans-Serif (Modernas)",

@@ -1,13 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useDialogFocus } from "../../../hooks/useDialogFocus";
 
 const ExportLoadingModal = ({ progresso, mensagemStatus, tipoExportacao }) => {
   const modalRef = useRef(null);
   const titleId = "export-loading-title";
   const valor = Math.max(0, Math.min(100, progresso || 0));
 
-  useEffect(() => {
-    modalRef.current?.focus();
-  }, []);
+  // Sem ação de Esc: a exportação não pode ser interrompida pela metade.
+  useDialogFocus(modalRef);
 
   return (
     <div className="editor-modal-overlay loading-overlay">

@@ -1,11 +1,45 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { toast } from "../../../components/Toast/toastStore";
 import {
   exportJpegZip,
   exportPdfZip,
   exportSinglePdf,
 } from "../services/certificateExport";
+import { loadImage } from "../utils/loadImage";
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const EXPORTS = {
+  pdf: {
+    tipo: "PDF Único",
+    run: exportSinglePdf,
+    errorMessage: "Ocorreu um erro ao gerar o PDF.",
+  },
+  pdfZip: {
+    tipo: "PDFs Separados (.ZIP)",
+    run: exportPdfZip,
+    errorMessage: "Ocorreu um erro ao gerar os PDFs.",
+  },
+  jpegZip: {
+    tipo: "Imagens JPEG (.ZIP)",
+    run: exportJpegZip,
+    errorMessage: "Ocorreu um erro ao gerar as imagens.",
+  },
+};
+
+const getValidationError = (model) => {
+  if (model.nomesValidos.length === 0) {
+    return "Insira ao menos um nome na lista antes de exportar.";
+  }
+
+  const everyoneHasOwnText = model.nomesValidos.every(
+    (item) => item.overrides?.textoCorpo?.trim()
+  );
+
+  if (model.textoCorpoBase.trim() === "" && !everyoneHasOwnText) {
+    return "Escreva o texto do certificado antes de exportar.";
+  }
+
+  return null;
+};
 
 export const useCertificateExport = ({ certificate, model }) => {
   const [estaGerando, setEstaGerando] = useState(false);
@@ -13,137 +47,54 @@ export const useCertificateExport = ({ certificate, model }) => {
   const [progresso, setProgresso] = useState(0);
   const [menuDownloadAberto, setMenuDownloadAberto] = useState(false);
   const [tipoExportacao, setTipoExportacao] = useState("");
-  const imageCacheRef = useRef(null);
+  const runningRef = useRef(false);
 
-  const previewUrl = certificate?.previewUrl;
+  const handleExport = async (kind) => {
+    const config = EXPORTS[kind];
+    if (!config || !certificate || runningRef.current) return;
 
-  const preloadCertificateImage = useCallback(async () => {
-    if (imageCacheRef.current) return imageCacheRef.current;
+    setMenuDownloadAberto(false);
 
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = previewUrl;
-
-      img.onload = () => {
-        imageCacheRef.current = img;
-        resolve(img);
-      };
-
-      img.onerror = reject;
-    });
-  }, [previewUrl]);
-
-  useEffect(() => {
-    if (!previewUrl) return;
-
-    imageCacheRef.current = null;
-    preloadCertificateImage();
-  }, [previewUrl, preloadCertificateImage]);
-
-  useEffect(() => {
-    if (!menuDownloadAberto) return;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") setMenuDownloadAberto(false);
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [menuDownloadAberto]);
-
-  const validateExport = () => {
-    if (model.nomesValidos.length === 0) {
-      alert("Insira nomes na lista!");
-      return false;
+    const validationError = getValidationError(model);
+    if (validationError) {
+      toast.error(validationError);
+      return;
     }
 
-    if (model.textoCorpoBase.trim() === "") {
-      alert("Insira um texto para o certificado!");
-      return false;
-    }
-
-    return true;
-  };
-
-  const runExport = async ({
-    preparingMessage,
-    errorMessage,
-    tipo,
-    task,
-  }) => {
-    if (!validateExport()) return;
-
-    setTipoExportacao(tipo);
+    runningRef.current = true;
+    setTipoExportacao(config.tipo);
     setEstaGerando(true);
-    setProgresso(5);
-    setMensagemStatus(preparingMessage);
-    await sleep(600);
+    setProgresso(0);
+    setMensagemStatus("Preparando...");
 
     try {
-      const image = await preloadCertificateImage();
+      const image = await loadImage(certificate.previewUrl);
 
-      await task(image);
+      await config.run({
+        image,
+        names: model.nomesValidos,
+        bodyText: model.textoCorpoBase,
+        styles: model.styles,
+        positions: model.positions,
+        onProgress: setProgresso,
+        onStatus: setMensagemStatus,
+      });
+
+      toast.success(
+        model.nomesValidos.length === 1
+          ? "Certificado gerado. O download foi iniciado."
+          : `${model.nomesValidos.length} certificados gerados. O download foi iniciado.`
+      );
     } catch (error) {
-      console.error(error);
-      alert(errorMessage);
+      console.error("Erro na exportação:", error);
+      toast.error(config.errorMessage);
     } finally {
+      runningRef.current = false;
       setEstaGerando(false);
       setMensagemStatus("");
       setTipoExportacao("");
     }
   };
-
-  const handleDownloadPdf = () =>
-    runExport({
-      preparingMessage: "Preparando o arquivo PDF...",
-      errorMessage: "Ocorreu um erro ao gerar o PDF.",
-      tipo: "PDF Único",
-      task: (image) =>
-        exportSinglePdf({
-          image,
-          names: model.nomesValidos,
-          bodyText: model.textoCorpoBase,
-          styles: model.styles,
-          positions: model.positions,
-          onProgress: setProgresso,
-          onStatus: setMensagemStatus,
-        }),
-    });
-
-  const handleDownloadJpegZip = () =>
-    runExport({
-      preparingMessage: "Preparando os arquivos...",
-      errorMessage: "Ocorreu um erro ao gerar os certificados.",
-      tipo: "Imagens JPEG (.ZIP)",
-      task: (image) =>
-        exportJpegZip({
-          image,
-          names: model.nomesValidos,
-          bodyText: model.textoCorpoBase,
-          styles: model.styles,
-          positions: model.positions,
-          onProgress: setProgresso,
-          onStatus: setMensagemStatus,
-        }),
-    });
-
-  const handleDownloadPdfZip = () =>
-    runExport({
-      preparingMessage: "Preparando os arquivos...",
-      errorMessage: "Ocorreu um erro ao gerar os certificados.",
-      tipo: "PDFs Separados (.ZIP)",
-      task: (image) =>
-        exportPdfZip({
-          image,
-          names: model.nomesValidos,
-          bodyText: model.textoCorpoBase,
-          styles: model.styles,
-          positions: model.positions,
-          onProgress: setProgresso,
-          onStatus: setMensagemStatus,
-        }),
-    });
 
   const toggleDownloadMenu = () => {
     if (estaGerando) return;
@@ -160,8 +111,6 @@ export const useCertificateExport = ({ certificate, model }) => {
     menuDownloadAberto,
     toggleDownloadMenu,
     closeDownloadMenu,
-    handleDownloadPdf,
-    handleDownloadJpegZip,
-    handleDownloadPdfZip,
+    handleExport,
   };
 };

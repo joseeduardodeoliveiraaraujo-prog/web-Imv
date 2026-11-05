@@ -1,6 +1,23 @@
 import { FONT_OPTIONS } from "../constants/editor";
 
 let fontLinkPromise = null;
+let fontLinkLoaded = false;
+
+export const areEditorFontsLoaded = () => fontLinkLoaded;
+
+/** true quando as duas fontes já podem ser usadas no canvas sem esperar. */
+export const areFontsReady = (styles) =>
+  fontLinkLoaded &&
+  document.fonts.check(`${styles.tamanhoNome}px "${styles.fonteNome}"`) &&
+  document.fonts.check(`${styles.tamanhoCorpo}px "${styles.fonteCorpo}"`);
+
+export const loadSelectedFonts = async (styles) => {
+  await loadEditorFonts();
+  await Promise.all([
+    document.fonts.load(`${styles.tamanhoNome}px "${styles.fonteNome}"`),
+    document.fonts.load(`${styles.tamanhoCorpo}px "${styles.fonteCorpo}"`),
+  ]).catch(() => []);
+};
 
 const buildFontUrl = () => {
   const families = FONT_OPTIONS.flatMap((group) => group.options)
@@ -21,9 +38,13 @@ export const loadEditorFonts = () => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = buildFontUrl();
-    link.onload = () => resolve();
+    link.onload = () => {
+      fontLinkLoaded = true;
+      resolve();
+    };
     link.onerror = () => {
       console.error("Erro ao carregar fontes do editor");
+      fontLinkLoaded = true;
       resolve();
     };
 

@@ -1,10 +1,21 @@
 import "./Editor.css";
-import { useEffect } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { confirmDialog } from "../../components/ConfirmDialog/confirmStore";
 import PageLoader from "../../components/PageLoader/PageLoader";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 import CertificatePreviewList from "./components/CertificatePreviewList";
+import EditorErrorState from "./components/EditorErrorState";
+import {
+  BackIcon,
+  DownloadIcon,
+  SaveIcon,
+  SlidersIcon,
+} from "./components/EditorIcons";
 import EditorSidebar from "./components/EditorSidebar";
 import ExportLoadingModal from "./components/ExportLoadingModal";
+import ExportModal from "./components/ExportModal";
+import SaveStatus from "./components/SaveStatus";
 import { useCanvasInteraction } from "./hooks/useCanvasInteraction";
 import { useCertificateData } from "./hooks/useCertificateData";
 import { useCertificateExport } from "./hooks/useCertificateExport";
@@ -12,48 +23,100 @@ import { useEditorModel } from "./hooks/useEditorModel";
 import { useSaveProject } from "./hooks/useSaveProject";
 import { loadEditorFonts } from "./utils/loadEditorFonts";
 
+// Mesmo breakpoint em que o CSS transforma o inspector em gaveta.
+const DRAWER_QUERY = "(max-width: 1080px)";
+
 const Editor = ({ user }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const isProjectRoute = location.pathname.startsWith("/project/");
+  const isDrawer = useMediaQuery(DRAWER_QUERY);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     loadEditorFonts();
   }, []);
 
   const model = useEditorModel();
-  const { certificate, projectId, setProjectId } = useCertificateData({
-    id,
-    isProjectRoute,
-    navigate,
-    onProjectLoaded: model.applyProject,
-  });
+  const { certificate, projectId, adoptProject, error, retry } =
+    useCertificateData({
+      id,
+      isProjectRoute,
+      onProjectLoaded: model.applyProject,
+    });
 
   const interaction = useCanvasInteraction({
-    indexEditando: model.indexEditando,
-    nomesLista: model.nomesLista,
-    textoCorpoBase: model.textoCorpoBase,
-    tamanhoNome: model.tamanhoNome,
-    fonteNome: model.fonteNome,
-    tamanhoCorpo: model.tamanhoCorpo,
-    fonteCorpo: model.fonteCorpo,
-    posicaoNome: model.posicaoNome,
-    posicaoCorpo: model.posicaoCorpo,
     setPosicaoNome: model.setPosicaoNome,
     setPosicaoCorpo: model.setPosicaoCorpo,
-    getCachedTextBox: model.getCachedTextBox,
   });
 
   const exportState = useCertificateExport({ certificate, model });
 
-  const { handleSaveProject } = useSaveProject({
+  const { handleSaveProject, isSaving, lastSavedAt } = useSaveProject({
     user,
     certificate,
     projectId,
-    setProjectId,
+    adoptProject,
+    navigate,
     model,
   });
+
+  const { isDirty } = model;
+
+  // Aviso do navegador ao fechar/recarregar a aba com alterações pendentes.
+  useEffect(() => {
+    if (!isDirty) return undefined;
+
+    const handleBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  const handleShortcut = useEffectEvent((event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+      event.preventDefault();
+      handleSaveProject();
+    }
+  });
+
+  useEffect(() => {
+    const listener = (event) => handleShortcut(event);
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, []);
+
+  const handleBack = async () => {
+    if (isDirty) {
+      const leave = await confirmDialog({
+        title: "Sair sem salvar?",
+        message:
+          "Há alterações que ainda não foram salvas neste projeto. Se sair agora, elas serão perdidas.",
+        confirmLabel: "Sair sem salvar",
+        cancelLabel: "Continuar editando",
+        tone: "danger",
+      });
+
+      if (!leave) return;
+    }
+
+    navigate("/");
+  };
+
+  if (error) {
+    return (
+      <EditorErrorState
+        message={error.message}
+        canRetry={error.status !== 404}
+        onRetry={retry}
+        onBack={() => navigate("/")}
+      />
+    );
+  }
 
   if (!certificate) {
     return <PageLoader message="Carregando certificado..." />;
@@ -63,21 +126,14 @@ const Editor = ({ user }) => {
     <div className="editor">
       <header className="editor-header">
         <div className="editor-header-left">
-          <button className="btn-header-back" onClick={() => navigate("/")} title="Voltar">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
+          <button
+            type="button"
+            className="btn-header-back"
+            onClick={handleBack}
+            title="Voltar"
+            aria-label="Voltar para o início"
+          >
+            <BackIcon />
           </button>
           <div className="editor-header-title-group">
             <span className="editor-header-label">Projeto</span>
@@ -86,195 +142,66 @@ const Editor = ({ user }) => {
         </div>
 
         <div className="editor-header-actions">
-          <button className="btn-header-glass" onClick={handleSaveProject}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-              <polyline points="17 21 17 13 7 13 7 21"></polyline>
-              <polyline points="7 3 7 8 15 8"></polyline>
-            </svg>
-            <span>Salvar Projeto</span>
+          <SaveStatus
+            isSaving={isSaving}
+            isDirty={isDirty}
+            lastSavedAt={lastSavedAt}
+            isSavedProject={projectId !== null}
+          />
+
+          <button
+            type="button"
+            className="btn-header-glass"
+            onClick={handleSaveProject}
+            disabled={isSaving}
+            aria-label={isSaving ? "Salvando projeto" : "Salvar projeto"}
+            title="Salvar projeto (Ctrl+S)"
+          >
+            <SaveIcon />
+            <span className="btn-label">
+              {isSaving ? "Salvando..." : "Salvar Projeto"}
+            </span>
           </button>
 
-          <div className="header-download-wrapper">
+          <button
+            type="button"
+            className="btn-header-primary"
+            onClick={exportState.toggleDownloadMenu}
+            aria-expanded={exportState.menuDownloadAberto}
+            aria-haspopup="dialog"
+            aria-label="Exportar certificados"
+            disabled={exportState.estaGerando}
+          >
+            <DownloadIcon />
+            <span className="btn-label">Exportar</span>
+            <span
+              className={`chevron ${exportState.menuDownloadAberto ? "up" : "down"}`}
+              aria-hidden="true"
+            ></span>
+          </button>
+
+          {isDrawer && (
             <button
-              className="btn-header-primary"
-              onClick={exportState.toggleDownloadMenu}
-              aria-expanded={exportState.menuDownloadAberto}
+              type="button"
+              className="btn-header-glass sidebar-toggle"
+              onClick={() => setIsSidebarOpen(true)}
+              aria-expanded={isSidebarOpen}
+              aria-controls="editor-inspector"
+              aria-label="Abrir propriedades"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              <span>Exportar</span>
-              <span className={`chevron ${exportState.menuDownloadAberto ? "up" : "down"}`}></span>
+              <SlidersIcon />
+              <span className="btn-label">Propriedades</span>
             </button>
-          </div>
+          )}
         </div>
       </header>
 
       {exportState.menuDownloadAberto && (
-        <div
-          className="editor-modal-overlay"
-          onClick={exportState.closeDownloadMenu}
-          role="presentation"
-        >
-          <div
-            className="editor-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="export-modal-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="editor-modal-header">
-              <div>
-                <span className="editor-modal-eyebrow">Exportar</span>
-                <h2 className="editor-modal-title" id="export-modal-title">
-                  Baixar certificados
-                </h2>
-              </div>
-              <button
-                className="editor-modal-close"
-                onClick={exportState.closeDownloadMenu}
-                aria-label="Fechar"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-
-            <div className="export-modal-options">
-              <button
-                className="export-option"
-                onClick={() => {
-                  exportState.closeDownloadMenu();
-                  exportState.handleDownloadPdf();
-                }}
-              >
-                <span className="export-option-icon">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="8" y1="13" x2="16" y2="13"></line>
-                    <line x1="8" y1="17" x2="13" y2="17"></line>
-                  </svg>
-                </span>
-                <span className="export-option-text">
-                  <strong className="export-option-title">PDF Único</strong>
-                  <span className="export-option-desc">
-                    Todos os certificados em um só arquivo
-                  </span>
-                </span>
-              </button>
-
-              <button
-                className="export-option"
-                onClick={() => {
-                  exportState.closeDownloadMenu();
-                  exportState.handleDownloadPdfZip();
-                }}
-              >
-                <span className="export-option-icon">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 8v13H3V8"></path>
-                    <path d="M1 3h22v5H1z"></path>
-                    <path d="M10 12h4"></path>
-                  </svg>
-                </span>
-                <span className="export-option-text">
-                  <strong className="export-option-title">PDFs Separados (.ZIP)</strong>
-                  <span className="export-option-desc">
-                    Cada certificado em seu próprio PDF
-                  </span>
-                </span>
-              </button>
-
-              <button
-                className="export-option"
-                onClick={() => {
-                  exportState.closeDownloadMenu();
-                  exportState.handleDownloadJpegZip();
-                }}
-              >
-                <span className="export-option-icon">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
-                  </svg>
-                </span>
-                <span className="export-option-text">
-                  <strong className="export-option-title">Imagens JPEG (.ZIP)</strong>
-                  <span className="export-option-desc">
-                    Fotos individuais de cada certificado
-                  </span>
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <ExportModal
+          total={model.nomesValidos.length}
+          onClose={exportState.closeDownloadMenu}
+          onSelect={exportState.handleExport}
+        />
       )}
 
       <div className="editor-container">
@@ -289,6 +216,9 @@ const Editor = ({ user }) => {
         <EditorSidebar
           model={model}
           itemSelecionado={interaction.itemSelecionado}
+          isDrawer={isDrawer}
+          isOpen={!isDrawer || isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
         />
       </div>
 

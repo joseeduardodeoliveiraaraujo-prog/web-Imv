@@ -70,6 +70,7 @@ const Header = ({
             </div>
 
             <button
+              type="button"
               className="logout-btn"
               onClick={onLogout}
               title="Sair"

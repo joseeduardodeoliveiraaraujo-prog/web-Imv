@@ -1,19 +1,29 @@
-import { MAX_PREVIEW_ITEMS } from "../constants/editor";
+import { DEFAULT_NAME_TEXT, MAX_PREVIEW_ITEMS } from "../constants/editor";
 import { resolveBodyText } from "../utils/names";
 import CertificateCanvas from "./CertificateCanvas";
+import { EditIcon, ExitEditIcon } from "./EditorIcons";
+
+const INSTRUCTIONS_ID = "canvas-instructions";
+const EMPTY_ITEMS = [{ nome: "", overrides: {} }];
 
 const CertificatePreviewList = ({ certificate, model, interaction }) => {
   const items = (
-    model.nomesValidos.length > 0
-      ? model.nomesValidos
-      : [{ nome: "", overrides: {} }]
+    model.nomesValidos.length > 0 ? model.nomesValidos : EMPTY_ITEMS
   ).slice(0, MAX_PREVIEW_ITEMS);
 
   return (
     <>
+      <p id={INSTRUCTIONS_ID} className="visually-hidden">
+        Pressione Enter para alternar entre o nome e o texto do certificado,
+        use as setas para mover o item selecionado (Shift move mais rápido)
+        e Esc para desmarcar. Em telas de toque, toque no texto para
+        selecioná-lo e depois arraste.
+      </p>
+
       {items.map((item, index) => {
         const textoFinal = resolveBodyText(item, model.textoCorpoBase);
         const isEditing = model.indexEditando === index;
+        const displayName = item.nome || DEFAULT_NAME_TEXT;
 
         return (
           <div
@@ -21,67 +31,37 @@ const CertificatePreviewList = ({ certificate, model, interaction }) => {
             className={`canvas-wrapper ${isEditing ? "editando-este" : ""}`}
           >
             <button
+              type="button"
               className={`btn-editar-individual ${isEditing ? "active" : ""}`}
               onClick={() =>
                 model.setIndexEditando(isEditing ? null : index)
               }
+              aria-pressed={isEditing}
             >
               {isEditing ? (
                 <>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M9 14L4 9l5-5" />
-                    <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
-                  </svg>
+                  <ExitEditIcon />
                   <span>Sair da Edição</span>
                 </>
               ) : (
                 <>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
+                  <EditIcon />
                   <span>Texto Individual</span>
                 </>
               )}
             </button>
 
             <CertificateCanvas
-              certificate={certificate}
+              imageUrl={certificate.previewUrl}
               nome={item.nome}
               textoCorpo={textoFinal}
-              corNome={model.corNome}
-              corCorpo={model.corCorpo}
-              fonteNome={model.fonteNome}
-              fonteCorpo={model.fonteCorpo}
-              tamanhoNome={model.tamanhoNome}
-              tamanhoCorpo={model.tamanhoCorpo}
+              styles={model.styles}
               posicaoNome={model.posicaoNome}
               posicaoCorpo={model.posicaoCorpo}
-              isDragging={interaction.isDraggingRef.current}
-              itemHover={interaction.itemHover}
-              itemArrastado={interaction.itemArrastadoRef.current}
-              itemSelecionado={interaction.itemSelecionado}
-              onMouseDown={interaction.handleMouseDown}
-              onMouseMove={interaction.handleMouseMove}
-              onMouseUp={interaction.handleMouseUp}
+              interaction={interaction}
+              measure={model.getCachedTextBox}
+              label={`Certificado ${index + 1} de ${items.length}: ${displayName}`}
+              describedBy={INSTRUCTIONS_ID}
             />
 
             {item.overrides?.textoCorpo && !isEditing && (

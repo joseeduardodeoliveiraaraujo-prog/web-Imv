@@ -1,241 +1,78 @@
 import { useEffect, useRef } from "react";
-import { DEFAULT_BODY_TEXT, DEFAULT_NAME_TEXT } from "../constants/editor";
-import { getBoxRect } from "../utils/canvasGeometry";
-import { drawWrappedText, getTextBoxSize } from "../utils/canvasText";
-import { loadEditorFonts } from "../utils/loadEditorFonts";
+import {
+  drawPreview,
+  getDisplayTexts,
+  getPreviewScale,
+  getTextRects,
+  hitTestText,
+} from "../utils/certificatePreview";
+import { areFontsReady, loadSelectedFonts } from "../utils/loadEditorFonts";
+import { getLoadedImage, loadImage } from "../utils/loadImage";
 
-const imageCache = new Map();
-
-const loadImage = (src) => {
-  if (!imageCache.has(src)) {
-    const promise = new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
-    });
-
-    imageCache.set(src, promise);
-    promise.catch(() => imageCache.delete(src));
-  }
-
-  return imageCache.get(src);
+const NEXT_SELECTION = { none: "nome", nome: "corpo", corpo: null };
+const ARROWS = {
+  ArrowUp: [0, -1],
+  ArrowDown: [0, 1],
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
 };
 
 const CertificateCanvas = ({
-  certificate,
+  imageUrl,
   nome,
   textoCorpo,
-  corNome,
-  corCorpo,
-  fonteNome,
-  fonteCorpo,
-  tamanhoNome,
-  tamanhoCorpo,
+  styles,
   posicaoNome,
   posicaoCorpo,
-  isDragging,
-  itemHover,
-  itemArrastado,
-  itemSelecionado,
-  onMouseDown,
-  onMouseMove,
-  onMouseUp,
+  interaction,
+  measure,
+  label,
+  describedBy,
 }) => {
   const canvasRef = useRef(null);
+  const layoutRef = useRef(null);
+  const { itemHover, itemSelecionado, isDragging } = interaction;
+  const { nomeTexto, corpoTexto } = getDisplayTexts(nome, textoCorpo);
 
   useEffect(() => {
-    if (!certificate || !canvasRef.current) return;
-
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    if (!imageUrl || !canvas) return undefined;
+
     let isActive = true;
 
-    const draw = (img) => {
+    const paint = (img) => {
       if (!isActive) return;
 
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
+      const scale = getPreviewScale(img.width);
+      layoutRef.current = { imageWidth: img.width, imageHeight: img.height };
 
-      const nomeParaDesenho = nome && nome.length > 0 ? nome : DEFAULT_NAME_TEXT;
-      const corpoParaDesenho =
-        textoCorpo && textoCorpo.length > 0 ? textoCorpo : DEFAULT_BODY_TEXT;
-
-      const centroCanvas = canvas.width / 2;
-      const margemErro = 5;
-
-      const nomeNoCentro = Math.abs(posicaoNome.x - centroCanvas) <= margemErro;
-      const corpoNoCentro =
-        Math.abs(posicaoCorpo.x - centroCanvas) <= margemErro;
-
-      if (isDragging && (nomeNoCentro || corpoNoCentro)) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.setLineDash([15, 10]);
-        ctx.strokeStyle = "#e056fd";
-        ctx.lineWidth = 4;
-        ctx.moveTo(centroCanvas, 0);
-        ctx.lineTo(centroCanvas, canvas.height);
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      ctx.font = `${tamanhoNome}px "${fonteNome}", sans-serif`;
-      ctx.textBaseline = "top";
-      ctx.textAlign = "center";
-      ctx.fillStyle = corNome;
-
-      const nomeBase = nomeParaDesenho;
-
-      const nomeBox = getTextBoxSize(
-        ctx,
-        nomeBase,
-        tamanhoNome,
-        fonteNome,
-        canvas.width * 0.85
-      );
-
-      const alturaLinhaNome = tamanhoNome * 1.2;
-
-      const alturaTotalNome = drawWrappedText(
-        ctx,
-        nomeBase,
-        posicaoNome.x,
-        posicaoNome.y,
-        nomeBox.width,
-        alturaLinhaNome,
-        false
-      );
-
-      ctx.font = `${tamanhoCorpo}px "${fonteCorpo}", sans-serif`;
-      ctx.textBaseline = "top";
-      ctx.textAlign = "center";
-      ctx.fillStyle = corCorpo;
-
-      const textoBase = corpoParaDesenho;
-
-      const corpoBox = getTextBoxSize(
-        ctx,
-        textoBase,
-        tamanhoCorpo,
-        fonteCorpo,
-        canvas.width * 0.8
-      );
-
-      const alturaLinhaCorpo = tamanhoCorpo * 1.2;
-
-      const alturaTotalCorpo = drawWrappedText(
-        ctx,
-        textoBase,
-        posicaoCorpo.x,
-        posicaoCorpo.y,
-        corpoBox.width,
-        alturaLinhaCorpo,
-        true
-      );
-
-      const drawSelectionBox = (x, y, width, height, showHandles = false) => {
-        ctx.save();
-
-        const azulCanva = "#00c4cc";
-        const raioCanto = 8;
-        const box = getBoxRect(x, y, width, height);
-
-        const rectX = box.x;
-        const rectY = box.y;
-        const rectW = box.w;
-        const rectH = box.h;
-
-        ctx.shadowColor = "rgba(0, 0, 0, 0.15)";
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetY = 4;
-
-        ctx.beginPath();
-        ctx.roundRect(rectX, rectY, rectW, rectH, raioCanto);
-        ctx.strokeStyle = azulCanva;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        if (showHandles) {
-          ctx.shadowColor = "transparent";
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetY = 0;
-
-          ctx.fillStyle = "white";
-          ctx.strokeStyle = azulCanva;
-          ctx.lineWidth = 2;
-
-          const drawCircleHandle = (hx, hy) => {
-            ctx.beginPath();
-            ctx.arc(hx, hy, 6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-          };
-
-          drawCircleHandle(rectX, rectY);
-          drawCircleHandle(rectX + rectW, rectY);
-          drawCircleHandle(rectX, rectY + rectH);
-          drawCircleHandle(rectX + rectW, rectY + rectH);
-        }
-
-        ctx.restore();
-      };
-
-      if (itemHover === "nome" && itemSelecionado !== "nome") {
-        drawSelectionBox(
-          posicaoNome.x,
-          posicaoNome.y,
-          nomeBox.width,
-          alturaTotalNome,
-          false
-        );
-      }
-
-      if (itemSelecionado === "nome") {
-        drawSelectionBox(
-          posicaoNome.x,
-          posicaoNome.y,
-          nomeBox.width,
-          alturaTotalNome,
-          true
-        );
-      }
-
-      if (itemHover === "corpo" && itemSelecionado !== "corpo") {
-        drawSelectionBox(
-          posicaoCorpo.x,
-          posicaoCorpo.y,
-          corpoBox.width,
-          alturaTotalCorpo,
-          false
-        );
-      }
-
-      if (itemSelecionado === "corpo") {
-        drawSelectionBox(
-          posicaoCorpo.x,
-          posicaoCorpo.y,
-          corpoBox.width,
-          alturaTotalCorpo,
-          true
-        );
-      }
+      drawPreview({
+        canvas,
+        ctx: canvas.getContext("2d"),
+        img,
+        scale,
+        nomeTexto,
+        corpoTexto,
+        styles,
+        posicaoNome,
+        posicaoCorpo,
+        isDragging,
+        itemHover,
+        itemSelecionado,
+      });
     };
 
-    const loadSelectedFonts = () =>
-      Promise.all([
-        document.fonts.load(`${tamanhoNome}px "${fonteNome}"`),
-        document.fonts.load(`${tamanhoCorpo}px "${fonteCorpo}"`),
-      ]).catch(() => []);
+    // Caminho rápido (arraste/digitação): imagem e fontes já prontas, desenho síncrono.
+    const img = getLoadedImage(imageUrl);
+    if (img && areFontsReady(styles)) {
+      paint(img);
+      return () => {
+        isActive = false;
+      };
+    }
 
-    Promise.all([
-      loadImage(certificate.previewUrl),
-      loadEditorFonts().then(loadSelectedFonts),
-    ])
-      .then(([img]) => draw(img))
+    Promise.all([loadImage(imageUrl), loadSelectedFonts(styles)])
+      .then(([loadedImg]) => paint(loadedImg))
       .catch((error) => {
         console.error("Erro ao carregar imagem do certificado:", error);
       });
@@ -244,32 +81,136 @@ const CertificateCanvas = ({
       isActive = false;
     };
   }, [
-    certificate,
-    nome,
-    textoCorpo,
-    corNome,
-    corCorpo,
+    imageUrl,
+    nomeTexto,
+    corpoTexto,
+    styles,
     posicaoNome,
     posicaoCorpo,
-    fonteNome,
-    fonteCorpo,
-    tamanhoNome,
-    tamanhoCorpo,
     isDragging,
     itemHover,
-    itemArrastado,
     itemSelecionado,
   ]);
+
+  const toImagePoint = (event) => {
+    const layout = layoutRef.current;
+    if (!layout) return null;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+
+    return {
+      x: ((event.clientX - rect.left) * layout.imageWidth) / rect.width,
+      y: ((event.clientY - rect.top) * layout.imageHeight) / rect.height,
+    };
+  };
+
+  const hitTest = (point, priority) =>
+    hitTestText(
+      point,
+      getTextRects({
+        ctx: canvasRef.current.getContext("2d"),
+        measure,
+        imageWidth: layoutRef.current.imageWidth,
+        nomeTexto,
+        corpoTexto,
+        styles,
+        posicaoNome,
+        posicaoCorpo,
+      }),
+      priority
+    );
+
+  const handlePointerDown = (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    const point = toImagePoint(event);
+    if (!point) return;
+
+    const item = hitTest(point, "nome");
+
+    if (!item) {
+      interaction.select(null);
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    interaction.startDrag(
+      item,
+      point,
+      item === "nome" ? posicaoNome : posicaoCorpo
+    );
+  };
+
+  const handlePointerMove = (event) => {
+    const point = toImagePoint(event);
+    if (!point) return;
+
+    if (interaction.isDragActive()) {
+      interaction.dragTo(point, layoutRef.current.imageWidth);
+      return;
+    }
+
+    if (event.pointerType === "mouse") {
+      interaction.hover(hitTest(point, "corpo"));
+    }
+  };
+
+  const handlePointerEnd = (event) => {
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    interaction.endDrag();
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      interaction.select(NEXT_SELECTION[itemSelecionado ?? "none"]);
+      return;
+    }
+
+    if (event.key === "Escape" && itemSelecionado) {
+      event.preventDefault();
+      interaction.select(null);
+      return;
+    }
+
+    const direction = ARROWS[event.key];
+    if (!direction || !itemSelecionado || !layoutRef.current) return;
+
+    event.preventDefault();
+    const baseStep = Math.max(1, Math.round(layoutRef.current.imageWidth / 500));
+    const step = event.shiftKey ? baseStep * 10 : baseStep;
+    interaction.nudge(direction[0] * step, direction[1] * step);
+  };
+
+  const className = [
+    "editor-canvas",
+    itemSelecionado ? "is-locked" : "",
+    isDragging ? "is-dragging" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className="canvas-wrapper">
       <canvas
         ref={canvasRef}
-        className="editor-canvas"
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
+        className={className}
+        tabIndex={0}
+        aria-label={label}
+        aria-describedby={describedBy}
+        aria-roledescription="pré-visualização editável"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onPointerLeave={() => {
+          if (!interaction.isDragActive()) interaction.hover(null);
+        }}
+        onKeyDown={handleKeyDown}
       />
     </div>
   );

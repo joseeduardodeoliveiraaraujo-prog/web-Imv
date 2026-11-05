@@ -1,6 +1,6 @@
 import Header from "../components/Header/Header";
 import "./Home.css";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaHistory,
@@ -8,13 +8,9 @@ import {
   FaSearch,
   FaThLarge,
 } from "react-icons/fa";
-import {
-  deleteCertificate,
-  listCertificates,
-  uploadCertificate,
-} from "../services/certificatesApi";
-import { listProjects } from "../services/projectsApi";
-import { ensureUserSynced } from "../services/usersApi";
+import { confirmDialog } from "../components/ConfirmDialog/confirmStore";
+import { toast } from "../components/Toast/toastStore";
+import { deleteCertificate } from "../services/certificatesApi";
 import CertificateCard from "./Home/components/CertificateCard";
 import CertificatePreviewModal from "./Home/components/CertificatePreviewModal";
 import HomeEmptyState from "./Home/components/HomeEmptyState";
@@ -22,160 +18,56 @@ import HomeMetrics from "./Home/components/HomeMetrics";
 import HomeTip from "./Home/components/HomeTip";
 import RecentProjectCard from "./Home/components/RecentProjectCard";
 import UploadCard from "./Home/components/UploadCard";
-
-const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg"];
+import { useCertificateUpload } from "./Home/hooks/useCertificateUpload";
+import { useHomeData } from "./Home/hooks/useHomeData";
+import {
+  countCreatedThisMonth,
+  formatLastModified,
+  getRequestErrorMessage,
+} from "./Home/utils/homeFormatters";
 
 const preloadEditorModule = () => {
   import("./Editor/EditorPage").catch(() => {});
 };
 
-const formatDate = (value) => {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleDateString("pt-BR");
-};
-
-const getExtension = (name = "") => {
-  if (!name.includes(".")) return "IMG";
-
-  const extension = name.split(".").pop().toUpperCase();
-  return extension === "JPEG" ? "JPG" : extension.slice(0, 4);
-};
-
-const formatCertificate = (cert) => ({
-  id: cert.id,
-  name: cert.title,
-  previewUrl: cert.thumbnail_path,
-  originalUrl: cert.image_path,
-  createdAt: formatDate(cert.created_at),
-  createdAtRaw: cert.created_at,
-  extension: getExtension(cert.title),
-});
-
-const getLoadErrorMessage = (error) => {
-  if (error?.status === 429) {
-    return "Muitas requisições. Aguarde alguns instantes e tente novamente.";
-  }
-
-  return "Não foi possível carregar os modelos. Verifique a conexão e tente novamente.";
-};
-
 /**
  * COMPONENT: Home
- * RESPONSIBILITY: Gerenciar a dashboard de modelos de certificados, uploads de mídia,
- * abertura de modais e listagem de projetos editados recentemente.
+ * RESPONSIBILITY: Compor a dashboard de modelos de certificados e projetos recentes.
+ * Dados em useHomeData; upload em useCertificateUpload.
  */
 const Home = ({ user, onLogout }) => {
-  // ==========================================
-  // STATES (ESTADOS DA APLICAÇÃO)
-  // ==========================================
   const navigate = useNavigate();
   const [selectedCertificate, setSelectedCertificate] = useState(null);
-  const [certificates, setCertificates] = useState([]);
-  const [recentes, setRecentes] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
-  const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
 
-  // ==========================================
-  // REFS
-  // ==========================================
-  const fileInputRef = useRef(null);
+  const {
+    certificates,
+    recentes,
+    loadError,
+    isLoading,
+    reload,
+    addCertificate,
+    removeCertificate,
+  } = useHomeData(user);
 
-  // ==========================================
-  // SIDE EFFECTS (EFEITOS COLATERAIS)
-  // ==========================================
-
-  /**
-   * EFFECT: Carrega modelos e projetos recentes em paralelo, sem bloquear a renderização
-   * inicial da aplicação pela sincronização do usuário.
-   */
-  useEffect(() => {
-    if (!user) return;
-
-    let isActive = true;
-
-    setLoadError("");
-
-    const carregarDados = async () => {
-      try {
-        const token = await user.getIdToken();
-        const syncPromise = ensureUserSynced(user, token).catch((error) => {
-          console.error("Erro ao salvar usuário:", error);
-          return null;
-        });
-
-        const fetchData = () =>
-          Promise.allSettled([
-            listCertificates(token),
-            listProjects(token),
-          ]);
-
-        let results = await fetchData();
-
-        const needsRetry = results.some(
-          (result) =>
-            result.status === "rejected" && result.reason?.status === 404
-        );
-
-        if (needsRetry) {
-          await syncPromise;
-          results = await fetchData();
-        }
-
-        if (!isActive) return;
-
-        const [certificatesResult, projectsResult] = results;
-
-        if (certificatesResult.status === "fulfilled") {
-          setCertificates(certificatesResult.value.map(formatCertificate));
-          setLoadError("");
-        } else {
-          console.error(
-            "Erro ao carregar certificados:",
-            certificatesResult.reason
-          );
-          setLoadError(getLoadErrorMessage(certificatesResult.reason));
-        }
-
-        if (projectsResult.status === "fulfilled") {
-          setRecentes(projectsResult.value);
-        } else {
-          console.error("Erro ao carregar projetos:", projectsResult.reason);
-        }
-      } catch (error) {
-        if (isActive) {
-          console.error("Erro ao carregar dados:", error);
-          setLoadError(getLoadErrorMessage(error));
-        }
-      }
-    };
-
-    carregarDados();
-
-    return () => {
-      isActive = false;
-    };
-  }, [user, reloadKey]);
+  const {
+    fileInputRef,
+    isDragging,
+    isUploading,
+    uploadError,
+    openFilePicker,
+    handleFileChange,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+  } = useCertificateUpload({ user, onUploaded: addCertificate });
 
   useEffect(() => {
-    if (!selectedCertificate) return;
-
-    preloadEditorModule();
+    if (selectedCertificate) preloadEditorModule();
   }, [selectedCertificate]);
 
-  // ==========================================
-  // DERIVED DATA (DADOS CALCULADOS)
-  // ==========================================
   const filteredCertificates = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return certificates;
@@ -185,153 +77,36 @@ const Home = ({ user, onLogout }) => {
     );
   }, [certificates, searchQuery]);
 
-  const lastModified = useMemo(() => {
-    const latest = recentes[0]?.updated_at;
-    if (!latest) return "—";
+  const lastModified = useMemo(
+    () => formatLastModified(recentes[0]?.updated_at),
+    [recentes]
+  );
 
-    const date = new Date(latest);
-    if (Number.isNaN(date.getTime())) return "—";
+  const newThisMonth = useMemo(
+    () => countCreatedThisMonth(certificates),
+    [certificates]
+  );
 
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
+  const closeModal = () => setSelectedCertificate(null);
 
-    return isToday
-      ? `Hoje, ${date.toLocaleTimeString("pt-BR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}`
-      : date.toLocaleDateString("pt-BR");
-  }, [recentes]);
-
-  const newThisMonth = useMemo(() => {
-    const now = new Date();
-
-    return certificates.filter((certificate) => {
-      if (!certificate.createdAtRaw) return false;
-
-      const date = new Date(certificate.createdAtRaw);
-      return (
-        !Number.isNaN(date.getTime()) &&
-        date.getMonth() === now.getMonth() &&
-        date.getFullYear() === now.getFullYear()
-      );
-    }).length;
-  }, [certificates]);
-
-  // ==========================================
-  // HANDLERS (EVENTOS E INTERAÇÕES)
-  // ==========================================
-
-  /**
-   * EVENT: handleUploadClick
-   * DESCRIPTION: Simula um evento de clique no input de arquivo oculto via referência do DOM.
-   */
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  /**
-   * FUNCTION: processUpload
-   * DESCRIPTION: Valida tipo/tamanho do arquivo e o envia para a API.
-   */
-  const processUpload = async (file) => {
-    if (!user || !file) return;
-
-    setUploadError("");
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      setUploadError("Formato inválido. Envie um arquivo PNG ou JPEG.");
-      return;
-    }
-
-    if (file.size > MAX_UPLOAD_SIZE) {
-      setUploadError("O arquivo excede o limite de 5 MB.");
-      return;
-    }
-
-    setIsUploading(true);
-
-    try {
-      const token = await user.getIdToken();
-      const newCert = await uploadCertificate(file, token);
-      setCertificates((prev) => [formatCertificate(newCert), ...prev]);
-    } catch (error) {
-      console.error("Erro ao enviar arquivo:", error);
-      setUploadError("Não foi possível enviar o modelo. Tente novamente.");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  /**
-   * EVENT: handleFileChange
-   * DESCRIPTION: Captura o arquivo escolhido no input e dispara o upload.
-   */
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    processUpload(file);
-    event.target.value = "";
-  };
-
-  const handleDragOver = (event) => {
-    event.preventDefault();
-    if (!isUploading) setIsDragging(true);
-  };
-
-  const handleDragLeave = (event) => {
-    event.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (event) => {
-    event.preventDefault();
-    setIsDragging(false);
-
-    if (isUploading) return;
-
-    const file = event.dataTransfer.files?.[0];
-    processUpload(file);
-  };
-
-  /**
-   * EVENT: handleAbrirProjeto
-   * DESCRIPTION: Redireciona a pilha do roteador interno do React Router diretamente para a rota do projeto ID.
-   */
-  const handleAbrirProjeto = (id) => {
-    navigate(`/project/${id}`);
-  };
-
-  /**
-   * EVENT: closeModal
-   * DESCRIPTION: Esvazia o estado de contexto do certificado selecionado, desmontando o nó do modal overlay.
-   */
-  const closeModal = () => {
-    setSelectedCertificate(null);
-  };
-
-  /**
-   * EVENT: handleEdit
-   * DESCRIPTION: Interrompe o escopo do modal e despacha o usuário para o editor de certificados indexado.
-   */
   const handleEdit = () => {
     if (!selectedCertificate) return;
     closeModal();
     navigate(`/editor/${selectedCertificate.id}`);
   };
 
-  /**
-   * EVENT: handleDelete
-   * DESCRIPTION: Solicita confirmação nativa do navegador e executa o disparo destrutivo via método HTTP DELETE.
-   */
   const handleDelete = async (certificate) => {
     const target = certificate || selectedCertificate;
     if (!user || !target) return;
 
-    const confirmDelete = window.confirm(
-      "Tem certeza que deseja apagar este modelo?"
-    );
+    const confirmed = await confirmDialog({
+      title: "Excluir modelo?",
+      message: `"${target.name}" e os projetos salvos com este modelo serão excluídos. Essa ação não pode ser desfeita.`,
+      confirmLabel: "Excluir modelo",
+      tone: "danger",
+    });
 
-    if (!confirmDelete) return;
+    if (!confirmed) return;
 
     setActionError("");
 
@@ -339,29 +114,73 @@ const Home = ({ user, onLogout }) => {
       const token = await user.getIdToken();
       await deleteCertificate(target.id, token);
 
-      setCertificates((prev) => prev.filter((item) => item.id !== target.id));
+      removeCertificate(target.id);
       setSelectedCertificate((current) =>
         current?.id === target.id ? null : current
       );
+      toast.success("Modelo excluído.");
     } catch (error) {
       console.error("Erro ao deletar:", error);
       setActionError(
-        error?.status === 429
-          ? "Muitas requisições. Aguarde alguns instantes e tente novamente."
-          : "Não foi possível excluir o modelo. Tente novamente."
+        getRequestErrorMessage(
+          error,
+          "Não foi possível excluir o modelo. Tente novamente."
+        )
       );
     }
   };
 
-  // ==========================================
-  // RENDER INTERFACE (JSX DOM STRUCTURE)
-  // ==========================================
+  const renderCertificates = () => {
+    if (filteredCertificates.length > 0) {
+      return (
+        <div
+          className={`certificates-grid${
+            viewMode === "list" ? " certificates-grid--list" : ""
+          }`}
+        >
+          {filteredCertificates.map((cert) => (
+            <CertificateCard
+              key={cert.id}
+              certificate={cert}
+              view={viewMode}
+              onSelect={setSelectedCertificate}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    if (loadError) return null;
+
+    if (isLoading) {
+      return (
+        <HomeEmptyState
+          title="Carregando modelos..."
+          description="Isso leva só um instante."
+          busy
+        />
+      );
+    }
+
+    return (
+      <HomeEmptyState
+        title={certificates.length > 0 ? "Nenhum modelo encontrado" : "Nenhum modelo ainda"}
+        description={
+          certificates.length > 0
+            ? "Tente outro termo de busca."
+            : "Envie seu primeiro modelo no campo acima."
+        }
+      />
+    );
+  };
+
   return (
     <>
       <Header
         user={user}
         onLogout={onLogout}
-        onNewModel={handleUploadClick}
+        onNewModel={openFilePicker}
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
       />
@@ -381,14 +200,18 @@ const Home = ({ user, onLogout }) => {
             ref={fileInputRef}
             style={{ display: "none" }}
             onChange={handleFileChange}
+            tabIndex={-1}
+            aria-hidden="true"
           />
 
           <div className="home-layout">
             <div className="home-main">
-              <section className="certificates-section">
+              <section className="certificates-section" aria-labelledby="models-title">
                 <div className="models-header">
                   <div className="models-heading">
-                    <h2 className="models-title">Modelos de Certificados</h2>
+                    <h2 className="models-title" id="models-title">
+                      Modelos de Certificados
+                    </h2>
                     <p className="models-subtitle">
                       Gerencie e organize os layouts de certificados do
                       instituto
@@ -412,22 +235,20 @@ const Home = ({ user, onLogout }) => {
                     <div className="view-toggle" role="group" aria-label="Modo de visualização">
                       <button
                         type="button"
-                        className={
-                          viewMode === "grid" ? "is-active" : undefined
-                        }
+                        className={viewMode === "grid" ? "is-active" : undefined}
                         onClick={() => setViewMode("grid")}
                         title="Visualização em grade"
+                        aria-label="Visualização em grade"
                         aria-pressed={viewMode === "grid"}
                       >
                         <FaThLarge aria-hidden="true" />
                       </button>
                       <button
                         type="button"
-                        className={
-                          viewMode === "list" ? "is-active" : undefined
-                        }
+                        className={viewMode === "list" ? "is-active" : undefined}
                         onClick={() => setViewMode("list")}
                         title="Visualização em lista"
+                        aria-label="Visualização em lista"
                         aria-pressed={viewMode === "list"}
                       >
                         <FaList aria-hidden="true" />
@@ -437,7 +258,7 @@ const Home = ({ user, onLogout }) => {
                 </div>
 
                 <UploadCard
-                  onUpload={handleUploadClick}
+                  onUpload={openFilePicker}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
@@ -449,10 +270,7 @@ const Home = ({ user, onLogout }) => {
                 {actionError && (
                   <div className="home-alert" role="alert">
                     <span>{actionError}</span>
-                    <button
-                      type="button"
-                      onClick={() => setActionError("")}
-                    >
+                    <button type="button" onClick={() => setActionError("")}>
                       Fechar
                     </button>
                   </div>
@@ -461,54 +279,22 @@ const Home = ({ user, onLogout }) => {
                 {loadError && (
                   <div className="home-alert" role="alert">
                     <span>{loadError}</span>
-                    <button
-                      type="button"
-                      onClick={() => setReloadKey((value) => value + 1)}
-                    >
+                    <button type="button" onClick={reload}>
                       Tentar novamente
                     </button>
                   </div>
                 )}
 
-                {filteredCertificates.length > 0 ? (
-                  <div
-                    className={`certificates-grid${
-                      viewMode === "list" ? " certificates-grid--list" : ""
-                    }`}
-                  >
-                    {filteredCertificates.map((cert) => (
-                      <CertificateCard
-                        key={cert.id}
-                        certificate={cert}
-                        view={viewMode}
-                        onSelect={setSelectedCertificate}
-                        onDelete={handleDelete}
-                      />
-                    ))}
-                  </div>
-                ) : loadError ? null : (
-                  <HomeEmptyState
-                    title={
-                      certificates.length > 0
-                        ? "Nenhum modelo encontrado"
-                        : "Nenhum modelo ainda"
-                    }
-                    description={
-                      certificates.length > 0
-                        ? "Tente outro termo de busca."
-                        : "Envie seu primeiro modelo no campo acima."
-                    }
-                  />
-                )}
+                {renderCertificates()}
               </section>
             </div>
 
             <aside className="home-aside">
-              <section className="recentes-section">
+              <section className="recentes-section" aria-labelledby="recentes-title">
                 <div className="recentes-header">
                   <div className="recentes-heading">
                     <FaHistory aria-hidden="true" />
-                    <h3>Recentes / Editados</h3>
+                    <h3 id="recentes-title">Recentes / Editados</h3>
                   </div>
                   <span className="recentes-count">
                     {recentes.length} recentes
@@ -521,15 +307,16 @@ const Home = ({ user, onLogout }) => {
                       <RecentProjectCard
                         key={item.id}
                         project={item}
-                        onOpen={handleAbrirProjeto}
+                        onOpen={(id) => navigate(`/project/${id}`)}
                         onPreload={preloadEditorModule}
                       />
                     ))}
                   </div>
                 ) : (
                   <HomeEmptyState
-                    title="Sem projetos"
-                    description="Salve um projeto no editor."
+                    title={isLoading ? "Carregando..." : "Sem projetos"}
+                    description={isLoading ? "" : "Salve um projeto no editor."}
+                    busy={isLoading}
                   />
                 )}
               </section>

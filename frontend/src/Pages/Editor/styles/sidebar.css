@@ -130,6 +130,25 @@
   border-color: rgba(255, 255, 255, 0.24);
 }
 
+.field-hint {
+  font-size: 0.78rem;
+  color: rgba(226, 232, 240, 0.6);
+}
+
+.inspector-tab:focus-visible,
+.btn-voltar-global:focus-visible,
+.btn-editar-individual:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+
+.font-range-input:focus-visible,
+.font-number-input:focus-visible,
+.input-color-picker:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+
 .editor-input:focus {
   border-color: rgba(255, 255, 255, 0.4);
   outline: none;
@@ -243,3 +262,44 @@
   pointer-events: none;
 }
 
+/*
+ * Gaveta do inspector (telas até 1080px).
+ * Precisa ficar DEPOIS da regra base .editor-sidebar deste arquivo: com a mesma
+ * especificidade, a regra que vem por último vence (antes o position: relative
+ * da regra base anulava o position: fixed e a gaveta nunca aparecia).
+ */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 70px 0 0 0;
+  z-index: 5;
+  background: rgba(4, 4, 6, 0.55);
+  animation: editorOverlayIn 0.18s ease;
+}
+
+@media (max-width: 1080px) {
+  .editor-sidebar {
+    position: fixed;
+    top: 70px;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    /* Deixa ao menos 40px de fundo visível para tocar e fechar no celular. */
+    width: min(380px, calc(100% - 40px));
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.25s ease, visibility 0s linear 0.25s;
+    background: rgba(15, 23, 42, 0.96);
+    overscroll-behavior: contain;
+  }
+
+  .editor-sidebar.is-open {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.25s ease;
+    box-shadow: -30px 0 80px -30px rgba(0, 0, 0, 0.9);
+  }
+
+  .editor-sidebar:focus {
+    outline: none;
+  }
+}

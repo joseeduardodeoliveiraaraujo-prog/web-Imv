@@ -1,7 +1,8 @@
 import { renderCertificateForExport } from "../utils/canvasRenderer";
-import { loadEditorFonts } from "../utils/loadEditorFonts";
+import { loadSelectedFonts } from "../utils/loadEditorFonts";
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const JPEG_QUALITY_PDF = 0.75;
+const JPEG_QUALITY_IMAGE = 0.8;
 
 const loadExportDependencies = async () => {
   const [{ default: JSZip }, { saveAs }, { jsPDF }] = await Promise.all([
@@ -13,16 +14,6 @@ const loadExportDependencies = async () => {
   return { JSZip, saveAs, jsPDF };
 };
 
-const loadFonts = async (styles) => {
-  await loadEditorFonts();
-  await document.fonts.load(
-    `${styles.tamanhoNome}px "${styles.fonteNome}"`
-  );
-  await document.fonts.load(
-    `${styles.tamanhoCorpo}px "${styles.fonteCorpo}"`
-  );
-};
-
 const createTempCanvas = (img) => {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -32,31 +23,111 @@ const createTempCanvas = (img) => {
   return { canvas, ctx };
 };
 
+/**
+ * Codificação assíncrona e binária (sem base64). Além de economizar memória,
+ * o await devolve o controle ao navegador entre certificados: a barra de
+ * progresso é atualizada e a aba não congela em listas grandes.
+ */
+const canvasToJpeg = (canvas, quality) =>
+  new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) =>
+        blob ? resolve(blob) : reject(new Error("Falha ao gerar a imagem")),
+      "image/jpeg",
+      quality
+    );
+  });
+
+const blobToBytes = async (blob) => new Uint8Array(await blob.arrayBuffer());
+
 const getOrientation = (img) => (img.width > img.height ? "l" : "p");
 
 const getProgress = (index, total) =>
-  Math.round(20 + ((index + 1) / total) * 70);
+  Math.round(10 + ((index + 1) / total) * 80);
+
+const INVALID_FILE_CHARS = /[<>:"/\\|?*]/g;
+
+export const sanitizeFileName = (name) => {
+  const safe = String(name)
+    .normalize("NFC")
+    .replace(INVALID_FILE_CHARS, "")
+    .replace(/[\p{Cc}]/gu, "")
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/^\.+|\.+$/g, "")
+    .slice(0, 80);
+
+  return safe || "certificado";
+};
 
 const getFileName = (name, index, extension) =>
-  `${name.replace(/\s+/g, "_")}_${index + 1}.${extension}`;
+  `${sanitizeFileName(name)}_${index + 1}.${extension}`;
 
 const getItemBody = (item, bodyText) =>
   item.overrides?.textoCorpo || bodyText;
 
-export const exportSinglePdf = async ({
+/**
+ * Desenha e codifica cada certificado em sequência, chamando onItem com o JPEG.
+ */
+const renderEach = async ({
   image,
   names,
   bodyText,
   styles,
   positions,
+  quality,
+  statusLabel,
   onProgress,
   onStatus,
+  onItem,
 }) => {
+  const { canvas, ctx } = createTempCanvas(image);
+
+  for (let i = 0; i < names.length; i++) {
+    const item = names[i];
+
+    onStatus(`${statusLabel} ${i + 1} de ${names.length}...`);
+
+    renderCertificateForExport(
+      ctx,
+      image,
+      item.nome,
+      getItemBody(item, bodyText),
+      canvas.width,
+      styles,
+      positions
+    );
+
+    const jpeg = await canvasToJpeg(canvas, quality);
+    await onItem(jpeg, item, i);
+
+    onProgress(getProgress(i, names.length));
+  }
+};
+
+const prepare = async ({ styles, onProgress, onStatus }) => {
   onStatus("Carregando fontes e estilos...");
-  onProgress(15);
-  await sleep(600);
-  await loadFonts(styles);
-  const { jsPDF } = await loadExportDependencies();
+  onProgress(5);
+  await loadSelectedFonts(styles);
+  return loadExportDependencies();
+};
+
+const finishZip = async ({ zip, saveAs, fileName, onProgress, onStatus }) => {
+  onStatus("Compactando arquivos no ZIP...");
+  onProgress(92);
+
+  const content = await zip.generateAsync({ type: "blob" }, (metadata) => {
+    onProgress(Math.min(99, 92 + Math.round(metadata.percent * 0.07)));
+  });
+
+  saveAs(content, fileName);
+  onStatus("Download iniciado!");
+  onProgress(100);
+};
+
+export const exportSinglePdf = async (options) => {
+  const { image, onProgress, onStatus } = options;
+  const { jsPDF } = await prepare(options);
 
   const orientation = getOrientation(image);
   const pdf = new jsPDF({
@@ -66,154 +137,73 @@ export const exportSinglePdf = async ({
     compress: true,
   });
 
-  const { canvas, ctx } = createTempCanvas(image);
+  await renderEach({
+    ...options,
+    quality: JPEG_QUALITY_PDF,
+    statusLabel: "Desenhando certificado",
+    onItem: async (jpeg, _item, index) => {
+      if (index > 0) pdf.addPage([image.width, image.height], orientation);
+      pdf.addImage(await blobToBytes(jpeg), "JPEG", 0, 0, image.width, image.height);
+    },
+  });
 
-  for (let i = 0; i < names.length; i++) {
-    const item = names[i];
-    const itemBody = getItemBody(item, bodyText);
-
-    onProgress(getProgress(i, names.length));
-    onStatus(`Desenhando certificado ${i + 1} de ${names.length}...`);
-
-    renderCertificateForExport(
-      ctx,
-      image,
-      item.nome,
-      itemBody,
-      canvas.width,
-      styles,
-      positions
-    );
-
-    const imgData = canvas.toDataURL("image/jpeg", 0.75);
-
-    if (i > 0) pdf.addPage([image.width, image.height], orientation);
-    pdf.addImage(imgData, "JPEG", 0, 0, image.width, image.height);
-
-    if (names.length > 30 && i % 15 === 0) await sleep(10);
-  }
-
-  await sleep(500);
-  onStatus("Finalizando arquivo e disparando download...");
+  onStatus("Finalizando arquivo PDF...");
   onProgress(95);
-  await sleep(800);
-
   pdf.save("todos-os-certificados.pdf");
 
-  onStatus("Download concluído!");
+  onStatus("Download iniciado!");
   onProgress(100);
-  await sleep(600);
 };
 
-export const exportJpegZip = async ({
-  image,
-  names,
-  bodyText,
-  styles,
-  positions,
-  onProgress,
-  onStatus,
-}) => {
-  onStatus("Carregando fontes e estilos...");
-  onProgress(15);
-  await sleep(600);
-  await loadFonts(styles);
-  const { JSZip, saveAs } = await loadExportDependencies();
-
-  const { canvas, ctx } = createTempCanvas(image);
+export const exportJpegZip = async (options) => {
+  const { JSZip, saveAs } = await prepare(options);
   const zip = new JSZip();
 
-  for (let i = 0; i < names.length; i++) {
-    const item = names[i];
-    const itemBody = getItemBody(item, bodyText);
+  await renderEach({
+    ...options,
+    quality: JPEG_QUALITY_IMAGE,
+    statusLabel: "Gerando imagem",
+    onItem: (jpeg, item, index) => {
+      zip.file(getFileName(item.nome, index, "jpg"), jpeg);
+    },
+  });
 
-    onProgress(getProgress(i, names.length));
-    onStatus(`Gerando imagens ${i + 1} de ${names.length}...`);
-
-    renderCertificateForExport(
-      ctx,
-      image,
-      item.nome,
-      itemBody,
-      canvas.width,
-      styles,
-      positions
-    );
-
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.8).split(",")[1];
-    zip.file(getFileName(item.nome, i, "jpg"), dataUrl, { base64: true });
-  }
-
-  await sleep(500);
-  onStatus("Compactando arquivos no ZIP...");
-  onProgress(95);
-  await sleep(800);
-
-  const content = await zip.generateAsync({ type: "blob" });
-  saveAs(content, "certificados-individuais.zip");
-
-  onStatus("Download concluído!");
-  onProgress(100);
-  await sleep(500);
+  await finishZip({
+    zip,
+    saveAs,
+    fileName: "certificados-individuais.zip",
+    onProgress: options.onProgress,
+    onStatus: options.onStatus,
+  });
 };
 
-export const exportPdfZip = async ({
-  image,
-  names,
-  bodyText,
-  styles,
-  positions,
-  onProgress,
-  onStatus,
-}) => {
-  onStatus("Carregando fontes e estilos...");
-  onProgress(15);
-  await sleep(600);
-  await loadFonts(styles);
-  const { JSZip, saveAs, jsPDF } = await loadExportDependencies();
-
-  const { canvas, ctx } = createTempCanvas(image);
+export const exportPdfZip = async (options) => {
+  const { image } = options;
+  const { JSZip, saveAs, jsPDF } = await prepare(options);
   const orientation = getOrientation(image);
   const zip = new JSZip();
 
-  for (let i = 0; i < names.length; i++) {
-    const item = names[i];
-    const itemBody = getItemBody(item, bodyText);
+  await renderEach({
+    ...options,
+    quality: JPEG_QUALITY_PDF,
+    statusLabel: "Gerando PDF",
+    onItem: async (jpeg, item, index) => {
+      const pdf = new jsPDF({
+        orientation,
+        unit: "px",
+        format: [image.width, image.height],
+        compress: true,
+      });
+      pdf.addImage(await blobToBytes(jpeg), "JPEG", 0, 0, image.width, image.height);
+      zip.file(getFileName(item.nome, index, "pdf"), pdf.output("blob"));
+    },
+  });
 
-    onProgress(getProgress(i, names.length));
-    onStatus(`Gerando PDF ${i + 1} de ${names.length}...`);
-
-    renderCertificateForExport(
-      ctx,
-      image,
-      item.nome,
-      itemBody,
-      canvas.width,
-      styles,
-      positions
-    );
-
-    const imgData = canvas.toDataURL("image/jpeg", 0.75);
-    const pdf = new jsPDF({
-      orientation,
-      unit: "px",
-      format: [image.width, image.height],
-      compress: true,
-    });
-    pdf.addImage(imgData, "JPEG", 0, 0, image.width, image.height);
-
-    zip.file(getFileName(item.nome, i, "pdf"), pdf.output("blob"));
-  }
-
-  await sleep(500);
-  onStatus("Compactando arquivos no ZIP...");
-  onProgress(95);
-  await sleep(800);
-
-  const content = await zip.generateAsync({ type: "blob" });
-  saveAs(content, "certificados-pdf-separados.zip");
-
-  onStatus("Download concluído!");
-  onProgress(100);
-  await sleep(500);
+  await finishZip({
+    zip,
+    saveAs,
+    fileName: "certificados-pdf-separados.zip",
+    onProgress: options.onProgress,
+    onStatus: options.onStatus,
+  });
 };

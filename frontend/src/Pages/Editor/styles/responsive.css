@@ -1,23 +1,15 @@
 /**
  * DESCRIPTION: Media Queries (Responsividade para Viewports médias e menores).
- * RESPONSIBILITY: Readequar as colunas do grid mestre e reorganizar fluxos de blocos para visualização mobile.
+ * RESPONSIBILITY: Ajustar a área de trabalho em telas pequenas.
+ * O inspector vira gaveta abaixo de 1080px (ver base.css).
  */
-@media (max-width: 1024px) {
-  .editor-container {
-    grid-template-columns: 1fr 300px;
-  }
-}
 @media (max-width: 768px) {
-  .editor-container {
-    grid-template-columns: 1fr;
-    overflow-y: auto;
+  .editor-workspace.bulk-scroll {
+    padding: 28px 16px 96px;
+    gap: 40px;
   }
-  .editor-workspace {
-    height: 400px;
-  }
-  .editor-sidebar {
-    border-left: none;
-    border-top: 1px solid var(--border-color);
+
+  .canvas-wrapper {
+    width: 100%;
   }
 }
-

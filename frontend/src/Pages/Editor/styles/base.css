@@ -1,7 +1,6 @@
-html,
-body {
-  margin: 0;
-  padding: 0;
+/* Só enquanto o editor está montado: antes a regra vazava para o app inteiro. */
+html:has(.editor),
+body:has(.editor) {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -149,10 +148,6 @@ body {
   border-color: rgba(255, 255, 255, 0.36);
 }
 
-.header-download-wrapper {
-  position: relative;
-}
-
 .editor-container {
   position: relative;
   z-index: 1;
@@ -200,13 +195,133 @@ body {
   }
 }
 
+.btn-header-back:focus-visible,
+.btn-header-glass:focus-visible,
+.btn-header-primary:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+
+.btn-header-glass:disabled,
+.btn-header-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 4px;
+  font-size: 0.8rem;
+  color: rgba(226, 232, 240, 0.72);
+  white-space: nowrap;
+}
+
+.save-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.save-status-dot--saved {
+  background: #34d399;
+}
+
+.save-status-dot--dirty {
+  background: #fbbf24;
+}
+
+.save-status-dot--saving {
+  background: #cbd5e1;
+  animation: saveStatusPulse 1s ease-in-out infinite;
+}
+
+@keyframes saveStatusPulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.editor-modal-summary {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  color: rgba(226, 232, 240, 0.65);
+}
+
+.editor-error {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(1400px 900px at 50% 0%, rgba(148, 163, 184, 0.08), transparent 70%),
+    linear-gradient(180deg, #0a0a0b 0%, #050506 100%);
+}
+
+.editor-error-card {
+  width: min(460px, 100%);
+  padding: 28px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #17171a 0%, #101012 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.9);
+}
+
+.editor-error-title {
+  margin: 6px 0 10px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.editor-error-title:focus {
+  outline: none;
+}
+
+.editor-error-message {
+  margin: 0 0 22px;
+  color: rgba(226, 232, 240, 0.78);
+  line-height: 1.55;
+}
+
+.editor-error-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Abaixo de 1080px o inspector sai da grade e vira gaveta (ver fim de sidebar.css). */
 @media (max-width: 1080px) {
   .editor-container {
     grid-template-columns: 1fr;
   }
+}
 
-  .editor-sidebar {
+@media (max-width: 720px) {
+  .editor-header {
+    padding: 0 14px;
+  }
+
+  .editor-header-actions {
+    gap: 6px;
+  }
+
+  .editor-header-title {
+    max-width: 38vw;
+  }
+
+  .btn-header-glass,
+  .btn-header-primary {
+    padding: 9px;
+  }
+
+  .btn-label,
+  .btn-header-primary .chevron,
+  .save-status-text {
     display: none;
   }
 }
-

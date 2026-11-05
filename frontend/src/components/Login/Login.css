@@ -8,13 +8,56 @@
   box-sizing: border-box;
   color: #f8fafc;
   font-family: "Plus Jakarta Sans", "Inter", "Segoe UI", Arial, sans-serif;
-  background: radial-gradient(
+  position: relative;
+  isolation: isolate;
+}
+
+/*
+ * Fundo em camada fixa própria: mesmo visual de background-attachment: fixed,
+ * sem repintar a imagem a cada rolagem (o que pesava junto com os backdrop-filter).
+ */
+.login-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-image: radial-gradient(
       900px 600px at 15% 0%,
       rgba(16, 185, 129, 0.12),
       transparent 60%
     ),
     linear-gradient(180deg, rgba(2, 6, 23, 0.92) 0%, rgba(2, 6, 23, 0.98) 100%),
-    url("/img1.webp") center / cover no-repeat fixed;
+    url("/img1.webp");
+  background-image: radial-gradient(
+      900px 600px at 15% 0%,
+      rgba(16, 185, 129, 0.12),
+      transparent 60%
+    ),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.92) 0%, rgba(2, 6, 23, 0.98) 100%),
+    image-set(url("/img1.avif") type("image/avif"), url("/img1.webp") type("image/webp"));
+}
+
+@media (max-width: 1280px) {
+  .login-page::before {
+    background-image: radial-gradient(
+        900px 600px at 15% 0%,
+        rgba(16, 185, 129, 0.12),
+        transparent 60%
+      ),
+      linear-gradient(180deg, rgba(2, 6, 23, 0.92) 0%, rgba(2, 6, 23, 0.98) 100%),
+      url("/img1-1280.webp");
+    background-image: radial-gradient(
+        900px 600px at 15% 0%,
+        rgba(16, 185, 129, 0.12),
+        transparent 60%
+      ),
+      linear-gradient(180deg, rgba(2, 6, 23, 0.92) 0%, rgba(2, 6, 23, 0.98) 100%),
+      image-set(url("/img1-1280.avif") type("image/avif"), url("/img1-1280.webp") type("image/webp"));
+  }
 }
 
 .login-shell {

@@ -105,11 +105,11 @@ export const getTextBoxSize = (
   };
 };
 
-export const createTextBoxMeasurer = () => {
+export const createTextBoxMeasurer = (maxEntries = 300) => {
   const textBoxCache = new Map();
 
   return (ctx, text, size, font, maxWidth) => {
-    const key = text + size + font + maxWidth;
+    const key = `${size}|${font}|${maxWidth}|${text}`;
 
     if (textBoxCache.has(key)) {
       return textBoxCache.get(key);
@@ -117,6 +117,11 @@ export const createTextBoxMeasurer = () => {
 
     const result = getTextBoxSize(ctx, text, size, font, maxWidth);
     textBoxCache.set(key, result);
+
+    // Map preserva a ordem de inserção: descarta a medição mais antiga.
+    if (textBoxCache.size > maxEntries) {
+      textBoxCache.delete(textBoxCache.keys().next().value);
+    }
 
     return result;
   };

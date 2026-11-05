@@ -4,5 +4,6 @@
 @import "./styles/modal.css";
 @import "./styles/actions.css";
 @import "./styles/loading.css";
-@import "./styles/responsive.css";
 @import "./styles/workspace.css";
+/* Por último: os ajustes responsivos precisam vencer as regras base de mesma especificidade. */
+@import "./styles/responsive.css";

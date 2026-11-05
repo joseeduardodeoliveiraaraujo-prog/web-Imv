@@ -11,7 +11,7 @@ import { useState } from "react";
 import "./Login.css";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../services/firebase";
-import { syncUser } from "../../services/usersApi";
+import { getLoginErrorMessage } from "./loginErrors";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -28,22 +28,13 @@ const Login = () => {
     setError("");
     setIsSubmitting(true);
 
+    // Só autentica: a sincronização com o backend acontece uma única vez
+    // em App (onAuthStateChanged -> ensureUserSynced).
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
-      const response = await syncUser(user);
-
-      if (!response.ok) {
-        throw new Error(`Erro no servidor: ${response.status}`);
-      }
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (loginError) {
       console.error("Erro ao logar:", loginError.code || loginError.message);
-      setError("E-mail ou senha inválidos ou erro de conexão.");
-    } finally {
+      setError(getLoginErrorMessage(loginError));
       setIsSubmitting(false);
     }
   };
